@@ -34,10 +34,7 @@
 ## Block BE — Media: what the bytes mean
 
 - 📋 **SH1363** (deps: SH1355 ✅) **The shio CLI still uploads an asset in one multipart POST, so pushing a video restarts from zero when the link drops** — The CLI is the agent's path to an asset, and P1 puts it before REST, which now has resumable sessions. → §LXX.11
-
-## Block M — Token economy, measured (SH74)
-
-- 📋 **SH1357** (deps: —) **The phone's run, apply, uploads, a page per photo and publish, is not a canonical job, so it is unpriced** — A free tier's agent budget is set from this number, and the rule here is that the measurement lands before anything is built on it. → §XIII.27
+- 📋 **SH1364** (deps: —) **An upload answers with the whole File post entity, about 1,800 tokens a photo, most of the phone's run** — Four uploads are 7,276 of the run's 13,004 tokens, and that number sets the free tier's agent cap. → §LXX.12
 
 ## Priority
 

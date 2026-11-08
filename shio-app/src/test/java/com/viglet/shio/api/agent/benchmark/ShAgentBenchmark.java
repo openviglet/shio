@@ -74,7 +74,7 @@ public final class ShAgentBenchmark {
      *                   {@code MockHttpServletRequestBuilder} does not expose it, and a
      *                   write's cost is mostly what it sent
      */
-    public MvcResult call(String label, MockHttpServletRequestBuilder request, String sentBody)
+    public MvcResult call(String label, org.springframework.test.web.servlet.RequestBuilder request, String sentBody)
             throws Exception {
         // SH1327 — a read task repeats reads with nothing written between them, and H2 would
         // recall them from its result cache; the wall clock is the calls' own.
@@ -94,7 +94,7 @@ public final class ShAgentBenchmark {
         return result;
     }
 
-    public MvcResult call(String label, MockHttpServletRequestBuilder request) throws Exception {
+    public MvcResult call(String label, org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
         return call(label, request, null);
     }
 

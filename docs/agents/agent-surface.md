@@ -1539,8 +1539,11 @@ process invites rather than a lapse. If the analysis feels too big for the line,
 signal it goes in IMPROVEMENTS, not that the line should grow.
 
 **The cost of all of it is measured, not asserted (Block M).** `ShAgentTaskBenchmarkTest`
-runs four canonical jobs over the agent surface *and* over the id-keyed console/CDA path and
-asserts both ratios; `ShAgentResponseBudgetTest` guards eleven canonical response sizes. Both
+runs five canonical jobs over the agent surface *and* over the id-keyed console/CDA path and
+asserts both ratios (the fifth, `build-site-from-photos` since SH1357, is the mobile run whose figure
+sets the free tier's agent-call cap: build-marketing-site plus four uploads, their alt text, a
+gallery page and a publish, with the uploads' answers counted and their bytes not);
+`ShAgentResponseBudgetTest` guards eleven canonical response sizes. Both
 read their ceilings from `shio-app/src/test/resources/token-budgets.properties`, the same
 file as the SH132 MCP budgets, because a second place to keep a number is a place that goes
 stale. Raising a ceiling is allowed and must be justified in the commit.

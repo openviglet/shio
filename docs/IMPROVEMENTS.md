@@ -317,23 +317,6 @@ token-budgets.properties takes a row for it.
 > baseline getting leaner, and what it left behind is mostly the shape of that argument
 > getting harder: the calls that remain are real work.
 
-### XIII.27 The phone's run, priced (SH1357)
-
-ShAgentTaskBenchmarkTest prices four jobs, and build-marketing-site is the nearest: one
-apply, five calls, under five thousand tokens. The mobile run is that job plus what a
-phone adds, a batch of uploads, a page or a gallery entry per photo, alt text the agent
-writes, a review, a publish. None of that is in the four, and the free tier's one
-variable cost is the model behind exactly those calls.
-
-A fifth canonical job, build-site-from-photos, run twice like the others, over the agent
-surface and over the console and CDA path a client without a context pack would take,
-guarded on calls and tokens with the same loose token ceiling and exact call ceiling.
-The number it prints is the one the mobile project multiplies by a model's price to set
-the agent-call cap, and a regression in it is a build failure, as P3 says. It lands
-before the small-business package is built on it and is re-measured once with it,
-because the package changes the call count. The assertion carrying this id is the
-benchmark row itself.
-
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
 > The reorientation was mostly additive, but it did invalidate some existing choices.
@@ -1242,6 +1225,28 @@ Done when a CLI test drives an upload whose connection is cut mid-chunk against 
 server and reads one asset with the declared digest, and the conformance instance helper
 uploads a large asset the same way. A model is not involved: the CLI does the
 arithmetic.
+
+### LXX.12 An upload answers with the media item (SH1364)
+
+Measured by SH1357's build-site-from-photos benchmark: the phone's run costs 13004
+tokens over the agent surface, and the four photo uploads are 7276 of them, about 1820
+tokens each. `POST /api/v2/staticfile/upload` answers with the whole `ShPostUnified`
+entity, and that is what a model reads after every photo. The SH1355 finish answers the
+same way, so a resumed upload inherits it.
+
+What a caller needs back is small and already has a shape: `ShStaticFileItem` is the
+media library's row (id, file name, URL, size, sha256, content type, width and height),
+and `/replace` already answers with it. So the upload should answer with that item, or
+take `format=terse` and answer with it there, the way the agent reads do. The first is
+preferred if no caller reads a field only the entity carries; the console's upload flow,
+the CLI's admin client (`cli/src/admin-client.mjs`), the conformance instance helper and
+the replication chain all have to be checked before choosing, by reading what each takes
+out of the response rather than assuming.
+
+Done when build-site-from-photos is re-measured and its token ceiling in
+token-budgets.properties is lowered to the new figure, with the per-upload cost stated
+in the comment beside it. The CLI's own upload (SH1363) gets the same saving for free if
+the answer changes shape.
 
 ## LXXI The visual editor becomes a composer (Block BF)
 

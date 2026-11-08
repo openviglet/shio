@@ -132,25 +132,26 @@ saving grows has to be measured at two sizes or it is not a claim.
 
 ## The benchmark
 
-Four canonical tasks are run against the real instance on every build, and both their call
-count and their token cost are held:
+Five canonical tasks are run against the real instance on every build, and both their call
+count and their token cost are held. The figures are the ceilings CI enforces, from
+`token-budgets.properties`:
 
 | Task | Calls | Est. tokens |
 |---|---|---|
 | Fix a broken link | 3 | 400 |
-| Build a marketing site | 4 | 2700 |
+| Build a marketing site | 6 | 4000 |
 | Translate a site | 3 | 800 |
-| Add a post type and 10 posts | 3 | 1800 |
+| Add a post type and 10 posts | 3 | 2200 |
+| Build a site from the photos on a phone | 10 | 13500 |
 
-Four calls to build a site is the number worth internalising: **a session, not a
-conversation.**
+Six calls to build a site is the number worth internalising: **a session, not a
+conversation.** That run ends at a published page a visitor can open: it applies a blueprint,
+publishes the pages and their templates, checks the site and renders the home page.
 
-:::caution[What the build-a-site number does and does not include]
-The benchmark ends at `verify` (content that passes the checks) **not** at a page a person
-can open in a browser. Rendering and publishing are separate steps, and closing that gap is
-an open task. So read 2700 tokens as "a correct, verified site's worth of content", not "a
-finished website".
-:::
+The photo run is the same job plus what a phone adds: four uploads, the alt text for each, a
+gallery on a new page, and a publish. Its figure is what a free tier's agent budget is set from.
+The uploads are over half of it today, because each upload answers with the whole file record;
+making that answer smaller is an open task.
 
 ---
 

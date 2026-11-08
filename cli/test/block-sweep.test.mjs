@@ -81,6 +81,13 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  M: {
+    swept: true,
+    why: "token economy, measured, re-closed by SH1357: the mobile run priced as a fifth canonical job, "
+      + "build-site-from-photos, whose figure sets the free tier's agent-call cap. docs-shio moved: "
+      + "COVERAGE's Block M row names SH1357 and the mirror is regenerated. README and shio-site are NOT "
+      + "moved: neither lists the benchmark jobs or quotes a token figure that changed",
+  },
   P: {
     swept: true,
     why: "the visible site, closed by SH1304: the console's View published site beside Preview on the "

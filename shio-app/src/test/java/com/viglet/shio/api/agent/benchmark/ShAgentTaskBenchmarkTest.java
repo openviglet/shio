@@ -135,6 +135,14 @@ class ShAgentTaskBenchmarkTest {
     private String naiveSiteName;
     private String naiveSiteId;
     private String naiveRootFolderId;
+    private String photoSiteName;
+    private String photoSiteId;
+    private String photoRootFolderId;
+    private String naivePhotoSiteName;
+    private String naivePhotoSiteId;
+    private String naivePhotoRootFolderId;
+    /** SH1357 — how many photographs the phone's run uploads, describes and shows. */
+    private static final int PHOTOS = 4;
     /** Post ids by 1-based index — the id column is 36 chars, so they cannot be spelled. */
     private final List<String> postIds = new ArrayList<>();
 
@@ -258,7 +266,35 @@ class ShAgentTaskBenchmarkTest {
             naiveRoot.setOwner("admin");
             entityManager.persist(naiveRoot);
             naiveRootFolderId = naiveRoot.getId();
+
+            // SH1357 — two more blank sites, one per path, for the phone's run: it applies a package
+            // and binds a layout exactly as build-marketing-site does, so it cannot share theirs.
+            String[] photo = blankSite("bench-photos-" + suffix, when);
+            photoSiteName = photo[0];
+            photoSiteId = photo[1];
+            photoRootFolderId = photo[2];
+            String[] naivePhoto = blankSite("bench-naive-photos-" + suffix, when);
+            naivePhotoSiteName = naivePhoto[0];
+            naivePhotoSiteId = naivePhoto[1];
+            naivePhotoRootFolderId = naivePhoto[2];
         });
+    }
+
+    /** A site with nothing but its root folder: name, id, root folder id. */
+    private String[] blankSite(String name, Instant when) {
+        ShSite site = new ShSite();
+        site.setName(name);
+        site.setDate(when);
+        site.setOwner("admin");
+        entityManager.persist(site);
+        ShFolder root = new ShFolder();
+        root.setName("root");
+        root.setRootFolder((byte) 1);
+        root.setShSite(site);
+        root.setDate(when);
+        root.setOwner("admin");
+        entityManager.persist(root);
+        return new String[] { name, site.getId(), root.getId() };
     }
 
     private ShWidget widget(String name) {
@@ -398,63 +434,7 @@ class ShAgentTaskBenchmarkTest {
         // reported advantage while the agent did strictly more work, which is the same defect this
         // task is fixing, pointed the other way.
         ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
-        naive.call("list post-types", authed(get("/api/v2/post-type")));
-        naive.call("list sites", authed(get("/api/v2/site")));
-        naive.call("list root", authed(get("/api/v2/object/" + naiveRootFolderId + "/list")));
-        String folderName = "pages-" + UUID.randomUUID().toString().substring(0, 6);
-        String folderBody = "{\"name\":\"" + folderName + "\"}";
-        String folderId = id(naive.call("create folder",
-                authed(post("/api/v2/folder/" + naiveRootFolderId))
-                        .contentType(MediaType.APPLICATION_JSON).content(folderBody), folderBody));
-
-        // The render model, by hand. This is what the blueprint apply does in one call, and what
-        // the four-call number was leaving out of both columns: two post-types, two template
-        // posts, a binding, and publishing every one of them in the right order. The templates
-        // below are deliberately SIMPLER than the blueprint's — no relations, no query helper —
-        // because a generous baseline is the only kind worth comparing against.
-        // Not the post-types, though: `Theme` and `PageLayout` are instance-wide and the blueprint
-        // above already provisioned them, so the baseline reuses them for free. That is the
-        // understatement this class has always declared and it stays declared — a real hand-built
-        // instance pays for the render model too, and there is no second instance here to charge
-        // it on. The measured ratio is a floor, and it is a floor in the agent's disfavour.
-
-        String themeBody = renderPost(folderId, "Theme", "Naive theme",
-                "CSS", "body{font-family:system-ui;margin:0}main{max-width:44rem;margin:2rem auto}");
-        String themeId = id(naive.call("create theme", authed(post("/api/v2/post-unified"))
-                .contentType(MediaType.APPLICATION_JSON).content(themeBody), themeBody));
-        naive.call("publish theme", authed(post("/api/v2/post-unified/" + themeId + "/publish")));
-
-        String layoutBody = renderPost(folderId, "PageLayout", "Naive layout", "HTML",
-                "<!doctype html><html lang=\\\"en\\\"><head><meta charset=\\\"utf-8\\\">"
-                        + "<title>{{post.title}}</title></head><body><main>"
-                        + "<h1 sh-field=\\\"headline\\\">{{post.headline}}</h1>"
-                        + "<div sh-field=\\\"body\\\">{{post.body}}</div>"
-                        + "</main></body></html>");
-        String layoutId = id(naive.call("create layout", authed(post("/api/v2/post-unified"))
-                .contentType(MediaType.APPLICATION_JSON).content(layoutBody), layoutBody));
-        // Before the pages, and that ordering is the point rather than a tidiness: since SH280 a
-        // published render needs a published layout, and a session that publishes its pages first
-        // meets a 409 it has to diagnose. This benchmark cannot record that turn — a failing call
-        // makes a cost meaningless (ShAgentBenchmark.requireAllSucceeded) — so the baseline here
-        // is a session that already knew the order, which understates it by at least one round.
-        naive.call("publish layout", authed(post("/api/v2/post-unified/" + layoutId + "/publish")));
-
-        // Keyed by the type the pages actually are. Getting this wrong is silent: the binding is
-        // stored as opaque JSON, the site accepts it, and every page renders with no layout — a
-        // 200 that looks like a working site until somebody opens it.
-        String bind = "{\"name\":\"" + naiveSiteName + "\",\"postTypeLayout\":"
-                + "\"{\\\"" + articleType + "\\\":\\\"Naive layout\\\"}\"}";
-        naive.call("bind layout", authed(put("/api/v2/site/" + naiveSiteId))
-                .contentType(MediaType.APPLICATION_JSON).content(bind), bind);
-
-        for (int i = 1; i <= 5; i++) {
-            String body = createPost(folderId, "naive-page-" + i);
-            String postId = id(naive.call("create page " + i,
-                    authed(post("/api/v2/post-unified"))
-                            .contentType(MediaType.APPLICATION_JSON).content(body), body));
-            naive.call("publish page " + i,
-                    authed(post("/api/v2/post-unified/" + postId + "/publish")));
-        }
+        naiveSite(naive, naiveSiteName, naiveSiteId, naiveRootFolderId);
         // The baseline's version of the render check, over the route a visitor uses rather than
         // over /agent/render — the point of a baseline is that it does not have the agent surface.
         record(naive);
@@ -472,6 +452,122 @@ class ShAgentTaskBenchmarkTest {
         // four-call number left out of both columns.
 
         assertTask(task);
+    }
+
+    /**
+     * "Build a site from the photos on my phone." (SH1357)
+     *
+     * <p>The mobile product's run, and the number a free tier's agent-call cap is set from: the
+     * mobile project multiplies it by a model's price. It is build-marketing-site plus what a phone
+     * adds: a batch of uploads, the alt text the agent writes for each, the photos shown on a page,
+     * and a publish. The package is marketing-site because it is the nearest one shipped; SH1356's
+     * small-business package re-measures this when it lands, since it changes the call count.</p>
+     *
+     * <p>Uploads are one call per photo on both paths and their bytes are not counted as tokens: a
+     * client sends a file from disk, and a model never reads a JPEG's bytes. What the model does
+     * read is each upload's answer, and that is counted.</p>
+     */
+    @Test
+    void buildSiteFromPhotos() throws Exception {
+        String task = "build-site-from-photos";
+
+        ShAgentBenchmark agent = new ShAgentBenchmark(mockMvc, task, AGENT);
+        agent.call("context + capabilities", authed(get("/api/v2/agent/context")
+                .param("site", photoSiteName).param("format", "terse")
+                .param("include", "all,manifest")));
+        agent.call("blueprints", authed(get("/api/v2/agent/blueprints").param("format", "terse")));
+        String applyBody = "{\"site\":\"" + photoSiteName + "\",\"params\":{\"brand\":\"Cafe Aurora\"}}";
+        agent.call("apply blueprint",
+                authed(post("/api/v2/agent/blueprints/marketing-site/apply"))
+                        .contentType(MediaType.APPLICATION_JSON).content(applyBody), applyBody);
+        List<String> photos = new ArrayList<>();
+        for (int i = 1; i <= PHOTOS; i++) {
+            photos.add(id(agent.call("upload photo " + i, photoUpload(photoSiteId, i))));
+        }
+        // One batch: the alt text for every photo, a gallery holding them, the page showing it, and
+        // the publish of everything a visitor will load. The ops commit together, so a phone that
+        // loses the signal here leaves nothing half-described.
+        String batchBody = photoBatch(photoSiteName, photos);
+        agent.call("describe, compose and publish", authed(post("/api/v2/agent/batch").param("format", "terse"))
+                .contentType(MediaType.APPLICATION_JSON).content(batchBody), batchBody);
+        agent.call("verify", authed(get("/api/v2/agent/verify")
+                .param("site", photoSiteName).param("format", "terse")));
+        String rendered = agent.call("render photos", authed(get("/api/v2/agent/render")
+                .param("address", "post:" + photoSiteName + "/photos").param("format", "terse")))
+                .getResponse().getContentAsString();
+        record(agent);
+
+        assertThat(rendered)
+                .as("SH1357: the job ends at a page a visitor can open, as SH396 made the others end")
+                .contains("source=rendered");
+
+        // The baseline builds the same site by hand, then does what the phone adds through the
+        // console's own routes: an upload and a metadata write per photo, and a page that shows them.
+        ShAgentBenchmark naive = new ShAgentBenchmark(mockMvc, task, NAIVE);
+        String folderId = naiveSite(naive, naivePhotoSiteName, naivePhotoSiteId, naivePhotoRootFolderId);
+        StringBuilder figures = new StringBuilder();
+        for (int i = 1; i <= PHOTOS; i++) {
+            String photoId = id(naive.call("upload photo " + i, photoUpload(naivePhotoSiteId, i)));
+            String meta = "{\"alt\":\"Photo " + i + " of the cafe\"}";
+            naive.call("describe photo " + i, authed(put("/api/v2/staticfile/" + photoId + "/meta"))
+                    .contentType(MediaType.APPLICATION_JSON).content(meta), meta);
+            figures.append("<img src=\\\"/api/v2/staticfile/").append(photoId)
+                    .append("\\\" alt=\\\"Photo ").append(i).append(" of the cafe\\\">");
+        }
+        // Generous on purpose: one article whose body embeds the photos, rather than a section type
+        // and a page composing it. A hand-built site would not have the vocabulary to reach for.
+        String page = "{\"folderId\":\"" + folderId + "\",\"postTypeId\":\"" + articleTypeId
+                + "\",\"state\":\"DRAFT\",\"data\":{\"headline\":\"Photos\",\"body\":\"" + figures + "\"}}";
+        String pageId = id(naive.call("create photos page", authed(post("/api/v2/post-unified"))
+                .contentType(MediaType.APPLICATION_JSON).content(page), page));
+        naive.call("publish photos page", authed(post("/api/v2/post-unified/" + pageId + "/publish")));
+        record(naive);
+
+        assertTask(task);
+    }
+
+    /** One photo upload: a real PNG, so the server stamps its dimensions as it would a phone's. */
+    private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder photoUpload(
+            String folderId, int index) throws IOException {
+        java.awt.image.BufferedImage image =
+                new java.awt.image.BufferedImage(40, 30, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        image.setRGB(index, index, 0xFFFFFF);
+        java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(image, "png", png);
+        return (org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder)
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart("/api/v2/staticfile/upload")
+                        .file(new org.springframework.mock.web.MockMultipartFile("file",
+                                "photo-" + index + ".png", "image/png", png.toByteArray()))
+                        .param("folderId", folderId).principal(principal);
+    }
+
+    /**
+     * The phone's one write: describe each photo, put them in a gallery on a new page, and publish
+     * what a visitor loads, the templates included (SH280).
+     */
+    private static String photoBatch(String site, List<String> photos) {
+        StringBuilder ops = new StringBuilder("{\"ops\":[");
+        StringBuilder rows = new StringBuilder();
+        for (int i = 0; i < photos.size(); i++) {
+            ops.append("{\"op\":\"asset.meta\",\"address\":\"id:").append(photos.get(i))
+                    .append("\",\"data\":{\"alt\":\"Photo ").append(i + 1).append(" of the cafe\"}},");
+            rows.append(i > 0 ? "," : "").append("{\"image\":\"").append(photos.get(i))
+                    .append("\",\"caption\":\"Photo ").append(i + 1).append("\"}");
+        }
+        ops.append("{\"op\":\"post.upsert\",\"address\":\"post:").append(site)
+                .append("/sections/home/gallery\",\"type\":\"SectionGallery\",\"folder\":\"/sections/home\","
+                        + "\"data\":{\"heading\":\"Inside the cafe\",\"images\":[")
+                .append(rows).append("]}},");
+        ops.append("{\"op\":\"post.upsert\",\"address\":\"post:").append(site)
+                .append("/photos\",\"type\":\"Page\",\"folder\":\"/\","
+                        + "\"data\":{\"title\":\"Photos\",\"sections\":[\"/sections/home/gallery\"]}},");
+        String[] published = { "/theme/site", "/theme/layout", "/", "/sections/home/gallery", "/photos" };
+        for (int i = 0; i < published.length; i++) {
+            ops.append(i > 0 ? "," : "").append("{\"op\":\"post.publish\",\"address\":\"post:")
+                    .append(site).append(published[i]).append("\"}");
+        }
+        return ops.append("]}").toString();
     }
 
     /** "Add a post-type and ten posts." The two paths reach the same end state here. */
@@ -616,6 +712,75 @@ class ShAgentTaskBenchmarkTest {
         record(naive);
 
         assertTask(task);
+    }
+
+    /**
+     * The baseline's site, built by hand: what one blueprint apply does over the agent surface.
+     * Extracted from build-marketing-site unchanged (SH1357), so that task measures the same calls
+     * and the phone's run can start from the same place.
+     *
+     * @return the folder the pages were created in
+     */
+    private String naiveSite(ShAgentBenchmark naive, String siteName, String siteId, String rootFolderId)
+            throws Exception {
+        naive.call("list post-types", authed(get("/api/v2/post-type")));
+        naive.call("list sites", authed(get("/api/v2/site")));
+        naive.call("list root", authed(get("/api/v2/object/" + rootFolderId + "/list")));
+        String folderName = "pages-" + UUID.randomUUID().toString().substring(0, 6);
+        String folderBody = "{\"name\":\"" + folderName + "\"}";
+        String folderId = id(naive.call("create folder",
+                authed(post("/api/v2/folder/" + rootFolderId))
+                        .contentType(MediaType.APPLICATION_JSON).content(folderBody), folderBody));
+
+        // The render model, by hand. This is what the blueprint apply does in one call, and what
+        // the four-call number was leaving out of both columns: two post-types, two template
+        // posts, a binding, and publishing every one of them in the right order. The templates
+        // below are deliberately SIMPLER than the blueprint's — no relations, no query helper —
+        // because a generous baseline is the only kind worth comparing against.
+        // Not the post-types, though: `Theme` and `PageLayout` are instance-wide and the blueprint
+        // above already provisioned them, so the baseline reuses them for free. That is the
+        // understatement this class has always declared and it stays declared — a real hand-built
+        // instance pays for the render model too, and there is no second instance here to charge
+        // it on. The measured ratio is a floor, and it is a floor in the agent's disfavour.
+
+        String themeBody = renderPost(folderId, "Theme", "Naive theme",
+                "CSS", "body{font-family:system-ui;margin:0}main{max-width:44rem;margin:2rem auto}");
+        String themeId = id(naive.call("create theme", authed(post("/api/v2/post-unified"))
+                .contentType(MediaType.APPLICATION_JSON).content(themeBody), themeBody));
+        naive.call("publish theme", authed(post("/api/v2/post-unified/" + themeId + "/publish")));
+
+        String layoutBody = renderPost(folderId, "PageLayout", "Naive layout", "HTML",
+                "<!doctype html><html lang=\\\"en\\\"><head><meta charset=\\\"utf-8\\\">"
+                        + "<title>{{post.title}}</title></head><body><main>"
+                        + "<h1 sh-field=\\\"headline\\\">{{post.headline}}</h1>"
+                        + "<div sh-field=\\\"body\\\">{{post.body}}</div>"
+                        + "</main></body></html>");
+        String layoutId = id(naive.call("create layout", authed(post("/api/v2/post-unified"))
+                .contentType(MediaType.APPLICATION_JSON).content(layoutBody), layoutBody));
+        // Before the pages, and that ordering is the point rather than a tidiness: since SH280 a
+        // published render needs a published layout, and a session that publishes its pages first
+        // meets a 409 it has to diagnose. This benchmark cannot record that turn — a failing call
+        // makes a cost meaningless (ShAgentBenchmark.requireAllSucceeded) — so the baseline here
+        // is a session that already knew the order, which understates it by at least one round.
+        naive.call("publish layout", authed(post("/api/v2/post-unified/" + layoutId + "/publish")));
+
+        // Keyed by the type the pages actually are. Getting this wrong is silent: the binding is
+        // stored as opaque JSON, the site accepts it, and every page renders with no layout — a
+        // 200 that looks like a working site until somebody opens it.
+        String bind = "{\"name\":\"" + siteName + "\",\"postTypeLayout\":"
+                + "\"{\\\"" + articleType + "\\\":\\\"Naive layout\\\"}\"}";
+        naive.call("bind layout", authed(put("/api/v2/site/" + siteId))
+                .contentType(MediaType.APPLICATION_JSON).content(bind), bind);
+
+        for (int i = 1; i <= 5; i++) {
+            String body = createPost(folderId, "naive-page-" + i);
+            String postId = id(naive.call("create page " + i,
+                    authed(post("/api/v2/post-unified"))
+                            .contentType(MediaType.APPLICATION_JSON).content(body), body));
+            naive.call("publish page " + i,
+                    authed(post("/api/v2/post-unified/" + postId + "/publish")));
+        }
+        return folderId;
     }
 
     // ------------------------------------------------------------- assertions

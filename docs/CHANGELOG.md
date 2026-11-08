@@ -471,6 +471,7 @@
 - **SH736** — The help total is 9475 of a 9950 ceiling, and the gate now asserts 4% headroom under it, so raising the ceiling to meet the total fails instead of charging the next task for every verb.
 - **SH230** — format=terse now cuts each endpoint purpose to its lead sentence and keeps the example verbatim, taking the manifest from 2395 to 1890 where the two candidates aimed at examples were worth 3.6%.
 - **SH743** — Every response budget must keep 4% free or be declared in AT_THE_WALL with the reason it cannot be trimmed, and that list is the seventh row in the known-debt registry.
+- **SH1357** — The phone's run is a fifth canonical job: build-site-from-photos measures 10 calls and 13004 tokens against a 29-call baseline, guarded in token-budgets, and found the uploads are over half of it (design §XIII.27 recorded in `docs/agents/agent-surface.md`).
 
 ## Block N — Realignment of what already shipped (SH74)
 
