@@ -31,6 +31,8 @@ import { promisify } from "node:util";
 
 import { ShioHttpError } from "@viglet/shio-client";
 
+import { UPLOAD_SESSION_THRESHOLD, uploadInSession } from "../../src/upload-session.mjs";
+
 const run = promisify(execFile);
 
 /** The scratch site's name prefix — grep-able, and what `stale()` looks for. */
@@ -500,6 +502,23 @@ export class ConsoleSession {
    */
   async uploadAsset(folderId, fileName, bytes, contentType = "image/png") {
     const { value, header } = await this.#csrf();
+    // SH1363 — a large asset takes the resumable session, the same arithmetic the CLI runs.
+    if (bytes.byteLength > UPLOAD_SESSION_THRESHOLD) {
+      const send = (method, path, { json, bytes: chunk } = {}) => {
+        const headers = { [header]: value };
+        let body;
+        if (json !== undefined) {
+          headers["Content-Type"] = "application/json";
+          body = JSON.stringify(json);
+        } else if (chunk !== undefined) {
+          headers["Content-Type"] = "application/octet-stream";
+          body = chunk;
+        }
+        return this.#fetch(path, { method, headers, body });
+      };
+      const created = await uploadInSession(send, { folderId, fileName, bytes, contentType });
+      return created.id;
+    }
     const form = new FormData();
     form.append("file", new Blob([bytes], { type: contentType }), fileName);
     form.append("folderId", folderId);

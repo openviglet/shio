@@ -353,6 +353,14 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
     to the site root. And **a path already on disk is not re-downloaded** on `pull`, because a
     File post's bytes were immutable. An id that resolves to no known asset stays an id and is
     reported.
+  - **A large asset goes up in a resumable session (SH1363).** Above `UPLOAD_SESSION_THRESHOLD`
+    (8 MB) `ShioAdminClient.uploadStaticFile` takes SH1355's `/api/v2/staticfile/upload-session`
+    through `cli/src/upload-session.mjs`: sha256 first, 4 MB chunks by offset, and after a dropped
+    link or a `409` the next chunk starts at the offset `GET /upload-session/{id}` reports, never a
+    client-side guess, since a guessed resume duplicates or drops a chunk silently. Five failed
+    attempts in a row end it with the session id in the message. Below the threshold it is still one
+    multipart POST. `push --content`, `convert` and the conformance helper's `uploadAsset` share the
+    one function; `cli/test/upload-session.test.mjs` cuts a connection mid-chunk against a fake.
   - **A path the server already has is compared on push, not skipped (SH210).** That immutability
     was the projection's one silent no-op: `push --content` skipped a known path, so **editing an
     asset's bytes uploaded nothing and reported success**, on the most ordinary thing anyone does

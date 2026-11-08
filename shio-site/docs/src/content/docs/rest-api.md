@@ -162,6 +162,11 @@ session is discarded and nothing is created. `DELETE /api/v2/staticfile/upload-s
 abandons a session; one left unfinished expires after 24 hours (`shio.upload-sessions.ttl`).
 A session is visible only to the account that started it.
 
+The `shio` CLI does this for you. `shio push --content` and `shio convert` send any asset larger
+than 8 MB as an upload session in 4 MB chunks, and resume from the server's offset when the
+connection drops. If the link stays down, the command stops and the error names the session, which
+stays open on the server until it expires.
+
 ## The rest
 
 | Root | Owns |

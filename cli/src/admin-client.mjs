@@ -10,6 +10,8 @@
  */
 import { ShioHttpError } from "@viglet/shio-client";
 
+import { UPLOAD_SESSION_THRESHOLD, uploadInSession } from "./upload-session.mjs";
+
 /** A failed response's body, or "" — never the reason the error itself is lost. */
 async function bodyOf(res) {
   try {
@@ -73,6 +75,23 @@ export class ShioAdminClient {
       throw new ShioHttpError(res.status, url, await bodyOf(res));
     }
     return res.json();
+  }
+
+  /**
+   * SH1363 — one raw request for `uploadInSession`: JSON or bytes, the response as it came, and a
+   * network failure left to throw, because resuming after one is the point.
+   */
+  #send(method, path, { json, bytes } = {}) {
+    const headers = { Authorization: this.#authHeader(), Accept: "application/json" };
+    const init = { method, headers };
+    if (json !== undefined) {
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(json);
+    } else if (bytes !== undefined) {
+      headers["Content-Type"] = "application/octet-stream";
+      init.body = bytes;
+    }
+    return this.fetch(`${this.baseUrl}${path}`, init);
   }
 
   /**
@@ -190,7 +209,12 @@ export class ShioAdminClient {
    * Multipart, because that is what the endpoint the console uses takes; sharing it is the
    * point (law P10) rather than adding a bytes-over-JSON path just for the CLI.
    */
-  async uploadStaticFile({ folderId, fileName, bytes, contentType }) {
+  async uploadStaticFile({ folderId, fileName, bytes, contentType }, options = {}) {
+    // SH1363 — a large asset goes up in a resumable session, so a dropped link costs one chunk.
+    if (bytes.byteLength > (options.threshold ?? UPLOAD_SESSION_THRESHOLD)) {
+      return uploadInSession((method, path, body) => this.#send(method, path, body),
+        { folderId, fileName, bytes, contentType }, options);
+    }
     const form = new FormData();
     form.append("file", new Blob([bytes], { type: contentType || "application/octet-stream" }), fileName);
     form.append("folderId", folderId);

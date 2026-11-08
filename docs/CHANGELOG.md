@@ -1981,6 +1981,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1099** — Long-text fields bind as LONGVARCHAR, not @Lob, so PostgreSQL stores the document inline and search matches body text; a changeset inlines and unlinks old objects, and a lint bars @Lob.
 - **SH1100** — ShReference and ShReferenceDraft are dropped with their entity and repository and left the tenant backfill; the exchange format never carried them, so nothing moved.
 - **SH1355** — An upload can resume: a session begun with size and sha256 takes chunks by offset, a resent chunk is a no-op, a gap is a 409 naming where to resume, and finish creates the File post through upload only when the digest agrees (design §LXX.10 recorded in `docs/agents/content-api.md`).
+- **SH1363** — The shio CLI sends an asset above 8 MB as a resumable upload session in 4 MB chunks, resuming from the server's offset after a dropped link or a 409, so pushing or converting a video no longer restarts from zero; the conformance helper shares the same function (design §LXX.11 recorded in `docs/agents/content-files.md`).
 
 ## Block BF — The visual editor becomes a composer
 
