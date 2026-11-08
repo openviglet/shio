@@ -36,10 +36,6 @@
 - 📋 **SH1363** (deps: SH1355 ✅) **The shio CLI still uploads an asset in one multipart POST, so pushing a video restarts from zero when the link drops** — The CLI is the agent's path to an asset, and P1 puts it before REST, which now has resumable sessions. → §LXX.11
 - 📋 **SH1364** (deps: —) **An upload answers with the whole File post entity, about 1,800 tokens a photo, most of the phone's run** — Four uploads are 7,276 of the run's 13,004 tokens, and that number sets the free tier's agent cap. → §LXX.12
 
-## Block R — End-user documentation for 2026.3 (docs-shio)
-
-- 📋 **SH1368** (deps: —) **configuration-reference.md claims every property; 29 shio.* keys are absent (events, meter, renditions, Turing)** — docs-sync-report names them, all bound in @ConfigurationProperties classes; an operator cannot tune SSE, metering, rendition disk or OCR limits from docs. → §XCVI.4
-
 ## Priority
 
 ## Done when — SH1245

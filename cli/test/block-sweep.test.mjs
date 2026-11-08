@@ -318,6 +318,14 @@ const SWEEP = {
       + "configuration at all; the README links the product and shio-site points at the roadmap, "
       + "so there was no sentence in either that this block made untrue",
   },
+  R: {
+    swept: true,
+    why: "end-user documentation, reopened for the shio-docs-sync round and re-closed by SH1368: "
+      + "SH1365-SH1368 put every batch op, MCP resource, CLI verb and shio.* key on a page and gate "
+      + "the code-to-docs direction. docs-shio moved: four pages and COVERAGE's Block R row, with the "
+      + "mirror regenerated. README and shio-site are NOT moved: the verb, tool and op counts they "
+      + "state did not change, and neither lists properties or resources",
+  },
   S: {
     swept: true,
     why: "the visibility round, closed by SH1243: shio-site/src itself is the sweep, since every id "

@@ -435,6 +435,28 @@ ${report(misses)}`);
   });
 
   /**
+   * SH1368 — held against one page, because that page says it is complete.
+   *
+   * <p>`configuration-reference.md` opens "Every property below exists" and describes itself as
+   * every property. Against the whole site it was 29 keys short; against itself, 42, because
+   * thirteen more were documented only on the page about their feature (webhooks, versions, the
+   * upload policy). An operator looking up a key reads this page, not the one where it was born.</p>
+   */
+  test("SH1368: every `shio.*` property a class binds is on the configuration reference", () => {
+    const reference = pages().find(([file]) => file === "configuration-reference.md");
+    assert.ok(reference, "SH1368: configuration-reference.md was not read, so nothing below is checked");
+    const onReference = docsNamer(reference[1]);
+    assert.ok(vocabulary.properties.size > 50,
+      `SH1368: the property reader found ${vocabulary.properties.size}; an empty read passes below`);
+    const missing = [...vocabulary.properties]
+      .filter((key) => !isTemplateKey(key) && !foreign(key) && !onReference(key)).sort();
+    assert.deepEqual(missing, [],
+      "SH1368: a @ConfigurationProperties or @Value key is not on the configuration reference, which "
+        + "tells the operator it lists every property. Add a row with the default from the binding "
+        + "class, in the section for its feature.");
+  });
+
+  /**
    * SH697 — and the number in the prose, derived rather than typed.
    *
    * <p>The page said *"Thirteen"* while `ShMcpServerTest` capped the list at twelve, because the

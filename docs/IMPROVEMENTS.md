@@ -1334,26 +1334,3 @@ and the console open to a guest role that can browse, edit drafts and see the re
 queue but not publish, reset from the blueprint on a schedule. The README and the site
 link it beside `docker run`. If a guest console is too costly to keep safe, the rendered
 showcase alone, with a recorded console tour, is the first step.
-
-## XCVI End-user documentation for 2026.3 (docs-shio)
-
-### XCVI.4 The configuration reference is not the complete list it says it is (SH1368)
-
-The page opens "Every property below exists in the current release" and its description
-says it is every property. On 2026-11-08 the report names 29 committed `shio.*` keys on
-no page (the uncommitted `shio.device-auth.*` keys are left out of this count). By
-cluster, with the class that binds each:
-
-- `shio.events.*` ×6, `ShEventsProperties` (SH967)
-- `shio.meter.*` ×3, `ShMeterProperties` (SH45)
-- `shio.asset-renditions.*` ×3, `ShAssetRenditionProperties` (SH1035)
-- `shio.turing.extract-*` ×4, `max-attempts`, `retry-backoff`, `ShTuringProperties` (SH912/913)
-- `shio.upload-sessions.path` (SH1355); `shio.site-thumbnails.*` ×2 (SH1218)
-- `shio.cda.preview.path`/`token-param`/`url-param`
-- `shio.agent.batch.max-session-ops`/`session-window`; `shio.agent.changes.max-budget-tokens`
-- `shio.required-viglet-client`; `shio.sites.host-scheme`
-
-The defaults the page already lists match the code (cda, agent, turing were checked).
-Take each new row's default from its class, and mark any key that is genuinely internal
-🔒 in COVERAGE rather than leaving it out. Done when `docs-sync-report.mjs --strict`
-lists no committed `shio.*` property.
