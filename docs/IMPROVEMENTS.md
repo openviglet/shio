@@ -654,34 +654,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.18 A consistent visual contract with viglet.org (SH1370)
-
-Review of 2026-11-08: published pages and current source, compared with viglet.org.
-shio-site/src/components/sections/hero.tsx uses a rounded metadata chip, hardcoded dark
-surfaces, gradient text, grid and animated orbs; the hub uses neutral surfaces and plain
-typographic metadata. Header product highlights also use pills.
-
-Adopt the hub typography roles, title scale, content gutters, spacing, button hierarchy,
-borders and focus treatment. shio-site does not depend on @viglet/viglet-design-system
-(shio-site/package.json); the console pins ^2026.3.24 (shio-react/package.json:46),
-which exports a product-site layer: ./site (SiteNav, SiteHero, SiteFooter) over
-./site.css and ./tokens.css. Measured: that SiteHero draws a gradient half-headline and
-pills, and SiteNav truncates the name on phones, against this contract, and the hub uses
-neither. Take ./tokens.css at most, never ./styles; the Astro docs link tokens.css.
-Preserve violet as the product accent. Replace decorative chips with plain eyebrow text
-(the Eyebrow in brand.tsx:68 is gradient), separators or ordinary navigation links. Keep
-genuine filter selections and status controls functional. Restyle the shared PageHero
-(page-hero.tsx:26, seven subpages) and the dark bands in laws.tsx, curator-half.tsx,
-cta.tsx, console.tsx, curator.tsx and replicate.tsx instead of adding a hero;
-documentation keeps its reading sidebar and article layout while sharing brand tokens.
-Avoid permanent dark heroes in light mode and remove decorative motion that competes
-with the product evidence.
-
-Acceptance: compare home, one solution page, a feature page, docs overview and article
-at 390/768/1440 pixels, light/dark and reduced motion. Preserve real demos, code
-examples, contrast, keyboard focus and original URLs. No framework migration or forced
-orange product branding.
-
 ### XIX.19 Navigation, installation and release destinations (SH1371)
 
 Review of 2026-11-08: published pages and current source, compared with viglet.org. The

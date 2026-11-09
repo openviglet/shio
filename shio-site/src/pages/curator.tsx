@@ -180,21 +180,19 @@ export function CuratorPage() {
         {/* ── The gates ───────────────────────────────────────────────── */}
         <section
           id="gates"
-          className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
+          className="border-y border-border bg-muted/40 py-20 text-foreground"
         >
-          <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-a pointer-events-none absolute -top-32 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-30 blur-[80px]" />
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
-              <span className="inline-block bg-gradient-to-r from-[#c4b5fd] to-[#f5c46b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
+              <span className="inline-block font-mono text-xs font-bold tracking-[0.12em] text-primary uppercase">
                 The six gates
               </span>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
                 Each one is a mechanism, and{" "}
-                <span className="text-gradient">each one has a reason</span>
+                <span className="text-primary">each one has a reason</span>
               </h2>
-              <p className="mt-3 text-base leading-relaxed text-[#c9b6ae] sm:text-lg">
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
                 The reason is the interesting half. A rule with no argument behind it
                 is a rule somebody will turn off the first time it is inconvenient.
               </p>
@@ -204,17 +202,17 @@ export function CuratorPage() {
               {GATES.map((g) => (
                 <div
                   key={g.title}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-6"
+                  className="rounded-xl border border-border bg-background p-6"
                 >
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-[#7c3aed]/12 text-[#c4b5fd]">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-[#7c3aed]/12 text-primary">
                     <g.icon className="size-5" />
                   </div>
                   <h3 className="mt-4 font-bold">{g.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#c9b6ae]">
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     {g.mechanism}
                   </p>
-                  <p className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-[#a89189]">
-                    <span className="font-semibold text-[#c4b5fd]">Because</span>{" "}
+                  <p className="mt-3 border-t border-border pt-3 text-sm leading-relaxed text-muted-foreground">
+                    <span className="font-semibold text-primary">Because</span>{" "}
                     {g.because}
                   </p>
                 </div>

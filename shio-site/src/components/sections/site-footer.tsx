@@ -45,11 +45,11 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[#0f0a09] text-[#a89189]">
+    <footer className="border-t border-border bg-muted/40 text-muted-foreground">
       <Container className="py-14">
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
-            <Logo className="text-[#f6ece8]" />
+            <Logo className="text-foreground" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed">
               An open-source, agent-ready CMS with four ways in: a full console, a
               coding agent, files in your repository, and the delivery API. Same
@@ -58,7 +58,7 @@ export function SiteFooter() {
           </div>
           {COLUMNS.map((col) => (
             <div key={col.heading}>
-              <h3 className="text-xs font-bold tracking-[0.06em] text-[#f6ece8] uppercase">
+              <h3 className="text-xs font-bold tracking-[0.06em] text-foreground uppercase">
                 {col.heading}
               </h3>
               <ul className="mt-4 space-y-2.5">
@@ -68,7 +68,7 @@ export function SiteFooter() {
                       href={link.href}
                       target={link.href.startsWith("http") ? "_blank" : undefined}
                       rel={link.href.startsWith("http") ? "noreferrer" : undefined}
-                      className="text-sm transition-colors hover:text-[#f6ece8]"
+                      className="text-sm transition-colors hover:text-foreground"
                     >
                       {link.label}
                     </a>
@@ -81,21 +81,21 @@ export function SiteFooter() {
         <div className="mt-12 flex flex-col justify-between gap-2 border-t border-[#241a17] pt-6 text-xs text-[#7a6660] sm:flex-row">
           <span>
             &copy; {new Date().getFullYear()} Viglet Shio &middot;{" "}
-            <a href={LINKS.license} target="_blank" rel="noreferrer" className="hover:text-[#f6ece8]">
+            <a href={LINKS.license} target="_blank" rel="noreferrer" className="hover:text-foreground">
               Apache 2.0
             </a>
           </span>
           <span className="space-x-3">
-            <a href={LINKS.viglet} target="_blank" rel="noreferrer" className="hover:text-[#f6ece8]">
+            <a href={LINKS.viglet} target="_blank" rel="noreferrer" className="hover:text-foreground">
               viglet.org
             </a>
-            <a href={LINKS.docs} className="hover:text-[#f6ece8]">
+            <a href={LINKS.docs} className="hover:text-foreground">
               Docs
             </a>
-            <a href={withBase("/llms.txt")} className="font-mono hover:text-[#f6ece8]">
+            <a href={withBase("/llms.txt")} className="font-mono hover:text-foreground">
               llms.txt
             </a>
-            <button type="button" onClick={reopenConsent} className="hover:text-[#f6ece8]">
+            <button type="button" onClick={reopenConsent} className="hover:text-foreground">
               Cookie settings
             </button>
           </span>

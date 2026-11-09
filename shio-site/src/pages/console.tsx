@@ -171,19 +171,17 @@ export function ConsolePage() {
         {/* ── Adding an agent later ────────────────────────────────────── */}
         <section
           id="agent-later"
-          className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
+          className="border-y border-border bg-muted/40 py-20 text-foreground"
         >
-          <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-b pointer-events-none absolute -bottom-40 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-25 blur-[80px]" />
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
               <Eyebrow>Later, if you want it</Eyebrow>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
                 What changes the day you{" "}
-                <span className="text-gradient">attach an agent</span>
+                <span className="text-primary">attach an agent</span>
               </h2>
-              <p className="mt-3 text-base leading-relaxed text-[#c9b6ae] sm:text-lg">
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
                 Less than you would expect, which is the argument for starting without
                 one. No migration, no second store, no content to move.
               </p>
@@ -193,10 +191,10 @@ export function ConsolePage() {
               {AGENT_LATER.map((item) => (
                 <div
                   key={item.title}
-                  className="rounded-xl border border-white/10 bg-white/[0.03] p-5"
+                  className="rounded-xl border border-border bg-background p-5"
                 >
                   <h3 className="font-bold">{item.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-[#a89189]">{item.body}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
                 </div>
               ))}
             </div>
@@ -211,7 +209,6 @@ export function ConsolePage() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
               >
                 <a href={withBase("/claude-code/")}>
                   <TerminalSquare className="size-4" />

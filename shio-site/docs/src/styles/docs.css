@@ -9,7 +9,6 @@
   --sl-font: "Plus Jakarta Sans", system-ui, sans-serif;
   --sl-font-mono: "JetBrains Mono", ui-monospace, monospace;
   --shio-radius: 0.75rem;
-  --shio-gradient: linear-gradient(110deg, #ddd6fe, #a78bfa 45%, #f0abfc);
 
   /* Dark, the site's .dark tokens. */
   --sl-color-white: oklch(0.96 0.005 60);
@@ -27,7 +26,6 @@
 }
 
 :root[data-theme="light"] {
-  --shio-gradient: linear-gradient(110deg, #5b21b6, #7c3aed 55%, #c026d3);
 
   /* Light, the site's :root tokens. */
   --sl-color-white: oklch(0.17 0.015 40);
@@ -75,14 +73,10 @@ header.header {
   font-weight: 700;
 }
 
-/* The page title carries the brand gradient, as the site's headline words do. */
+/* SH1370: the page title is solid strong text, as the hub's titles are; it carried the brand gradient. */
 .hero h1,
 .content-panel h1#_top {
-  background: var(--shio-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+  color: var(--sl-color-white);
   font-weight: 800;
   letter-spacing: -0.01em;
 }

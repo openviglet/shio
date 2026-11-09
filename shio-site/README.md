@@ -119,11 +119,15 @@ Five rules for editing any of it:
   crawler outputs and the prose of the docs pages, and names its exceptions: the
   historical changelog, and the console's own provider labels (**Shio Native**,
   **Shio Package**), which a page has to spell the way the screen does.
-- **The opening bands use the hub's visual grammar (SH1370).** The home hero and
-  the shared `PageHero` draw on the theme's surface: plain eyebrow text, a solid
-  violet accent, no grid, orbs or gradient text, and buttons with no dark-band
-  overrides. They used to be a permanent dark band that put a dark block on every
-  light page. The design system's `./site` layer was *not* adopted: at the pinned
+- **The site uses the hub's visual grammar (SH1370).** The home hero, the shared
+  `PageHero`, the section bands (laws, the curator's half, the call to action and
+  the console, curator and replicate pages) and both footers draw on the theme's
+  surface: plain eyebrow text, a solid violet accent, no grid, orbs or gradient
+  text, and buttons with no dark-band overrides. The header's plugin link is a
+  plain accent link, and the docs page titles are solid text. They used to be
+  permanent dark bands that put a dark block on every light page. Code samples
+  and the session demos keep their terminal surface, because that is evidence,
+  not decoration. The design system's `./site` layer was *not* adopted: at the pinned
   version its `SiteHero` draws a gradient half-headline and pills, and its
   `SiteNav` truncates the name on phones, and the hub uses neither.
   [`scripts/hub-grammar.test.mjs`](scripts/hub-grammar.test.mjs) holds it.

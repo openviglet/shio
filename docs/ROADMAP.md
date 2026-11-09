@@ -29,11 +29,10 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- ⏳ **SH1370** (deps: SH1369 ✅) **Product pages retain decorative chips and hero styling absent from the revised hub** — The six dark section bands, the footer, the header pill and the docs tokens still use the old dark grammar. → §XIX.18
 - 📋 **SH1371** (deps: SH1369 ✅) **Getting started and resource links do not express the same journey as the hub** — Give evaluation, installation, documentation and release history explicit destinations and a reliable route back to the portfolio. → §XIX.19
 - 📋 **SH1372** (deps: SH1369 ✅) **The home page repeats technical detail before visitors can choose their next step** — Shorten the evaluation path and move depth into existing pages without removing evidence, stable URLs or useful technical documentation. → §XIX.20
 - 📋 **SH1373** (deps: —) **The public site scarcely explains the optional search integration described by the hub** — Show how published content reaches Viglet Turing while keeping Viglet Shio useful on its own and keeping agent support claims precise. → §XIX.21
-- 📋 **SH1374** (deps: SH1369 ✅, SH1370 ⏳, SH1371, SH1372, SH1373) **No acceptance check compares the product site with the revised hub contract** — Validate the rendered brand and journeys across routes, themes and small screens so future site changes cannot silently undo the alignment. → §XIX.22
+- 📋 **SH1374** (deps: SH1369 ✅, SH1370 ✅, SH1371, SH1372, SH1373) **No acceptance check compares the product site with the revised hub contract** — Validate the rendered brand and journeys across routes, themes and small screens so future site changes cannot silently undo the alignment. → §XIX.22
 
 ## Priority
 
@@ -63,15 +62,6 @@
 - **A contact form on a blueprint page submits with script off** An applied
   small-business site's contact page, with submissions enabled, stores a Contact post
   from a plain browser form post, and verify reports its three promised pages.
-
-## Done when — SH1370
-
-- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
-  satisfy the acceptance checks in the design, and preserve technical identifiers and
-  existing URLs.
-- **The hub contract survives the change** Review full names, relevant light/dark and
-  mobile layouts, and links to installation, documentation and the portfolio; retain the
-  product-specific behavior.
 
 ## Done when — SH1371
 

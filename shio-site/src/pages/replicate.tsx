@@ -96,21 +96,19 @@ export function ReplicatePage() {
         {/* ── The three modes ─────────────────────────────────────────── */}
         <section
           id="modes"
-          className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
+          className="border-y border-border bg-muted/40 py-20 text-foreground"
         >
-          <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-b pointer-events-none absolute -bottom-40 right-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-25 blur-[80px]" />
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
-              <span className="inline-block bg-gradient-to-r from-[#c4b5fd] to-[#f5c46b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
+              <span className="inline-block font-mono text-xs font-bold tracking-[0.12em] text-primary uppercase">
                 The decision
               </span>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
                 Their look, or{" "}
-                <span className="text-gradient">a site somebody can maintain</span>
+                <span className="text-primary">a site somebody can maintain</span>
               </h2>
-              <p className="mt-3 text-base leading-relaxed text-[#c9b6ae] sm:text-lg">
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
                 Every captured block has three possible futures: keep its look,
                 keep its look with editable fields, or rebuild it as content in the
                 site&apos;s own theme. The proposal asks you which one per block rather
@@ -127,31 +125,31 @@ export function ReplicatePage() {
                     "rounded-2xl border p-6",
                     m.accent === "authorable"
                       ? "border-[#7c3aed]/40 bg-[#7c3aed]/[0.07]"
-                      : "border-white/12 bg-white/[0.03]"
+                      : "border-border bg-background"
                   )}
                 >
                   <h3 className="flex items-center gap-2 text-lg font-bold">
                     <Layers
                       className={cn(
                         "size-4",
-                        m.accent === "authorable" ? "text-[#c4b5fd]" : "text-[#a89189]"
+                        m.accent === "authorable" ? "text-primary" : "text-muted-foreground"
                       )}
                     />
                     {m.name}
                   </h3>
                   <dl className="mt-4 space-y-3 text-sm leading-relaxed">
                     <div>
-                      <dt className="font-mono text-xs font-bold text-[#c4b5fd]">keeps</dt>
-                      <dd className="mt-0.5 text-[#c9b6ae]">{m.keeps}</dd>
+                      <dt className="font-mono text-xs font-bold text-primary">keeps</dt>
+                      <dd className="mt-0.5 text-muted-foreground">{m.keeps}</dd>
                     </div>
                     <div>
-                      <dt className="font-mono text-xs font-bold text-[#c4b5fd]">offers</dt>
-                      <dd className="mt-0.5 text-[#c9b6ae]">{m.offers}</dd>
+                      <dt className="font-mono text-xs font-bold text-primary">offers</dt>
+                      <dd className="mt-0.5 text-muted-foreground">{m.offers}</dd>
                     </div>
                   </dl>
-                  <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-relaxed">
+                  <p className="mt-4 border-t border-border pt-4 text-sm leading-relaxed">
                     <span className="font-semibold">Pick it when</span>{" "}
-                    <span className="text-[#a89189]">{m.pick}</span>
+                    <span className="text-muted-foreground">{m.pick}</span>
                   </p>
                 </div>
               ))}
@@ -159,17 +157,17 @@ export function ReplicatePage() {
 
             <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-[#7c3aed]/25 bg-[#7c3aed]/[0.05] p-5">
               <h3 className="text-sm font-bold">{MIXED_PAGE.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#c9b6ae]">{MIXED_PAGE.body}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{MIXED_PAGE.body}</p>
             </div>
 
-            <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-border bg-background p-5">
               <h3 className="text-sm font-bold">
                 Why the look and the model are separate choices
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#a89189]">
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Because the one that tried was measured. An authorable replica of a real
-                site rendered <span className="font-mono text-[#f6ece8]">1,066,436</span>{" "}
-                bytes, <span className="font-mono text-[#f6ece8]">99%</span> of it the
+                site rendered <span className="font-mono text-foreground">1,066,436</span>{" "}
+                bytes, <span className="font-mono text-foreground">99%</span> of it the
                 captured stylesheet: roughly 2,894 rules meeting nineteen class
                 attributes, with not one source class surviving. Carrying the source's
                 classes through recovers about seven of the twenty-two that style a single

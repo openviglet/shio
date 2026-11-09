@@ -116,7 +116,9 @@ export function SiteNav() {
             </a>
           ))}
           {/*
-            The differentiator gets a pill of its own rather than a dropdown row.
+            The differentiator gets a link of its own rather than a dropdown row,
+            set in the accent (SH1370: a plain link now, as the hub's nav is, where
+            it was a pill).
             It used to read "Claude Code first", which was the site's whole
             positioning problem in two words: true of the build order, and read
             as a prerequisite. It now says what it is, a plugin you can install,
@@ -124,7 +126,7 @@ export function SiteNav() {
           */}
           <a
             href={withBase("/claude-code/")}
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-sm font-bold whitespace-nowrap text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
+            className="inline-flex items-center gap-1.5 font-mono text-sm font-bold whitespace-nowrap text-primary underline-offset-4 transition-colors hover:underline"
           >
             <Terminal className="size-3.5" />
             Claude Code plugin

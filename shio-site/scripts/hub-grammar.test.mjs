@@ -1,3 +1,5 @@
+// @scans code
+//
 // The opening bands follow the hub's visual grammar (viglet.org): a surface that follows the theme,
 // plain metadata, a solid product accent, and nothing moving behind the evidence.
 //
@@ -9,7 +11,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-const read = (path) => readFileSync(fileURLToPath(new URL(`../${path}`, import.meta.url)), "utf8");
+import { code } from "../../cli/test/support/source-text.mjs";
+
+/** The file with its comments out: a sentence about a removed class is not the class. */
+const read = (path) => code(readFileSync(fileURLToPath(new URL(`../${path}`, import.meta.url)), "utf8"));
 
 /** What a permanent dark hero was made of. */
 const DARK_HERO = [
@@ -28,6 +33,24 @@ test("SH1370: the home hero and the shared page hero carry none of the dark-hero
     }
     assert.match(source, /bg-background/u, `SH1370: ${file} draws on the theme's surface`);
   }
+});
+
+test("SH1370: the section bands, the footer and the docs carry none of the dark grammar", () => {
+  const files = ["src/components/sections/laws.tsx", "src/components/sections/curator-half.tsx",
+    "src/components/sections/cta.tsx", "src/components/sections/site-footer.tsx",
+    "src/pages/console.tsx", "src/pages/curator.tsx", "src/pages/replicate.tsx"];
+  for (const file of files) {
+    const source = read(file);
+    for (const token of ["bg-[#150e0c]", "bg-[#0f0a09]", "grid-bg", "animate-orb", "text-gradient"]) {
+      assert.ok(!source.includes(token), `SH1370: ${file} still has ${token}`);
+    }
+  }
+  assert.ok(!read("docs/src/components/Footer.astro").includes("#0f0a09"),
+    "SH1370: the docs footer is a fixed dark block again");
+  assert.ok(!read("docs/src/styles/docs.css").includes("--shio-gradient"),
+    "SH1370: the docs page titles carry the gradient again");
+  assert.doesNotMatch(read("src/components/sections/site-nav.tsx"), /rounded-full border border-primary/u,
+    "SH1370: the header's plugin link is a pill again");
 });
 
 test("SH1370: the eyebrow is plain accent text, not a gradient", () => {
