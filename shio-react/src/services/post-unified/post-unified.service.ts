@@ -7,7 +7,7 @@ import type {
   ShPublishRoutes,
   ShRevisionRow,
 } from "@/models/post-unified/post-unified"
-import type { ShRead } from "@/lib/read-options"
+import { isCancelled, type ShRead } from "@/lib/read-options"
 
 /**
  * The create body. The post-type is named either way: `postType` is its API name
@@ -156,6 +156,25 @@ export class ShPostUnifiedService {
     })
     this.remember(id, state, response.headers)
     return response.data
+  }
+
+  /**
+   * SH1390 — the row a post has: the draft, or the live one where there is no draft.
+   *
+   * <p>For a read that wants the post and not a particular state (its type, its folder). A stateless
+   * `GET /v2/post-unified/{id}` means PUBLISHED on the server, so for a post an agent wrote and
+   * nobody published it answered 404 with a teaching error meant for an agent, and the query cache
+   * put that text in front of the curator, once per read. The draft comes first because it is the
+   * row every write here composes against; a cancellation is rethrown rather than read as "no
+   * draft", which would fire a second request nobody is waiting for (SH1159).</p>
+   */
+  async current(id: string, read: ShRead = {}): Promise<ShPostUnified> {
+    try {
+      return await this.get(id, "DRAFT", read)
+    } catch (error) {
+      if (isCancelled(error)) throw error
+      return await this.get(id, "PUBLISHED", read)
+    }
   }
 
   async versions(id: string): Promise<ShPostUnified[]> {

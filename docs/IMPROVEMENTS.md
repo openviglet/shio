@@ -287,34 +287,6 @@ package, is the decision.
 instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
 line as the closed form it already is.
 
-### XI.117 A draft-only post opens cleanly in the Universal Editor (SH1390)
-
-**Where it showed.** On 2026-11-09, filming the Viglet Shio promo on a clean
-`ghcr.io/openviglet/shio:latest` (166cc6c) with Quilhara installed from the Marketplace.
-An agent session (Claude Code with the Shio plugin) wrote four new posts with
-`shio_write`, all drafts and never published, among them
-`post:quilhara/trilhas/pedra-do-vigia`. Opening that page in the Universal Editor
-(`/bento/universal-editor/<site>`, the frame on
-`/preview/quilhara/trilhas/pedra-do-vigia?editor=true`) renders it and makes its fields
-editable, and at the same time shows a toast with the raw API error, twice:
-
-"Post 9fb6000c-… exists, but not in published … It is stored as [draft] … Did you mean:
-draft".
-
-So the editor asks for the published row of a post that only has a draft, gets a 404,
-and hands the teaching error meant for an agent to a person.
-
-**Why it matters.** Reviewing an agent's drafts on the page is the curator's half of the
-product's pitch, and an agent's draft is the post a curator opens there first.
-
-**What to do.** The editor reads the state the post has (draft when there is no
-published row), and a state it cannot read is shown as a sentence for a person, not the
-API's error text. A console test opens a draft-only post in the editor with no error
-toast and no 4xx request.
-
-**Done when** a post an agent wrote and nobody published opens in the Universal Editor
-with no toast, and an edit saved there lands on its draft.
-
 ### XI.118 A refused page looks like the site (SH1391)
 
 **Where it showed.** On 2026-11-09, on a clean `ghcr.io/openviglet/shio:latest`

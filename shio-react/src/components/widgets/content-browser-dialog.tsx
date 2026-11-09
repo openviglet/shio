@@ -17,6 +17,9 @@ import type { ShFolder } from "@/models/folder/folder"
 import type { ShSite } from "@/models/site/site"
 import { breadcrumbFrom, soleRootFolder } from "@/app/content/content-browser/browser-view"
 import { Spinner } from "@/components/spinner"
+import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+
+const postService = new ShPostUnifiedService()
 
 /**
  * SH120: the CDA listing envelope — `folders`/`posts`, rows carrying the CDA's names.
@@ -316,8 +319,8 @@ function ContentBrowserBody({
     // `/object/{id}/path` (that is a folder's read), so its own row names the folder.
     let start: Promise<string | undefined> = Promise.resolve(startFolderId)
     if (!startFolderId && nearPostId) {
-      start = axios.get<{ shFolder?: { id?: string } }>(`/v2/post-unified/${nearPostId}`, { signal })
-        .then((res) => res.data?.shFolder?.id)
+      // SH1390 — the row the post has: a draft nobody published has no PUBLISHED row to read.
+      start = postService.current(nearPostId, { signal }).then((post) => post?.shFolder?.id)
     }
     start.then((folderId) => {
       if (!folderId) return fetchSites(signal)

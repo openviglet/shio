@@ -425,6 +425,7 @@
 - **SH1385** — The Quilhara showcase plans from the Marketplace on a clean instance: a dry run now counts the layouts earlier ops bind before checking the page type, and a refused plan shows its reason in the dialog (design §XI.113 recorded in `docs/agents/blueprints.md`).
 - **SH1387 (closed enquiry form)** — Quilhara's contact and trip pages carry an Enquiry SectionForm in both languages, shipped closed; once a curator opens the site's form an enquiry posts with script off and lands as a draft.
 - **SH1389** — The review queue's diff and the versions dialog draw a repeatable field one row per item and sub-field (Facts › 1 › Label), added, changed or removed like text, never [object Object] (design §XI.116 recorded in `shio-react/src/lib/version-diff.ts`).
+- **SH1390** — The Universal Editor and the content picker read a post in the state it has, draft first, so an agent's unpublished draft opens with no 404 and no toast; a lint keeps every single-post read naming a state (design §XI.117 recorded in `shio-react/test/post-read-state.test.mjs`).
 
 ## Block M — Token economy, measured (SH74)
 

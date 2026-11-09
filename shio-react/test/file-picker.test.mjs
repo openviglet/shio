@@ -41,7 +41,8 @@ test("SH1325: opening a folder is a control with a name, not a hover decoration"
 })
 
 test("SH1325: an image picker with no folder opens beside the post being edited", () => {
-  assert.match(dialog, /`\/v2\/post-unified\/\$\{nearPostId\}`/u,
+  // SH1390: through the post service, which reads the row the post has (a draft has no live row).
+  assert.match(dialog, /postService\.current\(nearPostId, \{ signal \}\)\.then\(\(post\) => post\?\.shFolder\?\.id\)/u,
     "SH1325: the picker ignores the post it was opened from and starts on the list of every site")
   const widget = stripComments(readFileSync(join(SRC, "components", "widgets", "file.widget.tsx"), "utf8"))
   assert.match(widget, /selectMode="file"\s+nearPostId=\{postId\}/u,

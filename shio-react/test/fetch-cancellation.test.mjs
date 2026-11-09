@@ -1085,13 +1085,21 @@ test("SH1159: the visual editor's three hand-written cache keys become query key
    * a second request for a row nobody is waiting for. §LXXII.21 names this hazard on the pages; this is
    * the same hazard inside the services the pages call.
    */
-  assert.equal((service.match(/if \(isCancelled\(error\)\) throw error/gu) ?? []).length, 3,
-    `SH1159: ${(service.match(/if \(isCancelled\(error\)\) throw error/gu) ?? []).length} of the three `
+  // SH1390 moved `editable`'s fallback into `ShPostUnifiedService.current`, which the type read and
+  // the content picker share, so the third rethrow is counted where it now lives.
+  const posts = stripComments(readFileSync(join(ROOT, "src", "services", "post-unified", "post-unified.service.ts"), "utf8"));
+  const current = posts.slice(posts.indexOf("async current("), posts.indexOf("async versions("));
+  const rethrows = (service.match(/if \(isCancelled\(error\)\) throw error/gu) ?? []).length
+    + (current.match(/if \(isCancelled\(error\)\) throw error/gu) ?? []).length;
+  assert.equal(rethrows, 3,
+    `SH1159: ${rethrows} of the three `
       + "swallowing fallbacks rethrow a cancellation. `insertable` and `patterns` would answer an empty "
       + "list for a frame the curator navigated, and `editable` would fire its PUBLISHED fallback for a "
       + "DRAFT read that was aborted — a second request for an answer nobody wants.");
-  for (const read of [/signal: read\.signal/u, /this\.posts\.get\(postId, "DRAFT", read\)/u]) {
-    assert.match(service, read, `SH1159: ${read.source} — the signal does not reach the request`);
+  assert.match(service, /async editable\([^)]*\)[^{]*\{\s*return this\.posts\.current\(postId, read\)/u,
+    "SH1159: `editable` no longer reads through the fallback that rethrows a cancellation");
+  for (const [source, read] of [[service, /signal: read\.signal/u], [current, /this\.get\(id, "DRAFT", read\)/u]]) {
+    assert.match(source, read, `SH1159: ${read.source} — the signal does not reach the request`);
   }
 });
 

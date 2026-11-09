@@ -48,9 +48,9 @@ export class ShUniversalEditorService {
    * where a label is declared and the one place it should be read from.
    */
   async postTypeOf(postId: string, read: ShRead = {}): Promise<string | null> {
-    const response = await axios.get<ShPostUnified>(`/v2/post-unified/${postId}`,
-      { signal: read.signal })
-    return response.data?.shPostType?.name ?? null
+    // SH1390 — the row the post has: a stateless read means PUBLISHED, and an agent's draft has none.
+    const post = await this.posts.current(postId, read)
+    return post?.shPostType?.name ?? null
   }
 
   /**
@@ -111,12 +111,7 @@ export class ShUniversalEditorService {
    * is waiting for, which is the opposite of what cancelling is for.</p>
    */
   async editable(postId: string, read: ShRead = {}): Promise<ShPostUnified> {
-    try {
-      return await this.posts.get(postId, "DRAFT", read)
-    } catch (error) {
-      if (isCancelled(error)) throw error
-      return await this.posts.get(postId, "PUBLISHED", read)
-    }
+    return this.posts.current(postId, read)
   }
 
   /**
