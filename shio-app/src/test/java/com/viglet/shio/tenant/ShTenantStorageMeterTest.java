@@ -40,15 +40,27 @@ import com.viglet.shio.api.staticfile.ShFileStorageService;
 @TestInstance(Lifecycle.PER_CLASS)
 class ShTenantStorageMeterTest {
 
-    private static final String TENANT = "shio";
+    /**
+     * SH1396 — a tenant of this class's own, created in {@link #reset}. The default tenant's store is
+     * the one every other class writes into (a showcase apply is ~1.9 MB of assets), and both the
+     * recount and the kept figure are about the whole tenant, so on {@code shio} every assertion here
+     * measured whichever class happened to run beside it, and the Java gate went red by timing.
+     */
+    private final String TENANT = "ut-sh1396-" + java.util.UUID.randomUUID().toString().substring(0, 8);
 
     @Autowired
     private ShTenantStorageMeter meter;
     @Autowired
     private ShFileStorageService storage;
+    @Autowired
+    private com.viglet.shio.persistence.repository.tenant.ShTenantRepository tenants;
 
     @BeforeAll
     void reset() {
+        com.viglet.shio.persistence.model.tenant.ShTenant row = new com.viglet.shio.persistence.model.tenant.ShTenant();
+        row.setName(TENANT);
+        row.setCreatedDate(java.time.Instant.now());
+        tenants.saveAndFlush(row);
         meter.reconcile(TENANT);
     }
 
@@ -107,8 +119,20 @@ class ShTenantStorageMeterTest {
         // maintained. Nothing failed, because a counter nobody increments is indistinguishable
         // from a tenant storing nothing — which is why the assertion is here, at the boundary the
         // bytes actually cross, rather than on the method that was already covered.
+        // The store, copy and delete below write under the current tenant's directory, so the
+        // context names this class's tenant for their duration (SH1396).
+        ShTenantContext.setTenantId(TENANT);
+        try {
+            theBytesMoveTheMeterOfThisTenant();
+        } finally {
+            ShTenantContext.clear();
+        }
+    }
+
+    private void theBytesMoveTheMeterOfThisTenant() throws Exception {
         meter.reconcile(TENANT);
         long before = meter.bytesFor(TENANT);
+        assertThat(before).as("SH1396: a tenant nobody else writes to starts empty").isZero();
 
         storage.store("ut-sh751", "probe.bin", new ByteArrayInputStream(new byte[2048]));
 

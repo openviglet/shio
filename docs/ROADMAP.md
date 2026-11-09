@@ -12,7 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 📋 **SH1387** (deps: —) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — Decided: the Marketplace dialog offers an explicit accept-enquiries step, so the admin's click opens the form, not the package. → §XI.114
+- 🛠 **SH1387** (deps: —) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — Decided: the Marketplace dialog offers an explicit accept-enquiries step, so the admin's click opens the form, not the package. → §XI.114
 
 ## Block BG — The console as an application: cost, resilience and access
 
