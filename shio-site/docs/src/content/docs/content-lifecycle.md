@@ -111,6 +111,8 @@ changed between the live page and the draft:
 - Each changed field is shown with the change inside it, word by word for text and block by
   block for rich text. A sentence that moved in a long body is marked where it moved, not left
   for you to find in two copies of the whole field.
+- A repeatable field, such as a trail's list of facts, is shown one row per item and sub-field
+  (*Facts › 2 › Value*), so an item that was added, removed or edited is its own row.
 - Fields that did not change are folded behind a count, so a post type with forty fields and
   two edits shows two.
 

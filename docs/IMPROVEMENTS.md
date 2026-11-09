@@ -287,27 +287,6 @@ package, is the decision.
 instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
 line as the closed form it already is.
 
-### XI.116 Repeatable fields in the review diff (SH1389)
-
-**Where it showed.** On 2026-11-09, in Agent Review (`/bento/admin/review`) on a clean
-`ghcr.io/openviglet/shio:latest` (166cc6c), comparing the agent's new Quilhara trail
-`post:quilhara/trilhas/pedra-do-vigia` ("Comparar"). The "Criado nesta versão" diff
-lists the trail's `facts` field, a repeatable list of label and value pairs, as "[object
-Object],[object Object],[object Object],[object Object]", while the Universal Editor
-shows the same field as `facts.0.label = Distância`, `facts.0.value = 6,5 km ida e
-volta` and so on.
-
-**Why it matters.** The diff is what a curator reads to decide whether to approve an
-agent's work, and a structured field is where an agent is most likely to get something
-wrong; today it is unreadable there.
-
-**What to do.** Render a repeatable or object field in the diff the way the editor
-addresses it: one row per item and sub-field (`facts[0].label`), added, changed or
-removed, in the same style as the text fields. A console test diffs a post with a
-repeatable field and finds no "[object Object]".
-
-**Done when** the diff of a new Quilhara trail shows each fact's label and value.
-
 ### XI.117 A draft-only post opens cleanly in the Universal Editor (SH1390)
 
 **Where it showed.** On 2026-11-09, filming the Viglet Shio promo on a clean

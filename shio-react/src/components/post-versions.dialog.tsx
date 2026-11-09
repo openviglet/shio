@@ -15,7 +15,7 @@ import { BentoDiff, BentoVersionRail } from "@viglet/viglet-design-system/bento"
 import { CreatedPagePanel } from "@/components/created-page-panel"
 import { reportProblem } from "@/lib/problem"
 import { isCancelled } from "@/lib/read-options"
-import { DRAFT, PUBLISHED, diffFields, railVersions, revisionOf } from "@/lib/version-diff"
+import { DRAFT, PUBLISHED, diffFields, diffView, railVersions, revisionOf } from "@/lib/version-diff"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { Spinner } from "@/components/spinner"
 import type {
@@ -116,6 +116,9 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
     { draft: draft?.modifiedDate || draft?.date, published: published?.publicationDate }),
   [revisions, draft, published, t])
   const fields = useMemo(() => (diff ? diffFields(diff, schema) : []), [diff, schema])
+  // SH1389 — the rows drawn: a repeatable field one row per item and sub-field. `fields` stays the
+  // top-level list, because a restore puts a whole field back, not one of its rows.
+  const view = useMemo(() => (diff ? diffView(diff, schema) : null), [diff, schema])
   const changedCount = diff?.fields.filter((field) => field.changed).length ?? 0
 
   const restoreSide = from === PUBLISHED && published ? PUBLISHED : revisionOf(from) !== null ? from : null
@@ -209,7 +212,7 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
         ) : (
           <div className="space-y-3">
             {!diff.before && <CreatedPagePanel postId={postId} />}
-            <BentoDiff before={diff.before} after={diff.after} fields={fields} />
+            {view && <BentoDiff before={view.before} after={view.after} fields={view.fields} />}
             {changedFields.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {changedFields.map((field) => (

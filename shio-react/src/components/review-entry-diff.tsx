@@ -8,11 +8,11 @@
  */
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { BentoDiff, type BentoDiffField } from "@viglet/viglet-design-system/bento"
+import { BentoDiff } from "@viglet/viglet-design-system/bento"
 import { CreatedPagePanel } from "@/components/created-page-panel"
 import { reportProblem } from "@/lib/problem"
 import { isCancelled } from "@/lib/read-options"
-import { DRAFT, PUBLISHED, diffFields } from "@/lib/version-diff"
+import { DRAFT, PUBLISHED, diffView, type DiffView } from "@/lib/version-diff"
 import { postFormSchema, type ShPostDiff } from "@/models/post-unified/post-unified"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { Spinner } from "@/components/spinner"
@@ -29,7 +29,7 @@ const service = new ShPostUnifiedService()
  */
 export function ReviewEntryDiff({ postId }: { postId: string }) {
   const { t } = useTranslation()
-  const [answer, setAnswer] = useState<{ diff: ShPostDiff; fields: BentoDiffField[] } | null>(null)
+  const [answer, setAnswer] = useState<{ diff: ShPostDiff; view: DiffView } | null>(null)
 
   useEffect(() => {
     const abort = new AbortController()
@@ -37,7 +37,7 @@ export function ReviewEntryDiff({ postId }: { postId: string }) {
       service.diff(postId, PUBLISHED, DRAFT, { signal: abort.signal }),
       service.get(postId, "DRAFT").catch(() => service.get(postId, "PUBLISHED")),
     ])
-      .then(([diff, post]) => setAnswer({ diff, fields: diffFields(diff, postFormSchema(post.shPostType)) }))
+      .then(([diff, post]) => setAnswer({ diff, view: diffView(diff, postFormSchema(post.shPostType)) }))
       .catch((error: unknown) => {
         if (!isCancelled(error)) reportProblem(error, t("common.error"))
       })
@@ -54,7 +54,7 @@ export function ReviewEntryDiff({ postId }: { postId: string }) {
   return (
     <div className="space-y-3">
       {!answer.diff.before && <CreatedPagePanel postId={postId} />}
-      <BentoDiff before={answer.diff.before} after={answer.diff.after} fields={answer.fields} />
+      <BentoDiff before={answer.view.before} after={answer.view.after} fields={answer.view.fields} />
     </div>
   )
 }
