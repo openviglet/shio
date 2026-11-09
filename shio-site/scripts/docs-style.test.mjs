@@ -97,7 +97,6 @@ const BASELINE = {
   "rest-api.md": ["frontmatter-description"],
   "search-caching.md": ["frontmatter-description", "release-relative"],
   "security.md": ["frontmatter-description", "release-relative"],
-  "universal-editor.md": ["implementation-claims", "release-relative"],
   "webhooks.md": ["frontmatter-description"],
   "website-development.md": ["glossary", "release-relative"],
 };

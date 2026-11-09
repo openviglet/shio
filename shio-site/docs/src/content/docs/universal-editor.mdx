@@ -1,0 +1,261 @@
+---
+title: The Universal Editor
+description: "Edit a page where it is read: open it in the console, change its text and sections on the page, and save the change to the draft."
+sidebar:
+  label: The Universal Editor
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+This page is for curators who change a site's pages and for developers who make a template or
+a front end editable. With the **Universal Editor** you open the rendered page inside the
+console, change the text, fields and sections where you see them, and save the change to the
+page's **draft**. The live page stays as it is until you publish.
+
+---
+
+## Open a page in the editor
+
+<Steps>
+
+1. Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type the page's title.
+2. Choose the page's row.
+
+</Steps>
+
+The page opens in the Universal Editor, drafts included, so a page that nothing links to yet
+can be edited where it will be read. Sections, menus and other posts that are not pages open in
+their form instead.
+
+The address of the editor names the page (`?path=pricing`) and follows you as you click
+through the site, so a reload or a shared link opens the same page.
+
+Other ways to open a page:
+
+- Choose its title in the site's **Pages** view.
+- Choose **Edit on the page**, beside **Preview**, in the page's form.
+- Choose **Universal Editor** in the console's sidebar, then a site to open its home page, or
+  enter an external URL under **Open External URL**.
+
+## Edit text and other fields
+
+<Steps>
+
+1. Click the text you want to change on the page, and type.
+2. To change an image, a date, a check box or a reference, click it on the page and change it
+   in the properties panel, which shows the same control the post form uses.
+3. To reach a field that nothing on the page shows (the description, dates, references),
+   choose **Fields** in the editor's header. The panel then shows every field of the selected
+   section, or of the page, opened on the field you had selected. Choose **Fields** again to
+   go back to your selection.
+
+</Steps>
+
+Each change waits as a pending change until you save. **Revert** beside a field puts it back
+to what it held before you started on it, and **Discard** drops every pending change after a
+confirmation. The full post form is the **Edit fields** row after the page in the
+<kbd>Ctrl</kbd>+<kbd>K</kbd> palette, and the list icon beside the page in the **Pages** view.
+
+## Save or publish your changes
+
+<Steps>
+
+1. Choose **Save draft** to write your pending changes to the page's draft.
+2. Read the result in the [assistant dock](/docs/content-console/#the-assistant-dock), at the
+   foot of the properties panel.
+3. To make the changes live, choose **Publish**. The editor saves them first, shows what would
+   go live, and asks you to confirm, as the post form's **Publish** does.
+
+</Steps>
+
+After a save, the dock names the fields that were saved and says whether the page's
+**structure** and **appearance** changed. If you edited only text and the appearance changed
+anyway, it asks you to look at the page: a layout has usually reflowed. A refused save shows
+the server's explanation in the same place. Nothing is live until you confirm a publish.
+
+You need write permission on the post to save, and publish permission as well to publish,
+the same as in the post's form. The editor saves on your console session, with no token to set up.
+
+## Add, move and remove sections
+
+On a page built from sections, a section is selected by clicking it, not one of its fields. A
+toolbar drawn over the selected section moves it up or down, duplicates it, or removes it from
+the page. Duplicating places an independent copy right after the original, as a new draft
+section in the same folder with its own friendly URL, so editing the copy leaves the original
+alone.
+
+To add a section:
+
+<Steps>
+
+1. Select the section the new one goes next to, or nothing, to add it at the end.
+2. Under **Add a section** in the panel, find the type you want. Each type is drawn as a
+   thumbnail through this page's own layout and theme, with each field's label as placeholder
+   text.
+3. Choose **Above** or **Below** to place it beside the selection, or **Add to the page** when
+   nothing is selected. Or drag the type onto the page, where a line marks the gap it will land
+   in. Dragging needs a section selected.
+
+</Steps>
+
+The new section is a draft. The panel offers only the types the page's layout accepts; a type
+the layout names that this instance has not provisioned is shown but cannot be added. A page
+that composes a type its layout does not accept still renders, and `shio verify` reports it as
+`section-not-accepted` (see [Proving it renders](/docs/website-development/#proving-it-renders)).
+
+## Insert a pattern
+
+A **pattern** is a set of sections captured from a page into your project as
+`shio/patterns/<name>.json`. The editor offers a pattern once it has been pushed to the
+instance.
+
+**Before you start:** an administrator pushes the pattern from the project:
+
+```bash
+shio patterns save pricing-block --from post:Acme/pricing
+shio patterns push pricing-block
+shio patterns list --remote     # pushed, stale (edited since the push), or not pushed
+```
+
+<Steps>
+
+1. Select the section the pattern goes after, or nothing, to add it at the end.
+2. Find the pattern under **Patterns** in the panel, which also says when it was pushed.
+3. Choose **Insert pattern**.
+
+</Steps>
+
+All of the pattern's sections are placed where **Below** would place one section, as drafts,
+the same result as `shio patterns apply`. The file in your project stays the one you edit.
+If a pattern has a `{{placeholder}}` with no default, the editor names it, and you place the
+pattern from the CLI with `shio patterns apply <name> --param`.
+
+## Annotate a template
+
+The editor reads which element is which field from the template. In a page's template, mark
+each editable element with `sh-field`:
+
+```handlebars
+<article sh-post="{{id}}">
+  <h1 sh-field="TITLE">{{TITLE}}</h1>
+  <div sh-field="TEXT">{{{TEXT}}}</div>
+</article>
+```
+
+The page's own post is already marked on `<body>`, so add `sh-post` only to an element whose
+fields belong to a different post, such as a row inside a `{{#query}}` listing. Keep the
+attributes in the output: the editor finds each field through them.
+
+## Make your own front end editable
+
+For a site served by your own front end (a Next.js app or anything else over the
+[Content Delivery API](/docs/headless/content-delivery-api/)):
+
+<Steps>
+
+1. Install the bridge:
+
+   ```bash
+   npm install @viglet/shio-editor-cors
+   ```
+
+2. Add the `sh-*` annotations to the elements you want editable, as in
+   [Annotate a template](#annotate-a-template). If you compose pages from
+   `@viglet/shio-sections`, the components emit them for you when you pass the section post's
+   id:
+
+   ```jsx
+   <Hero data={section.data} postId={section.id} />
+   ```
+
+3. Name the console's origin, the one allowed to frame the page:
+
+   ```html
+   <meta name="urn:shio:system:editor-origin" content="https://shio.example.com">
+   ```
+
+</Steps>
+
+The page is then editable in the Universal Editor through **Open External URL**.
+
+:::caution
+The bridge does nothing without that meta tag. A framed page cannot tell who framed it, so
+the page has to name the allowed origin itself.
+:::
+
+Without `postId` the components' markup carries no editing attributes, so a public page needs
+no change. The bridge is also inert on a page that is not framed, so shipping it to production
+costs a visitor nothing.
+
+Two things cannot be edited in place on your own front end: the rows of a collection field,
+since the delivery payload carries no id for each row, and `SectionHero.align`, which is
+rendered as a CSS class rather than as a value.
+
+---
+
+## Template annotations
+
+What a template writes, and what the rendered page carries for the editor:
+
+| You write | The browser receives | Means |
+|---|---|---|
+| `sh-region="Header"` | `data-shio-region`, `data-shio-region-post` | this element is that Region |
+| `sh-field="TITLE"` | `data-shio-prop` | this element is that field |
+| `sh-post="{{id}}"` | `data-shio-post` | the fields inside belong to that post |
+
+A field belongs to the nearest `sh-post` above it, and to the page's post when there is none.
+
+## Save and publish endpoints
+
+Every save is one merge per post into its draft, with the changed fields in `attrs`. The
+Universal Editor in the console calls:
+
+```http
+PATCH /api/v2/post-unified/{id}     {"attrs": {"heading": "..."}, "publish": false}
+```
+
+An editor of your own, on a front end that is not Viglet Shio's, saves through the delivery
+API instead, with a token of **write** scope, since it has no console session:
+
+```http
+GET   /api/v2/cda/post/{id}/editable    # the post plus its whole field schema
+PATCH /api/v2/cda/post/{id}            # merge an edit into the draft
+POST  /api/v2/cda/post/{id}/publish    # publish it
+```
+
+`editable` returns the whole field schema, not only the fields the page annotates.
+
+| Header | On | Effect |
+|---|---|---|
+| `ETag` | every read and every successful merge | the post's version as it is now |
+| `If-Match` | a `PATCH` | the merge is applied only if the post still has that version; otherwise `409 Conflict` with a `stale-expectation` problem saying what changed, and nothing is written |
+
+Without `If-Match`, a merge is applied unconditionally.
+
+---
+
+## How saving works
+
+An edit is merged into the post's **`DRAFT`** row. If the post existed only as a published
+page, the draft is first seeded from it, so the live page is untouched until someone
+publishes. A preview client reading with a preview-scoped token renders that draft, so a page
+can be seen before anyone else sees it, with no second deployment.
+
+A merge writes only the fields it names, so two curators editing different fields of one page
+do not overwrite each other. When they edit the same field, `If-Match` turns the second save
+into a conflict instead of a silent overwrite.
+
+The editor runs in a frame. A preview opened with `?editor=true` gets a small bridge script
+from `/preview/_shio/editor.js`; an ordinary preview carries no editor code. The console
+accepts messages only from the framed page's origin, and the bridge only from the console's,
+so neither side sends a message to any origin that asks.
+
+---
+
+## Related pages
+
+| Page | Description |
+|---|---|
+| [Pages, Layouts & Regions](/docs/website-development/) | The templates you annotate, and the preview route |
+| [Letting an agent in](/docs/agent-safety/) | Drafts, publishing and the review queue |
+| [Content Delivery API](/docs/headless/content-delivery-api/) | Token scopes, and the preview environment |

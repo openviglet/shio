@@ -19,13 +19,16 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH1403** (deps: SH1402 ✅) **universal-editor.md reads as a log of increments: three ways to open a page in one paragraph, rationale among steps** — Rewritten with shio-docs-write: how-tos as Steps, one reference section, rationale moved out or cut, and the page off the SH1401 list. → §XCVII.3
 - 📋 **SH1404** (deps: SH1402 ✅) **agent-surface.md runs 4,600 words with procedures, reference and rationale mixed under one heading** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1405** (deps: SH1402 ✅) **content-console.md runs 4,300 words and describes console surfaces as prose instead of tasks a curator does** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1406** (deps: SH1402 ✅) **website-development.md runs 4,000 words with template reference and build procedures interleaved** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1407** (deps: SH1402 ✅) **replication.md runs 3,800 words with no single walk-through from a source URL to a published replica** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1408** (deps: SH1402 ✅) **cli.md runs 2,800 words and mixes the verb reference with how-to prose** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1409** (deps: SH1402 ✅) **administration-guide.md runs 2,700 words with settings described in prose instead of a reference table** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
+
+## Block BF — The visual editor becomes a composer
+
+- 📋 **SH1410** (deps: —) **Open External URL's hint tells a curator to instrument a page with data-sh-* attributes, which SH304 retired** — A curator following it annotates nothing the bridge reads; the hint should name the editor package and its origin meta tag. → §XCVII.4
 
 ## Priority
 

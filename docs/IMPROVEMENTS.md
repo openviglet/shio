@@ -1200,3 +1200,23 @@ A page is done when the SH1401 lint drops it from its named list, pnpm conforman
 and the shio-site build are green, and its COVERAGE rows still resolve. Splitting a page
 into two is allowed when the Diátaxis types will not share one, and then the sidebar and
 the hub card grid change in the same commit.
+
+### XCVII.4 The external URL hint names a retired attribute prefix (SH1410)
+
+The Universal Editor's site list has an **Open External URL** field, and the hint under
+it (`universalEditor.urlHint` in
+`shio-react/src/i18n/locales/{en,pt}/universal-editor.json`) says "Open any page
+instrumented with data-sh-* attributes for visual editing." Both halves are wrong today.
+The `data-sh-*` attributes belonged to the second, unspecified bridge that SH304
+deleted; a page is annotated with `sh-*` in its template, the render emits
+`data-shio-*`, and an external front end needs `@viglet/shio-editor-cors` plus the
+`urn:shio:system:editor-origin` meta tag naming the console's origin, without which the
+bridge is inert. And "visual editing" is the term the docs glossary tells writers to
+avoid. Found while rewriting the docs page (SH1403), which now describes the external
+path in "Make your own front end editable".
+
+Build: reword the hint in both locales to name what a page needs (the bridge package and
+the editor-origin meta tag), and link nothing the console cannot reach. Assert it in a
+console test that reads the en and pt strings and fails on `data-sh-` anywhere under
+`shio-react/src/i18n`, since the retired prefix has no other guard and `data-shio-` must
+still pass.
