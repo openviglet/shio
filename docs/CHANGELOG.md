@@ -1494,6 +1494,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1405** — The content console page opens on six curator tasks in Steps with the console's real labels, then describes each screen in tables under the anchors COVERAGE cites, and is off the style-lint baseline.
 - **SH1413** — On a wide screen the docs text starts 24px from the navigation instead of centred in the viewport, measured at 2000px and 1280px; the table of contents keeps its place.
 - **SH1406** — The templates page opens on two Steps how-tos (build a page from a layout, accept form submissions), keeps its reference under the cited anchors, closes with why templates are Handlebars, and is off the style-lint baseline.
+- **SH1407** — The replication page opens on one Steps walk-through from a source URL to a judged replica (clone, propose, accept, convert, publish, public route, judge), with the stage detail as reference and the stale type count gone.
 
 ## Block S — The public site (shio.viglet.org)
 

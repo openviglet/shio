@@ -91,7 +91,6 @@ const BASELINE = {
   "import-export.md": ["fence-language", "heading-sentence-case"],
   "index.mdx": ["frontmatter-description"],
   "installation-guide.md": ["heading-sentence-case"],
-  "replication.md": ["fence-language", "frontmatter-description"],
   "rest-api.md": ["frontmatter-description"],
   "search-caching.md": ["frontmatter-description", "release-relative"],
   "security.md": ["frontmatter-description", "release-relative"],

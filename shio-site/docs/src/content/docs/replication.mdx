@@ -1,0 +1,345 @@
+---
+title: Replication
+description: "Turn an existing website into a Viglet Shio site: capture it, choose what becomes editable, convert it, publish it and judge the replica."
+sidebar:
+  label: Replication
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+This page is for whoever adopts an existing website into Viglet Shio, a developer or the agent
+doing it for them. After reading it you can capture a site, choose which of its blocks become
+editable content, convert it, publish it and prove the replica works, with the `shio` CLI.
+
+![Clone, propose, convert, publish, serve, judge](/docs/img/diagrams/shio-replication-flow.svg)
+
+---
+
+## Replicate a site
+
+**Before you start:** the `shio` CLI connected to your instance, and a decision on the mode
+(see [Two modes](#two-modes-and-the-choice-is-the-whole-thing)): accept nothing for a faithful
+copy, accept the blocks for editable content.
+
+<Steps>
+
+1. Capture the site, its assets and its markup:
+
+   ```bash
+   shio clone https://example.com --depth 3 --assets --markup --site mysite
+   ```
+
+2. Read what the conversion would do, block by block, and what each block would lose:
+
+   ```bash
+   shio propose
+   ```
+
+3. Accept the blocks you want as editable sections, or accept nothing for fidelity:
+
+   ```bash
+   shio propose --accept all
+   ```
+
+4. Write the site to the instance, as drafts:
+
+   ```bash
+   shio convert --site mysite --create-site
+   ```
+
+5. Publish it:
+
+   ```bash
+   shio push --content
+   ```
+
+6. Open the replica on the public route, not the preview: `/sites/mysite/default/en-us/`.
+
+7. Get the verdict:
+
+   ```bash
+   shio judge --site mysite
+   ```
+
+</Steps>
+
+`shio judge` answers **ACCEPTED**, **HOLDS** or **INCONCLUSIVE** (see
+[One verdict, against a written bar](#one-verdict-against-a-written-bar)). A held round lists
+what to fix; fix it, then run steps 4 to 7 again.
+
+---
+
+## Two modes, and the choice is the whole thing
+
+| | **Fidelity** | **Authorable** |
+|---|---|---|
+| What `convert` writes | The source's markup, verbatim, behind a Theme + Page Layout + Page | The captured blocks as **sections**: real fields, in a generated layout that annotates each one |
+| How close it looks | Pixel-identical is achievable | The captured CSS classes are dropped and the page is drawn with Viglet Shio's own vocabulary, styled by a theme whose colours are taken from the source |
+| Can a curator edit it? | **Not on its own**: verbatim markup carries no field annotations. `convert --annotate` adds them without touching the pixels: see [Fidelity with editable blocks](#fidelity-with-editable-blocks) | **Yes.** Every field is annotated and editable |
+| On a page that mixes them | The kept markup is a section of its own, movable and replaceable | The accepted blocks, in the same list, in source order |
+| Use it for | Proving the capture is faithful; archiving a site as-is | Adopting the site into a CMS |
+
+You choose by what you accept in the `propose` step: **accept nothing and you get fidelity;
+accept the blocks and you get authorable content.**
+
+### Most pages are both
+
+A page where you accept the hero and leave the source's header and footer is **mixed**. Each
+run of kept markup is a **`SectionMarkup` post in the page's own `sections` list**, in the place
+it stood, so a curator can move it, replace it with a real section, or delete it, one block at a
+time.
+
+- **A mixed page keeps the source's stylesheet** while any of its markup is still there. An
+  authorable page does not receive it: it draws `shio-*` names, which the captured CSS does not
+  define.
+- **The page's own title is editable on a mixed page too**, so the Universal Editor reaches it
+  even where the visible heading is the one the capture recorded.
+
+### Fidelity with editable blocks
+
+`--annotate` keeps the source's own markup **and** makes its words editable:
+
+```bash
+shio convert --site mysite --create-site --annotate
+```
+
+The mapping `propose` worked out (which node is a heading, which an intro) is **stamped onto
+the source's markup** as editable fields, and nothing else about the page changes; strip the
+annotations and the bytes are the source's body. On a real site this measured **2.02% pixel
+difference** for a page carrying 14 editable fields, against **6.76%** for the authorable
+rebuild of the same page.
+
+| Rule | Behaviour |
+|---|---|
+| Opt-in | Without `--annotate`, fidelity pages carry no editable field |
+| Which pages | Wholly verbatim pages only: on a mixed page the kept markup is split into `SectionMarkup` posts |
+| Storage | Nothing is stored until somebody edits a field; an edited field shows its value in place of the source's |
+
+---
+
+## The pipeline
+
+### 1. Capture
+
+```bash
+shio clone https://example.com --depth 3 --assets --markup --site mysite
+```
+
+`clone` walks the origin and writes an **inventory and a report**, no content yet.
+
+| Flag | Effect |
+|---|---|
+| `--assets` | Download the referenced images, stylesheets, fonts and icons, including those a stylesheet's `url()` calls name |
+| `--markup` | Keep each page's markup, which is what fidelity mode serves |
+| `--render` | Ask a browser on your machine to render the page first, for a source whose content is built by JavaScript |
+| `--scripts` | Inventory the third-party scripts, so `propose` can offer them as a Site Scripts list |
+| `--depth N` | How far to walk |
+| `--refresh` | Re-check a capture you already have (see below) |
+
+The report separates what a replica **needs to render** from what merely exists, and a
+downloaded file no post references is reported as its own finding.
+
+#### Re-capturing without paying for it again
+
+```bash
+shio clone --refresh --assets --markup --site mysite
+```
+
+Pass no URL: the existing capture says where the site is. Every page and asset is asked for
+conditionally, using what the last capture recorded, so anything the server reports as
+unchanged costs one request and no download. The report counts the unchanged and re-read pages
+and assets, and names any file it had to fetch in full.
+
+A refresh re-checks **what was captured**: it does not walk for new pages, though it names any
+it saw linked from a page that changed. A capture with nothing recorded to be conditional about
+fetches in full on its first refresh.
+
+### 2. Propose
+
+```bash
+shio propose                     # read what it would do
+shio propose --accept all        # …and accept it
+```
+
+For each captured block, `propose` reports the section type it would become, the fields it
+would carry, the markup it would keep, and **what the conversion would lose**.
+
+| Column | Means |
+|---|---|
+| `keeps N%` | How much of the block's own text the fields would hold. A block that would keep less than half is walked into rather than accepted whole |
+| Evidence | Why the type was proposed: *two or more `<details>`, which is a disclosure list*, *4 repeated units, each with text*. A block that matches no rule is proposed as a post type of its own |
+
+`--accept all` **declines a candidate that cannot fill a field its section type requires**, and
+says which and why; that block stays verbatim markup rather than becoming a section `shio verify`
+would refuse with `required-field-empty`. Naming its id accepts it anyway, and the command says
+what the gate will report.
+
+`propose` also offers the captured stylesheet as **design tokens plus CSS**, and the captured
+third-party scripts as a Site Scripts list with a consent category where the host declared one
+and a blank where it did not. The report counts the blanks a curator has to fill.
+
+### 3. Convert
+
+```bash
+shio convert --site mysite --create-site
+```
+
+`convert` applies the accepted plan through the ordinary desired-state path: one `Page` per
+captured page at the source's own URL, the sections it composes, a `Theme`, a `PageLayout`
+bound to both modes, and the captured files uploaded as `File` posts at **the paths their
+source used**. Everything lands as **drafts**.
+
+#### The site remembers where it came from
+
+After a real conversion (not `--dry-run`, `--check` or `--out`), `convert` records in the
+site's memory, under the key `replication`, the source URL, the date, how many pages and
+sections were written, a short digest of the plan, and the `shio clone` command that runs the
+round again. A curator sees it on the site's settings page under **Where this site came from**;
+an agent reads it with `shio_memory` or `shio memory --site mysite`. It travels with
+`shio export`, and a later conversion replaces it.
+
+#### The replica's navigation is the one the source stated
+
+`clone` reads `<nav>` and `[role=navigation]`, keeps the entries **in source order**, and counts
+how many pages each appears on. An entry on every page is a menu item; one on a single page is a
+link, and is left out. `convert` writes them as a `Menu` post and a `MenuItem` each, in a `/menu`
+folder, rendered by the generated layout and editable in the console like any other content.
+
+```text
+menu: 2 entry(ies) from the source's own navigation, in ITS order, of 4 link(s) it recorded
+```
+
+A source that states no navigation gets a layout that lists the site's pages by title.
+
+#### The theme an authorable replica is presented with
+
+An authorable page is drawn with Viglet Shio's own `shio-*` vocabulary (a container, a stack, a
+grid, a card), and the `Theme` `convert` writes styles each of those roles. Its **values come
+from the source**: each token is matched by the role the source uses a value in, not by the
+name the source gave it. The run says where each value came from:
+
+```text
+presented by mysite (Shio), the one stylesheet the layout names
+palette: 5 of 9 token(s) from the captured stylesheet, under this theme's own names
+  --color-ink #10243a from ink (text#1)
+  --color-accent #ff6600 from color.accent-1 (accent#1)
+  --color-line #d9e2ec from color.border-1 (border#1)
+  --size-radius 6px from radius (radius#1)
+  --text-family "Fixture Sans", system-ui, sans-serif from font.body (font.family#1)
+  --color-ink-muted #5a6373: the source states no text#2, so this theme's default
+    stands. Edit the Theme post's TOKENS to set it
+```
+
+| Value | Taken from |
+|---|---|
+| Colour | A page-level statement such as `body { color: … }`, since the same colour can be text in one rule and a background in another. A colour used more often falls to the next slot |
+| Corner radius, font stack | The value the stylesheet uses most |
+| Type scale | Only the step the page states outright (`body { font-size: … }`); the other sizes keep their defaults |
+| Accent | A rule that sets a background and sets its text to the page's own background colour: a button, a badge, a call to action. A band in the page's own text colour, such as a dark footer, is not taken |
+
+| Refused | Why |
+|---|---|
+| A colour that paints nothing | A fully transparent value is a reset, and a page background taken from one shows whatever sits behind it |
+| A pair you could not read | Text and page colours are checked together; under the contrast floor, the source's half gives way to the theme's default |
+
+A refusal is printed with its reason and, for contrast, the ratio:
+
+```text
+palette: 1 of 9 token(s) from the captured stylesheet, under this theme's own names, 2 refused
+  --color-surface #ffffff REFUSED: the source's background#1 is #0000, which paints nothing.
+    This theme's default stands; fix it in the source, or edit the Theme post's TOKENS
+  --color-ink #12151a REFUSED: #f9fafb from vg.foreground reads at 1.05:1 against
+    --color-surface #ffffff, under the 1.5:1 floor. …
+```
+
+Every token is a field on the `Theme` post, so changing one is a console edit.
+
+:::note[Palettes declared inside `@layer`]
+A palette declared inside `@layer theme { :root, :host { … } }` is read as the source's palette:
+a layer only orders the cascade. A palette declared under
+`@media (prefers-color-scheme: dark)` or a `.dark` class is a *variant* with two values and no
+default, so it is reported rather than written.
+:::
+
+### 4. Publish, then look at the public route
+
+```bash
+shio push --content            # or publish through the console / an agent
+```
+
+Then judge on the **public** route, `/sites/mysite/default/en-us/`, not the preview: the
+preview's banner shifts every pixel, and the preview renders **drafts**, so an asset you forgot
+to publish looks fine there and 404s in public.
+
+---
+
+## Judging the result
+
+Four checks, in the order that finds things:
+
+| Check | Pass when |
+|---|---|
+| Every reference resolves | Each same-origin `src`, `<link href>` and CSS `url()` answers 200. This finds missing webfonts, an asset at the wrong path, and anything left unpublished |
+| No link carries the source's base | Every same-origin link starts with the base the replica is served from |
+| Both spellings of a directory path answer | `/docs` and `/docs/`, one canonical and one redirecting, as the source did |
+| `shio verify --site mysite` | No findings |
+
+Then compare the pictures, and open the PNG rather than trusting the number: a 100% difference
+has been a screenshot of an authorization error.
+
+```bash
+shio snapshot /sites/mysite/default/en-us/ --against https://example.com --width 1280
+```
+
+For the authorable mode, count the annotations on `/preview/mysite/?editor=true`: there should
+be a `data-shio-prop` for every field each section declares, **including the fields of every
+row of a collection** (features, questions, logos, quotes). `shio annotations post:mysite/` does
+that count and reports a field whose **value is on the page** with nothing making it editable. A
+field the template does not draw is listed apart and does not fail the check, including on a
+page converted with `--annotate`.
+
+### One verdict, against a written bar
+
+```bash
+shio judge --site mysite
+```
+
+`verify`, `diff` and `audit` run; `snapshot` runs when you pass `--against <origin>`. Every
+finding is graded against the bar in `acceptance.properties`, and the mode is read from the
+plan, so a fidelity site is graded by the fidelity bar.
+
+| Verdict | Means |
+|---|---|
+| **ACCEPTED** | Every finding is at or below the bar; each prints as a task for later |
+| **HOLDS** | A finding is above the bar, or of a kind the bar does not name. Exits 1 |
+| **INCONCLUSIVE** | An instrument the bar rests on did not run |
+| **NOT RUN** | Printed for a skipped instrument, never read as green |
+
+```bash
+shio judge --site mysite --since --record
+```
+
+`--record` appends the round to `shio/judge-rounds.json`; `--since` reports what moved against
+the last one. A count that rose holds the round; a count that fell is reported and never held.
+
+---
+
+## Boundaries
+
+| Boundary | What it means |
+|---|---|
+| The instance does not run a browser | `--render` drives a browser on *your* machine at capture time, as an optional dependency. A source that builds its content client-side is captured only that way, as the DOM looked then |
+| Fidelity is editable only on request | `convert --annotate`, on the pages that kept all of their markup. On a mixed page, the authorable half is the editable half |
+| Authorable arrives styled, not as the source | Layout, spacing and type are the theme's; colours, corner radius and font stack are the source's where its stylesheet states them (see [the theme an authorable replica is presented with](#the-theme-an-authorable-replica-is-presented-with)) |
+| A captured page carries residues | Real-world markup has cases nobody predicted. The repository's conformance suite (`pnpm -C cli run conformance`) drives capture, propose, convert and verify over a served fixture, and any change to this chain has to pass it |
+
+---
+
+## Related pages
+
+| Page | Description |
+|---|---|
+| [The `shio` CLI](/docs/cli/) | Every flag of `clone`, `propose`, `convert` and `snapshot` |
+| [Pages, Layouts & Regions](/docs/website-development/) | What `convert` writes, and the `/sites/**` route |
+| [The Universal Editor](/docs/universal-editor/) | Editing an authorable replica |
+| [Content as Files](/docs/content-as-files/) | The tree a converted site projects to |
