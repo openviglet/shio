@@ -263,29 +263,29 @@ editors, and then the merge, filed as its own tasks.
 
 ### XI.114 Quilhara's forms take submissions out of the box (SH1387)
 
-**Where it showed.** On 2026-11-09, filming the Viglet Shio promo (chapter 10: someone
-asks about a trip, and the enquiry lands in the CMS as a draft) on a clean
-`ghcr.io/openviglet/shio:latest` (166cc6c) with Quilhara installed from the Marketplace.
-`/sites/quilhara/default/en-us/contact` and `/trips/wind-crest-overnight` render no
-`<form>` at all, in either language, and the console's Formulários page shows the site
-with no destination folder, no post types and no allowed origins.
+**Where it showed.** On 2026-11-09, filming the promo's trip-enquiry chapter, Quilhara
+installed from the Marketplace rendered no `<form>` on `/contact` or
+`/trips/wind-crest-overnight`.
 
-**What the showcase promises.** `docs/specs/SH1250-showcase-matrix.json` maps `/contact`
-to "A site form whose submissions land as drafts" and `/trips/wind-crest-overnight` to
-"One trip, with an enquiry form", and `site-forms` to `/contact`;
-`marketplace/quilhara/blueprint.json` carries no form section. SectionForm joined the
-vocabulary today (SH1386) and the small-business package already submits a contact form
-with script off (SH1356), so the parts exist.
+**What landed (part one).** Both pages carry an `Enquiry` `SectionForm` in both
+languages, with an `/enquiries` folder, shipped closed: the token is empty, so neither
+page draws a form until a curator opens it (`POST /api/v2/site-form` with folder
+`/enquiries`, type `Enquiry`, the site's origin, then the site's FORM token on the four
+form sections). `docs/agents/blueprints.md` records how; `ShBlueprintAccessibilityTest`
+proves the opened form submits with script off.
 
-**What to do.** Give Quilhara's contact page and its trip page a SectionForm, and have
-the package set the site's form destination (a folder that exists in the package, the
-post type a submission becomes, the site's own origin), so an install from the
-Marketplace accepts a submission with nothing configured by hand. The tour page
-`/tour/curator` can then point at a real submission.
+**What is left, and why it needs a person.** The ask was an install that accepts a
+submission with nothing set by hand. SH632 decided a site's form destination is never a
+template setting, since a folder chosen in a template is a folder an attacker chooses,
+and that enabling it is a console-admin act. A middle path: the Marketplace dialog, run
+by an admin, offers an explicit "accept enquiries now" step that creates the site-form
+row and a FORM token and fills the sections, so the admin's click opens it, not the
+package. Whether that click is enough, when the folder and type still come from the
+package, is the decision.
 
-**Done when** a clean release instance with Quilhara installed accepts a trip enquiry
-from `/trips/wind-crest-overnight` and the console lists it as a draft, and the coverage
-test holds the matrix's two form pages to it.
+**Done when** a person rules: if yes, build the dialog step and prove a clean release
+instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
+line as the closed form it already is.
 
 ### XI.115 The explorer's deprecated GraphiQL fetcher (SH1388)
 
@@ -358,6 +358,32 @@ toast and no 4xx request.
 
 **Done when** a post an agent wrote and nobody published opens in the Universal Editor
 with no toast, and an edit saved there lands on its draft.
+
+### XI.118 A refused page looks like the site (SH1391)
+
+**Where it showed.** On 2026-11-09, on a clean `ghcr.io/openviglet/shio:latest`
+(166cc6c) with Quilhara installed from the Marketplace. In the console, Conteúdo ›
+quilhara › pt › trilhas, the trail "Cachoeira das Samambaias" was set to "Quem pode ler
+a página publicada: Somente membros" in its Permissões and saved ("Permissões salvas").
+A browser with no session then asked for
+`/sites/quilhara/default/pt-br/trilhas/cachoeira-das-samambaias` and got a 404 whose
+body is the delivery API's JSON problem, shown as raw text: `{"detail":"Looked for a
+PUBLISHED post whose friendly URL is '/trilhas/cachoeira-das-samambaias'
+…","status":404,"type":"https://shio.viglet.com/errors/render-page-unknown","fix":"GET
+/api/v2/agent/find?site=quilhara lists the addresses this site holds", …}`.
+
+**Why it matters.** "Members get a page nobody else sees (content ACL)" is one of the
+showcase's promises (SH1250), and what a visitor meets instead is an error written for
+an agent, naming the agent API. A members-only page should look like the site: its 404
+page, or a sign-in prompt when the site has member sign-in.
+
+**What to do.** When the site renderer refuses a page, a browser asking for HTML gets
+the site's own not-found page (or its sign-in page for members-only content), with the
+same status; the JSON problem stays for API and agent clients. A test asks for a
+members-only page as a visitor and finds HTML in the site's layout, not JSON.
+
+**Done when** a visitor asking for Quilhara's members-only trail sees a page of the
+Quilhara site.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

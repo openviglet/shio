@@ -12,9 +12,10 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 📋 **SH1387** (deps: —) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — The showcase cannot show forms landing as drafts, and the promo's trip-enquiry chapter has nothing to film. → §XI.114
+- ⏳ **SH1387** (deps: decision: may an install open a form) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — Opening it at install is what SH632 keeps out of templates; a person decides if the Marketplace may offer it. → §XI.114
 - 📋 **SH1389** (deps: —) **Agent Review's diff shows a repeatable field such as a trail's facts as [object Object]** — The diff is what a curator reads before approving an agent's work, and structured fields are where it most needs reading. → §XI.116
 - 📋 **SH1390** (deps: —) **The Universal Editor asks a draft-only post for its published row and shows the API's error as a toast** — An agent's drafts are the first posts a curator opens on the page, and today each shows a 404 meant for an agent. → §XI.117
+- 📋 **SH1391** (deps: —) **A visitor asking for a members-only page gets the delivery API's JSON error instead of a page of the site** — The showcase promises a page only members see, and a visitor meets an error written for an agent. → §XI.118
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -51,6 +52,13 @@
   the site link a hosted instance where the Quilhara showcase renders publicly and a
   guest role can browse, edit drafts and see the review queue but not publish, reset
   from the blueprint on a schedule.
+
+## Done when — SH1387
+
+- **A Marketplace install of Quilhara takes an enquiry, or the line is closed** Either a
+  person rules that the install may open the form, and a clean instance with Quilhara
+  from the Marketplace accepts a trip enquiry with nothing set by hand, or a person
+  rules it may not, and the line ships as the closed form it already is.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -315,7 +315,7 @@ class ShBlueprintAccessibilityTest {
         token.setOwner("admin");
         token.setCreatedDate(Instant.now());
         apiTokenRepository.save(token);
-        fillFormToken(siteId);
+        fillFormToken(siteId, SB_TOKEN);
 
         String html = renderService.render(site, "/contact", ShPostState.DRAFT).html();
         assertThat(html)
@@ -350,8 +350,86 @@ class ShBlueprintAccessibilityTest {
                 .satisfies(each -> assertThat(each.getState()).isEqualTo(ShPostState.DRAFT));
     }
 
+    private static final String QUILHARA_ORIGIN = "https://quilhara.example";
+    private static final String QUILHARA_TOKEN = "sh1387-form-key";
+
+    /**
+     * SH1387 — the showcase's trip enquiry submits with script off, once a curator opens it.
+     *
+     * <p>The matrix promised a contact form and a trip enquiry and Quilhara rendered no {@code <form>}
+     * on either page. The package now carries both, closed the way {@code small-business}'s is (SH632):
+     * this applies it, sees the trip page draw no form, opens the site's form as a curator would, and
+     * posts what the rendered form carries. The Portuguese trip page labels its fields from its own
+     * string table, so the form is not an English island on a Portuguese page.</p>
+     */
+    @Test
+    @DisplayName("SH1387: the showcase's trip enquiry submits with script off once the site's form is opened")
+    void theShowcaseTripEnquirySubmitsWithScriptOff() throws Exception {
+        var mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        String site = freshSite("quilhara-form");
+        String siteId = siteRepository.findByName(site).getId();
+        blueprintService.apply(SHOWCASE, site, paramsFor(registry.all().get(SHOWCASE)), "admin");
+
+        assertThat(renderService.render(site, "/trips/wind-crest-overnight", ShPostState.DRAFT).html())
+                .as("SH1387: applying the showcase never opens the door; with no token there is no form")
+                .doesNotContain("<form");
+
+        siteFormAPI.create(new ShSiteFormRequest(siteId, "/enquiries", "Enquiry", true, QUILHARA_ORIGIN), null);
+        ShApiToken token = new ShApiToken();
+        token.setTitle("enquiry form");
+        token.setToken(QUILHARA_TOKEN);
+        token.setEnabled(true);
+        token.setScope(ShApiTokenScope.FORM);
+        token.setSiteIds(Set.of(siteId));
+        token.setOwner("admin");
+        token.setCreatedDate(Instant.now());
+        apiTokenRepository.save(token);
+        fillFormToken(siteId, QUILHARA_TOKEN);
+
+        for (String page : List.of("/trips/wind-crest-overnight", "/contact")) {
+            assertThat(renderService.render(site, page, ShPostState.DRAFT).html())
+                    .as("SH1387: %s posts natively to this site's endpoint with its hidden fields", page)
+                    .contains("method=\"post\" action=\"/api/v2/cda/form/" + site + "\"")
+                    .contains("name=\"" + ShFormSubmissionAPI.TYPE_FIELD + "\" value=\"Enquiry\"")
+                    .contains("name=\"" + ShApiTokenFilter.FORM_TOKEN_FIELD + "\" value=\"" + QUILHARA_TOKEN + "\"")
+                    .contains("<label for=\"q-form-name\">Your name</label>")
+                    .contains("<textarea id=\"q-form-message\" name=\"message\" required></textarea>");
+        }
+        assertThat(renderService.render(site, "/viagens/travessia-crista-do-vento", ShPostState.DRAFT).html())
+                .as("SH1387: the Portuguese trip page labels the fields in Portuguese")
+                .contains("<label for=\"q-form-name\">Seu nome</label>")
+                .contains(">Enviar pergunta</button>");
+        // The sweep above judges the package as applied, which is closed; this judges it open.
+        assertThat(verifyService.verify(site, "a11y", 200).findings())
+                .as("SH1387: with the form open, the showcase's pages still pass the a11y check")
+                .isEmpty();
+
+        MvcResult sent = mvc.perform(post("/api/v2/cda/form/" + site)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .header("Origin", QUILHARA_ORIGIN)
+                        .header("Referer", QUILHARA_ORIGIN + "/trips/wind-crest-overnight")
+                        .param(ShFormSubmissionAPI.TYPE_FIELD, "Enquiry")
+                        .param(ShApiTokenFilter.FORM_TOKEN_FIELD, QUILHARA_TOKEN)
+                        .param(ShFormSubmissionAPI.HONEYPOT_FIELD, "")
+                        .param("name", "Rafa").param("email", "rafa@example.com")
+                        .param("message", "Is there room for two on the March overnight?"))
+                .andReturn();
+        assertThat(sent.getResponse().getStatus())
+                .as("SH1387: a browser with script off follows the 303 back to the trip: "
+                        + sent.getResponse().getContentAsString())
+                .isEqualTo(303);
+        assertThat(postRepository.findAll().stream()
+                .filter(each -> each.getShSite() != null && siteId.equals(each.getShSite().getId()))
+                .filter(each -> each.getData() != null
+                        && each.getData().contains("Is there room for two on the March overnight?"))
+                .toList())
+                .as("SH1387: the enquiry is an Enquiry draft in the folder the site named")
+                .singleElement()
+                .satisfies(each -> assertThat(each.getState()).isEqualTo(ShPostState.DRAFT));
+    }
+
     /** The curator's edit: the site's FORM token on the contact form section. */
-    private void fillFormToken(String siteId) {
+    private void fillFormToken(String siteId, String value) {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             List<ShPostUnified> sections = entityManager
                     .createQuery("select p from ShPostUnified p where p.shSite.id = :site", ShPostUnified.class)
@@ -361,7 +439,7 @@ class ShBlueprintAccessibilityTest {
             assertThat(sections).as("the package ships one form section").isNotEmpty();
             for (ShPostUnified section : sections) {
                 section.setData(section.getData().replaceAll("\"formToken\"\\s*:\\s*\"\"",
-                        "\"formToken\":\"" + SB_TOKEN + "\""));
+                        "\"formToken\":\"" + value + "\""));
             }
         });
     }

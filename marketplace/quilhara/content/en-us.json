@@ -179,6 +179,20 @@
       "locale": "en-us"
     },
     {
+      "url": "/en/sections/trip-enquiry",
+      "type": "SectionForm",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Ask about this trip",
+        "intro": "Tell us your dates and how many of you are walking, and the guide answers within two working days.",
+        "formType": "Enquiry",
+        "submitLabel": "Send enquiry",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
       "url": "/trips/wind-crest-overnight",
       "type": "Trip",
       "folder": "/en/trips",
@@ -213,6 +227,9 @@
         ],
         "guide": [
           "/guides/marina-alves"
+        ],
+        "enquiry": [
+          "/en/sections/trip-enquiry"
         ]
       },
       "publish": true,
@@ -313,6 +330,20 @@
       "locale": "en-us"
     },
     {
+      "url": "/en/sections/contact-form",
+      "type": "SectionForm",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Ask the trail office",
+        "intro": "Tell us the trail or trip you are asking about and the dates you have in mind. We answer within two working days.",
+        "formType": "Enquiry",
+        "submitLabel": "Send question",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
       "url": "/contact",
       "type": "InfoPage",
       "folder": "/en/pages",
@@ -320,7 +351,8 @@
         "title": "Contact",
         "description": "How to reach the Quilhara trail office.",
         "sections": [
-          "/en/sections/contact"
+          "/en/sections/contact",
+          "/en/sections/contact-form"
         ],
         "image": "asset:/images/contact-hut.webp",
         "imageAlt": "A small wooden hut with a covered porch and two bicycles, at the edge of a coastal village."
@@ -867,7 +899,7 @@
       "folder": "/en/sections",
       "data": {
         "title": "Strings",
-        "strings": "skip = Skip to content\nnav = Main navigation\nlangs = Other languages\nfooter = A fictional trail magazine, made to show what Viglet Shio builds."
+        "strings": "skip = Skip to content\nnav = Main navigation\nlangs = Other languages\nfooter = A fictional trail magazine, made to show what Viglet Shio builds.\nname = Your name\nemail = Email\nmessage = Your question\nsend = Send\nhoneypot = Leave this field empty"
       },
       "publish": true,
       "locale": "en-us"

@@ -111,3 +111,33 @@ test("SH1256: every tour page, in every language, ends with a complete how-it-wa
     }
   }
 });
+
+test("SH1387: the pages the matrix says take submissions carry a form, in every language, shipped closed", () => {
+  // The matrix promised a contact form and a trip enquiry and the package carried neither, so the
+  // showcase rendered no <form> anywhere. The pages are found by what the matrix says of them, not
+  // by a list here: a page described as taking a form (a "long-form story" is not one), and the page
+  // the site-forms surface names.
+  const formPages = Object.entries(matrix.pages)
+    .filter(([, says]) => /(?<![\w-])form\b/i.test(says)).map(([page]) => page);
+  assert.ok(formPages.includes(matrix.curatorSurfaces["site-forms"].page),
+    "SH1387: the site-forms surface names a page the matrix does not describe as taking a form");
+  assert.ok(formPages.length >= 2, `SH1387: read only ${formPages.length} form page(s) from the matrix`);
+  const byUrl = new Map(posts.map((post) => [post.url, post]));
+  const enquiry = JSON.parse(readFileSync(join(PACKAGE, "post-types", "Enquiry.json"), "utf8"));
+  for (const page of formPages) {
+    const versions = posts.filter((post) => post.url === page || post.translationOf === page);
+    assert.equal(versions.length, matrix.locales.length, `SH1387: ${page} is missing in a showcase language`);
+    for (const post of versions) {
+      const related = Object.values(post.data).filter(Array.isArray).flat()
+        .map((url) => byUrl.get(url)).filter((each) => each?.type === "SectionForm");
+      assert.equal(related.length, 1, `SH1387: ${post.url} carries no SectionForm`);
+      const [form] = related;
+      assert.equal(form.locale, post.locale, `SH1387: ${post.url} borrows another language's form`);
+      assert.equal(form.data.formType, enquiry.name, `SH1387: ${form.url} stores submissions as another type`);
+      // SH632: applying a package never opens a public write path; the curator does, in the console.
+      assert.equal(form.data.formToken, "", `SH1387: ${form.url} ships a form token, so applying it opens the door`);
+    }
+  }
+  assert.ok(blueprint.postTypes.includes("post-types/SectionForm.json")
+    && blueprint.postTypes.includes("post-types/Enquiry.json"), "SH1387: the package does not install its form types");
+});

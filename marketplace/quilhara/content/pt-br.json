@@ -185,6 +185,21 @@
       "translationOf": "/guides/marina-alves"
     },
     {
+      "url": "/pt/secoes/trip-enquiry",
+      "type": "SectionForm",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Perguntar sobre esta viagem",
+        "intro": "Diga suas datas e quantas pessoas vão caminhar, e a guia responde em até dois dias úteis.",
+        "formType": "Enquiry",
+        "submitLabel": "Enviar pergunta",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/trip-enquiry"
+    },
+    {
       "url": "/viagens/travessia-crista-do-vento",
       "type": "Trip",
       "folder": "/pt/viagens",
@@ -219,6 +234,9 @@
         ],
         "guide": [
           "/guias/marina-alves"
+        ],
+        "enquiry": [
+          "/pt/secoes/trip-enquiry"
         ]
       },
       "publish": true,
@@ -327,6 +345,21 @@
       "translationOf": "/en/sections/contact"
     },
     {
+      "url": "/pt/secoes/contact-form",
+      "type": "SectionForm",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Pergunte ao escritório de trilhas",
+        "intro": "Diga qual trilha ou viagem interessa e as datas que você tem em mente. Respondemos em até dois dias úteis.",
+        "formType": "Enquiry",
+        "submitLabel": "Enviar pergunta",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact-form"
+    },
+    {
       "url": "/contato",
       "type": "InfoPage",
       "folder": "/pt/paginas",
@@ -334,7 +367,8 @@
         "title": "Contato",
         "description": "Como falar com o escritório de trilhas da Quilhara.",
         "sections": [
-          "/pt/secoes/contact"
+          "/pt/secoes/contact",
+          "/pt/secoes/contact-form"
         ],
         "image": "asset:/images/contact-hut.webp",
         "imageAlt": "Uma casinha de madeira com varanda coberta e duas bicicletas, na saída de uma vila no litoral."
@@ -912,7 +946,7 @@
       "folder": "/pt/secoes",
       "data": {
         "title": "Strings",
-        "strings": "skip = Pular para o conteúdo\nnav = Navegação principal\nlangs = Outros idiomas\nfooter = Uma revista de trilhas fictícia, feita para mostrar o que o Viglet Shio constrói."
+        "strings": "skip = Pular para o conteúdo\nnav = Navegação principal\nlangs = Outros idiomas\nfooter = Uma revista de trilhas fictícia, feita para mostrar o que o Viglet Shio constrói.\nname = Seu nome\nemail = E-mail\nmessage = Sua pergunta\nsend = Enviar\nhoneypot = Deixe este campo vazio"
       },
       "publish": true,
       "locale": "pt-br",

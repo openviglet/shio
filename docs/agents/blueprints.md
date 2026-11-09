@@ -233,6 +233,16 @@ It is a fourth `emit.mjs` target, so it carries the whole vocabulary for `landin
 measured against `blueprint.apply.small-business`; `ShBlueprintAccessibilityTest` now judges every
 package that has such a row, not only the showcase.
 
+**Quilhara's enquiry form follows the same rule (SH1387).** The showcase's contact page and its trip
+page each carry a `SectionForm` (`formType` `Enquiry`, the package's own post-type: name, email,
+question) in both languages, and the package declares an `/enquiries` folder; the trip reaches its
+form through an `enquiry` relation, since a `Trip` composes no sections. Both layouts draw the form,
+heading included, only once the section has a token, and label the fields with `{{t name}}` so the
+Portuguese page reads Portuguese. Applying it opens nothing: `cli/test/showcase-coverage.test.mjs`
+holds every page the matrix describes as taking a form to a closed `SectionForm` in each language,
+and `ShBlueprintAccessibilityTest.theShowcaseTripEnquirySubmitsWithScriptOff` opens it as a curator
+would and posts an enquiry through the chain. Opening it at install is not a package's to decide.
+
 ## The three packages that carry an index page (SH216)
 
 SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`

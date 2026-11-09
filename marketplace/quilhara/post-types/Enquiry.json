@@ -1,0 +1,46 @@
+{
+  "name": "Enquiry",
+  "title": "Enquiry",
+  "namePlural": "Enquiries",
+  "description": "A question a visitor sent from the contact page or a trip page. A submission is stored as one, as a draft.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "name",
+      "label": "Your name",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "message",
+      "label": "Your question",
+      "description": null,
+      "widget": "Text Area",
+      "required": true,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

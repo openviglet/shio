@@ -150,6 +150,18 @@
       "ordinal": 10,
       "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
       "fields": []
+    },
+    {
+      "name": "enquiry",
+      "label": "Enquiry form",
+      "description": null,
+      "widget": "Multi Select",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 11,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
+      "fields": []
     }
   ]
 }
