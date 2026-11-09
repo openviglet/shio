@@ -34,11 +34,6 @@ export function Hero() {
             REST and GraphQL. Four ways in, one content engine, and the same
             drafts, previews and publish button behind every one of them.
           </p>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            The agent path is what makes Viglet Shio unusual, not what makes it usable. Never
-            attach one and nothing is withheld: it is an ordinary CMS, and it
-            hosts no model, no prompts and no provider keys.
-          </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg">

@@ -61,7 +61,7 @@ export function FeaturePage({ detail }: Readonly<{ detail: FeatureDetail }>) {
               size="lg"
               variant="outline"
             >
-              <a href={withBase("/#laws")}>The ten laws</a>
+              <a href={withBase("/claude-code/#laws")}>The ten laws</a>
             </Button>
           </div>
         </PageHero>

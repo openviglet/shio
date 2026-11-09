@@ -1743,6 +1743,103 @@ export const LINKS = {
   mcpSpec: "https://modelcontextprotocol.io",
 } as const;
 
+/**
+ * SH1372: the depth the home used to carry in full, one card each. Every card keeps the anchor its
+ * section had (`/#laws`, `/#files`, ...) so an inbound link still lands on the topic, and links to
+ * the page that holds it now: the agent protocol on /claude-code/, the rest on its own page.
+ */
+export interface DepthCard {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  summary: string;
+  href: string;
+  go: string;
+}
+
+export const DEPTH_CARDS: DepthCard[] = [
+  {
+    id: "laws",
+    icon: ScrollText,
+    title: "The ten design laws",
+    summary: "The rules every feature is judged by, from agent-first design order to compose-don't-fork.",
+    href: withBase("/claude-code/#laws"),
+    go: "Read the laws",
+  },
+  {
+    id: "one-call",
+    icon: Gauge,
+    title: "One call, and its price",
+    summary: "The instance describes itself in one answer, and every answer has a token ceiling the build enforces.",
+    href: withBase("/claude-code/#one-call"),
+    go: "See the measurements",
+  },
+  {
+    id: "surface",
+    icon: TerminalSquare,
+    title: "The MCP and CLI surface",
+    summary: "Every tool and verb an agent can call, and the console screen behind each one.",
+    href: withBase("/claude-code/#surface"),
+    go: "See the surface",
+  },
+  {
+    id: "errors",
+    icon: Route,
+    title: "Errors that instruct",
+    summary: "A refusal names the fix, the allowed values and an example, so a retry is the next call.",
+    href: withBase("/claude-code/#errors"),
+    go: "See a refusal",
+  },
+  {
+    id: "verify",
+    icon: ClipboardCheck,
+    title: "Proof without a screenshot",
+    summary: "Lint, routes and a render digest: textual checks that say whether the site is right.",
+    href: withBase("/claude-code/#verify"),
+    go: "See the checks",
+  },
+  {
+    id: "files",
+    icon: FolderTree,
+    title: "Content as files",
+    summary: "Pull a site to Markdown, edit it with ordinary tools, push it back through the same drafts.",
+    href: withBase("/features/content-as-files/"),
+    go: "Read the page",
+  },
+  {
+    id: "blueprints",
+    icon: Boxes,
+    title: "Blueprints",
+    summary: "Apply a whole starting point (types, layouts, pages) in one step instead of following a recipe.",
+    href: withBase("/features/blueprints/"),
+    go: "Read the page",
+  },
+  {
+    id: "replicate",
+    icon: RefreshCw,
+    title: "Replicate a site",
+    summary: "Capture an existing website and turn it into an editable one, block by block.",
+    href: withBase("/replicate/"),
+    go: "Read the page",
+  },
+  {
+    id: "delivery",
+    icon: Braces,
+    title: "Delivery",
+    summary: "REST and GraphQL, the TypeScript SDKs, or pages Viglet Shio renders itself.",
+    href: withBase("/features/delivery/"),
+    go: "Read the page",
+  },
+  {
+    id: "compare",
+    icon: GitCompareArrows,
+    title: "Compared with the alternatives",
+    summary: "Contentful, Sanity, Strapi and WordPress, row by row, including where each one wins.",
+    href: withBase("/compare/"),
+    go: "See the comparison",
+  },
+];
+
 export interface ResourceCard {
   icon: LucideIcon;
   title: string;

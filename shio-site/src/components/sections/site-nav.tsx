@@ -40,10 +40,10 @@ const NAV_GROUPS = [
     items: [
       { label: "What the console does", href: withBase("/console/#capabilities") },
       { label: "What stops an agent write", href: withBase("/curator/") },
-      { label: "One call, and its price", href: withBase("/#one-call") },
-      { label: "MCP + CLI surface", href: withBase("/#surface") },
-      { label: "Errors that instruct", href: withBase("/#errors") },
-      { label: "Proof without a screenshot", href: withBase("/#verify") },
+      { label: "One call, and its price", href: withBase("/claude-code/#one-call") },
+      { label: "MCP + CLI surface", href: withBase("/claude-code/#surface") },
+      { label: "Errors that instruct", href: withBase("/claude-code/#errors") },
+      { label: "Proof without a screenshot", href: withBase("/claude-code/#verify") },
       { label: "Rendering and design tokens", href: withBase("/features/rendering/") },
       { label: "Replicate an existing site", href: withBase("/replicate/") },
       { label: "A finished site: the showcase", href: withBase("/showcase/") },
@@ -53,7 +53,7 @@ const NAV_GROUPS = [
     label: "Decide",
     items: [
       { label: "Who runs it, and how", href: withBase("/#use-cases") },
-      { label: "The ten design laws", href: withBase("/#laws") },
+      { label: "The ten design laws", href: withBase("/claude-code/#laws") },
       { label: "Compare", href: withBase("/compare/") },
       { label: "Self-host", href: withBase("/#self-host") },
     ],

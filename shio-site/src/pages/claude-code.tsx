@@ -3,6 +3,11 @@ import { SiteNav } from "@/components/sections/site-nav";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { PageHero } from "@/components/sections/page-hero";
 import { CallToAction } from "@/components/sections/cta";
+import { Laws } from "@/components/sections/laws";
+import { OneCall } from "@/components/sections/one-call";
+import { Surface } from "@/components/sections/surface";
+import { Errors } from "@/components/sections/errors";
+import { Verify } from "@/components/sections/verify";
 import { Container, LawChip, SectionHeader, TableScroll } from "@/components/brand";
 import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
@@ -336,6 +341,14 @@ export function ClaudeCodePage() {
             </div>
           </Container>
         </section>
+
+        {/* SH1372: the agent protocol in full, moved here from the home, which keeps an indexed
+            card for each under the same anchor. */}
+        <Laws />
+        <OneCall />
+        <Surface />
+        <Errors />
+        <Verify />
 
         <CallToAction />
       </main>

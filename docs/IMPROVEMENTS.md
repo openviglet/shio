@@ -654,30 +654,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.20 A focused home page with product-specific depth (SH1372)
-
-Review of 2026-11-08: published pages and current source, compared with viglet.org. At
-390 CSS pixels the published home measured 35,933 pixels tall. landing.tsx renders four
-paths, use cases, roles, ten design laws, token measurements, errors, verification and
-many other sections. The console-first positioning is useful, but the navigation gives
-the Claude Code plugin a special pill and the hero spends a second paragraph defending
-agent optionality.
-
-Lead with content authoring and publishing, a concise choice among console, agent, files
-and API, one visible result and an installation path. Move detailed design laws, token
-budgets and protocol inventories to existing depth/docs pages; retain the console-first
-choice and honest agent limitations. Preserve information by linking to its
-authoritative page instead of repeating the same inventory. Maintain existing anchor
-destinations with concise summaries when sections move. Align the short product
-descriptor with the hub but retain product-specific examples and technical depth. Give
-every retained section a decision it helps the visitor make.
-
-Acceptance: provide a before/after section map and walk a newcomer through what the
-product does, whom it serves, evidence and the next action without reading the whole
-page. Re-measure page length under the same viewport as supporting evidence, not as a
-conversion target. No invented testimonials, unsupported performance claims, deleted
-routes or promised conversion uplift; any outcome measurement needs later observation.
-
 ### XIX.21 Portfolio relationship and optional integrations (SH1373)
 
 Review of 2026-11-08: published pages and current source, compared with viglet.org. The

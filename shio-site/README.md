@@ -119,6 +119,17 @@ Five rules for editing any of it:
   crawler outputs and the prose of the docs pages, and names its exceptions: the
   historical changelog, and the console's own provider labels (**Shio Native**,
   **Shio Package**), which a page has to spell the way the screen does.
+- **The home decides; the depth lives on its own page (SH1372).** The home
+  renders what a visitor chooses with: the hero, the four ways in, who runs
+  it, the showcase, the three seats, what it can do, what stops an agent, an
+  index of the depth, self-hosting, resources and the install step. The ten
+  depth sections it used to carry in full are now cards in that index
+  (`DEPTH_CARDS`), each keeping its old anchor. The laws, one call, the
+  surface, errors and verify render in full on `/claude-code/`; files,
+  blueprints, delivery, replication and the comparison already had pages.
+  Measured at 390 px wide: 36,097 px and twenty sections before, 20,809 px and
+  eleven after. [`scripts/home-depth.test.mjs`](scripts/home-depth.test.mjs)
+  holds the structure.
 - **Every link out comes from one map (SH1371).**
   [`src/lib/destinations.ts`](src/lib/destinations.ts) names each destination by
   its job: Get started is the installation guide, Download and Release notes are

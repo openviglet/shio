@@ -1507,6 +1507,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1369** — The docs pages and the marketplace catalogue now name Viglet Shio, Viglet Turing and Viglet Dumont in full in every sentence, headings included, and the lint scans the docs prose too, keeping commands, code and the console's own provider labels as named exceptions.
 - **SH1370** — The section bands, both footers, the header's plugin link and the docs page titles now follow the hub's grammar too: themed surfaces, solid violet, no fixed dark blocks, grids, orbs or gradient text, and a lint holds each.
 - **SH1371** — One typed destination map drives the marketing nav and footer, the docs header and footer and llms.txt: Get started is the install guide everywhere, release notes and download are the hub's pages, and the roadmap is labelled as development (design §XIX.19 recorded in `shio-site/README.md`).
+- **SH1372** — The home keeps eleven deciding sections and indexes the depth as cards that keep their anchors; the agent protocol renders in full on /claude-code/, taking the phone-width home from 36,097 to 20,809 pixels (design §XIX.20 recorded in `shio-site/README.md`).
 
 ## Block T — End-user documentation, round two (the curator's half)
 
