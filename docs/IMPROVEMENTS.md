@@ -262,6 +262,45 @@ when the site's own page cannot be drawn.
 Test it in `ShSitesMembersOnlyTest` beside the existing assertion: the pt-br address
 answers in Portuguese with `lang="pt-BR"`, and the page carries its inline style.
 
+### XI.128 Form drafts in the language of the page that held the form (SH1414)
+
+Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): a visitor sends the
+enquiry form on Quilhara's Portuguese trip page
+(`/sites/quilhara/default/pt-br/viagens/travessia-crista-do-vento`), and the draft lands
+in `/enquiries` as an Enquiry in **EN**. The console's list and the post's header both
+say EN, and its fields read "Your name", "Your question". A curator reading her
+enquiries cannot tell which language to answer in, and a later translation step starts
+from the wrong one.
+
+The submission already knows the page it came from: the form's `Referer` (checked
+against the allowed origins, SH637) and the section that drew it, whose post has a
+locale. Give the draft the locale of the page that held the form: the section's own
+locale, else the address's locale segment, else the site's default. Keep the field
+labels as the post type defines them.
+
+Test in the form submission tests: a submission from a pt-br page creates a pt-br draft,
+one from an en-us page an en-us draft, and one with no page (an API client) the site's
+default.
+
+### XI.129 The post editor reads a draft-only post with no 4xx (SH1415)
+
+Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): opening a draft that
+was never published (a visitor's enquiry) in the post editor logs `Failed to load
+resource: 404` in the browser console, for `GET
+/api/v2/post-unified/<id>?state=PUBLISHED`. `post.edit.page.tsx` reads both rows with
+`allSettled` on purpose (SH1158, SH654): whether a published row exists decides
+Unpublish. The page works, but every draft-only post opens with an error in the console,
+which reads as a defect to anyone watching it, and the promo's scene had to list it as
+expected.
+
+Answer the question without an error: either a read that returns both rows at once (the
+draft, the published one or null), or a `HEAD`/states summary the editor asks first, so
+a draft-only post loads with no 4xx at all. The Universal Editor already reads by state
+(SH1390); this is the same discipline for the post editor.
+
+Test with the console check the suites already run: open a draft-only post in the post
+editor and assert no 4xx response and no console error.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -1196,26 +1235,6 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
 
 ## XCVII End-user documentation for 2026.3 (docs-shio)
-
-### XCVII.4 The external URL hint names a retired attribute prefix (SH1410)
-
-The Universal Editor's site list has an **Open External URL** field, and the hint under
-it (`universalEditor.urlHint` in
-`shio-react/src/i18n/locales/{en,pt}/universal-editor.json`) says "Open any page
-instrumented with data-sh-* attributes for visual editing." Both halves are wrong today.
-The `data-sh-*` attributes belonged to the second, unspecified bridge that SH304
-deleted; a page is annotated with `sh-*` in its template, the render emits
-`data-shio-*`, and an external front end needs `@viglet/shio-editor-cors` plus the
-`urn:shio:system:editor-origin` meta tag naming the console's origin, without which the
-bridge is inert. And "visual editing" is the term the docs glossary tells writers to
-avoid. Found while rewriting the docs page (SH1403), which now describes the external
-path in "Make your own front end editable".
-
-Build: reword the hint in both locales to name what a page needs (the bridge package and
-the editor-origin meta tag), and link nothing the console cannot reach. Assert it in a
-console test that reads the en and pt strings and fails on `data-sh-` anywhere under
-`shio-react/src/i18n`, since the retired prefix has no other guard and `data-shio-` must
-still pass.
 
 ### XCVII.5 The docs skill's product-name rule contradicts the full-names lint (SH1412)
 

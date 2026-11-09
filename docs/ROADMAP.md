@@ -13,6 +13,8 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - 📋 **SH1411** (deps: —) **The fallback error page a browser gets is unstyled and always in English, even under a pt-br address** — A visitor turned away from a missing or members-only page sees bare browser-default HTML, which reads as a broken site. → §XI.127
+- 📋 **SH1414** (deps: —) **A form sent from a pt-br page lands as an English draft, labelled EN in the console** — The curator cannot tell which language to answer an enquiry in, and a translation step starts from the wrong one. → §XI.128
+- 📋 **SH1415** (deps: —) **Opening a never-published draft in the post editor logs a 404 in the browser console** — The editor reads the published row to decide Unpublish, so every draft-only post opens with an error that reads as a defect. → §XI.129
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
@@ -21,10 +23,6 @@
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
 - 📋 **SH1412** (deps: —) **shio-docs-write tells a writer a bare Shio is fine after the first mention, and the full-names lint fails the page** — The skill and the gate disagree, so every Block R rewrite that follows the skill lands red on SH1369. → §XCVII.5
-
-## Block BF — The visual editor becomes a composer
-
-- 📋 **SH1410** (deps: —) **Open External URL's hint tells a curator to instrument a page with data-sh-* attributes, which SH304 retired** — A curator following it annotates nothing the bridge reads; the hint should name the editor package and its origin meta tag. → §XCVII.4
 
 ## Priority
 
