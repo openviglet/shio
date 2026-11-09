@@ -1652,6 +1652,9 @@ async function checkEditorDrive(context, sites) {
       }
       page.on("response", hear)
       await publish.click({ timeout: 10_000 })
+      // SH1400 — Publish saves, then asks with the form's own confirmation before anything is live.
+      await page.getByRole("dialog").getByRole("button", { name: /^(Publicar|Publish)$/ })
+        .click({ timeout: 15_000 })
       // The toast, not the button's own state: `persist` clears the pending map in the same tick
       // it succeeds *and* in the tick it fails, so an empty change count says nothing about which.
       // SH1174 — `.first()`: the toast and the assistant dock (SH965) both say it, and a locator

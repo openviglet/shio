@@ -109,3 +109,13 @@ test("SH1399: Fields draws the form in the panel, saved with the page's own chan
   assert.match(editor, /focusProp=\{selected\?\.postId === fieldsTarget \? selected\?\.prop : null\}/u,
     "SH1399: the field the curator had selected is the one the form opens on")
 })
+
+test("SH1400: the editor's Publish asks with the form's own confirmation, after saving", () => {
+  const editor = read("app", "editor", "visual-editor.page.tsx")
+  assert.doesNotMatch(editor, /onClick=\{\(\) => persist\(true\)\}/u,
+    "SH1400: Publish went live at once again, with no plan and no question (P7)")
+  assert.match(editor, /onClick=\{\(\) => \{ void requestPublish\(\) \}\}/u)
+  assert.match(editor, /if \(!\(await persist\(false\)\)\) return/u,
+    "SH1400: the pending changes are saved first, so the plan is of exactly what would go live")
+  assert.match(editor, /<PublishPreviewDialog/u, "SH1400: the confirmation is the form's own dialog")
+})

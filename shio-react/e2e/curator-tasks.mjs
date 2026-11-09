@@ -219,6 +219,16 @@ async function openPageInEditor(page, title, path) {
   return editorFrame(page, (url) => url.includes(path) && url.includes("editor=true"))
 }
 
+/**
+ * SH1400 — Publish in the Universal Editor asks, as the form's does: it saves the pending changes,
+ * opens the same confirmation, and the write to wait for is the publish itself.
+ */
+async function publishInEditor(page) {
+  await page.getByRole("button", { name: /^(publicar|publish)$/i }).first().click()
+  await clickAndWrite(page, page.getByRole("dialog").getByRole("button", { name: /^(publicar|publish)$/i }),
+    (url) => url.endsWith("/publish"))
+}
+
 /** The jobs SH1319 measures in both editors, which need the console and the renderer on one origin. */
 const SAME_ORIGIN = new URL(BASE).origin === new URL(API).origin
 
@@ -372,8 +382,7 @@ const TASKS = [
       // Replaced the way the form task replaces its field, so the two measure the same act (SH1394).
       await pricing.locator("h1[data-shio-prop='heading']").first().fill(ctx.heading)
       await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
-      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
-        (url) => /\/post-unified\//.test(url))
+      await publishInEditor(page)
     },
     async check(ctx) {
       const post = await read(`post:${SITE}/sections/pricing/hero`)
@@ -404,8 +413,7 @@ const TASKS = [
       await dialog.getByRole("button", { name: /^(selecionar|select)$/i }).click()
       // The choice is a pending change like a typed one, and Publish writes it.
       await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
-      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
-        (url) => /\/post-unified\//.test(url))
+      await publishInEditor(page)
     },
     cleanup: () => restoreHero(),
     async check(ctx) {
@@ -461,8 +469,7 @@ const TASKS = [
       await page.getByRole("button", { name: /^(campos|fields)$/i }).click()
       await page.locator("#ue-field-description").locator("textarea, input").first().fill(ctx.text)
       await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
-      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
-        (url) => /\/post-unified\//.test(url))
+      await publishInEditor(page)
     },
     async check(ctx) {
       return JSON.stringify((await read(`post:${SITE}/pricing`)).data ?? {}).includes(ctx.text)

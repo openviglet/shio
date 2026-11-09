@@ -4493,6 +4493,20 @@ Measured with a new pair, the Pricing page's description (metadata, drawn by no 
 `change-description-ue` 3 clicks, 1 key, 1 screen; `change-description` 4/1/1. Part of that click is
 the form's publish confirmation, which the editor's Publish does not ask (SH1400).
 
+## The editor's Publish asks, as the form's does (SH1400)
+
+The editor's Publish went live at once (`persist(true)`), while the form's showed the server's plan
+and asked (SH996, P7). Now `requestPublish` saves the pending changes as drafts first
+(`persist(false)`, which reports whether it landed), so the dry run is of exactly what would go live,
+then opens the form's own `PublishPreviewDialog` for the page when the page changed, else the first
+changed post. Confirming publishes every post the session changed (or the selection, else the page,
+when nothing was) through `ShPostUnifiedService.publish`, the form's call, with its gate override
+and redirect; a gate refusal keeps the dialog open asking for the reason, as the form does. Save
+stays immediate. `console-check`'s editor drive and the curator harness confirm the dialog, and
+the `-ue` tasks were re-recorded one click up each: headline 3 against the form's 4, image 7 against
+7, description 4 against 4. The harness matches the publish by `url.endsWith("/publish")`; a
+regex written through a Python heredoc had turned its `\b` into a backspace, which matched nothing.
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a

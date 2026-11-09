@@ -215,7 +215,12 @@ const SWEEP = {
       + "(axe on every route and at three widths, the document's language, dark: following the theme) "
       + "and SH1051 (the accent measured to AA and primary claimed). docs-shio moved: content-console "
       + "gained the keyboard paragraph and COVERAGE names every id, with the mirror regenerated. README "
-      + "and shio-site are NOT moved: neither states anything about the console's cost or accessibility",
+      + "and shio-site are NOT moved: neither states anything about the console's cost or accessibility. "
+      + "Reopened for the curator rounds and re-closed with SH1319 to SH1400: the Universal Editor made "
+      + "the primary page editor, measured against the form, opening a named page, writing every field "
+      + "kind, the default for a page, Fields beside the page and a Publish that asks. docs-shio moved: "
+      + "the universal-editor and content-console pages, COVERAGE's rows and the mirror. README and "
+      + "shio-site are NOT moved: neither describes how a page is edited",
   },
   BH: {
     swept: true,

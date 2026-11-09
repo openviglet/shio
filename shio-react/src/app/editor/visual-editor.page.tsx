@@ -16,7 +16,9 @@ import { toast } from "@viglet/viglet-design-system"
 import { BentoStatusDock } from "@/app/system/bento-status-dock"
 import { pushReport, setWorking } from "@/lib/dock-reports"
 import { saveDelta, type SaveDelta } from "@/lib/save-delta"
-import { reportRefusal } from "@/lib/problem"
+import { headlineOf, reportRefusal } from "@/lib/problem"
+import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
+import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService, type PatternSummary } from "@/services/universal-editor/universal-editor.service"
@@ -38,6 +40,8 @@ import { Spinner } from "@/components/spinner"
 
 const siteService = new ShSiteService()
 const editorService = new ShUniversalEditorService()
+// SH1400 — publishing through the form's own call, with its ETag and its gate override.
+const unifiedService = new ShPostUnifiedService()
 
 /**
  * The Page field that holds an ordered list of sections (SH1038).
@@ -444,6 +448,10 @@ export default function VisualEditorPage() {
   const [mobile, setMobile] = useState(false)
   // SH1399 — the form drawn in the panel's place, for the selection or the page.
   const [fieldsMode, setFieldsMode] = useState(false)
+  // SH1400 — the posts a confirmed Publish will publish; the dialog is open while this is set.
+  const [publishTargets, setPublishTargets] = useState<string[] | null>(null)
+  const [publishing, setPublishing] = useState(false)
+  const [publishGate, setPublishGate] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<SelectedElement | null>(null)
   /**
@@ -1247,10 +1255,11 @@ export default function VisualEditorPage() {
     }, "saves")
   }
 
-  const persist = async (publish: boolean) => {
+  /** Save (or, with `publish`, save and publish) the pending changes; true when it landed. */
+  const persist = async (publish: boolean): Promise<boolean> => {
     // SH335 — no token check. Saving is a console write on the curator's own session now; the
     // token that used to gate this authorized nothing the cookie did not already.
-    if (changes.size === 0 && !publish) return
+    if (changes.size === 0 && !publish) return true
 
     // Group pending changes into one attr patch per post.
     const byPost = new Map<string, Record<string, unknown>>()
@@ -1287,12 +1296,50 @@ export default function VisualEditorPage() {
       if (pageId && saved.length) {
         reportSaveDelta(saveDelta({ changes: saved, before, after: await editorService.digests(pageId) }))
       }
+      return true
     } catch (error) {
       // SH972 — a refusal is the server's problem document in the dock, not the word Error.
       reportRefusal(error, t("universalEditor.saveError"), { t: (key, options) => String(t(key, options)) })
+      return false
     } finally {
       setWorking(null)
       setSaving(false)
+    }
+  }
+
+  /**
+   * SH1400 — Publish asks, as the form's does (SH996, P7): the pending changes are saved as drafts
+   * first, so the plan the dialog asks the server for is of exactly what would go live, and then the
+   * form's own confirmation opens. What it publishes is every post this session changed, or the
+   * selection (else the page) when nothing was changed.
+   */
+  const requestPublish = async () => {
+    const changed = [...new Set([...changes.values()].map((change) => change.postId))]
+    if (!(await persist(false))) return
+    const targets = changed.length ? changed : [selected?.postId ?? pageOfFrame].filter((id): id is string => Boolean(id))
+    if (targets.length) setPublishTargets(targets)
+  }
+
+  const confirmPublish = async (override?: string, redirect?: boolean) => {
+    if (!publishTargets) return
+    setPublishing(true)
+    try {
+      for (const postId of publishTargets) await unifiedService.publish(postId, override, redirect)
+      setPublishTargets(null)
+      setPublishGate(null)
+      refresh()
+      toast.success(t("universalEditor.published"))
+    } catch (error) {
+      const problem = reportRefusal(error, t("universalEditor.saveError"),
+        { t: (key, options) => String(t(key, options)) })
+      // SH998 — a gate is the one refusal the dialog can answer, so it stays open and asks why.
+      if (problem.type?.endsWith("publish-gate-failed") || problem.type?.endsWith("waiver-needs-a-reason")) {
+        setPublishGate(headlineOf(problem, t("universalEditor.saveError")))
+        return
+      }
+      setPublishTargets(null)
+    } finally {
+      setPublishing(false)
     }
   }
 
@@ -1420,7 +1467,7 @@ export default function VisualEditorPage() {
               {t("universalEditor.fields")}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => persist(true)} disabled={saving}>
+          <Button variant="outline" size="sm" onClick={() => { void requestPublish() }} disabled={saving || publishing}>
             <Upload className="h-4 w-4 mr-1" />
             {t("universalEditor.publish")}
           </Button>
@@ -1693,6 +1740,22 @@ export default function VisualEditorPage() {
           </div>
         </aside>
       </div>
+      {/* SH1400 — the form's own confirmation, over the plan for what this Publish makes live. */}
+      {publishTargets && (
+        <PublishPreviewDialog
+          postId={publishTargets.includes(pageOfFrame ?? "") ? pageOfFrame ?? publishTargets[0] : publishTargets[0]}
+          open
+          setOpen={(next) => {
+            if (!next) {
+              setPublishTargets(null)
+              setPublishGate(null)
+            }
+          }}
+          onConfirm={(override, redirect) => { void confirmPublish(override, redirect) }}
+          publishing={publishing}
+          gateRefusal={publishGate}
+        />
+      )}
     </div>
   )
 }

@@ -194,9 +194,10 @@ The editor saves on your console session, with no token to set up: one merge per
 PATCH /api/v2/post-unified/{id}     {"attrs": {"heading": "..."}, "publish": false}
 ```
 
-with the fields you changed in `attrs`, and `"publish": true` when you press **Publish**. It is
-held to the same permissions as the post's own form: you need write permission on the post to
-save, and publish permission as well to publish. A merge only writes the fields it names, so two
+with the fields you changed in `attrs`. **Publish** saves your changes the same way first, then
+shows what would go live and asks, exactly as the post form's Publish does; nothing is live until
+you confirm. It is held to the same permissions as the post's own form: you need write permission
+on the post to save, and publish permission as well to publish. A merge only writes the fields it names, so two
 curators editing different fields of one page do not overwrite each other.
 
 The merge can be made conditional. Reading a post answers an `ETag` for it as it is now. Send it

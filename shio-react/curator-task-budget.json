@@ -44,18 +44,18 @@
       "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
     },
     "change-headline-ue": {
-      "clicks": 2,
+      "clicks": 3,
       "keys": 1,
       "screens": 1,
-      "ms": 884,
-      "why": "SH1394: Ctrl+K, Pricing's own row (a page opens in the Universal Editor), the heading replaced the way the form task replaces its field, Publish, on one screen: two clicks fewer than the form. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319)."
+      "ms": 1055,
+      "why": "SH1394: Ctrl+K, Pricing's own row (a page opens in the Universal Editor), the heading replaced the way the form task replaces its field, Publish and its confirmation, on one screen: one click fewer than the form. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319). Publish asks with the form's own confirmation since SH1400, so the comparison is like for like."
     },
     "replace-image-ue": {
-      "clicks": 6,
+      "clicks": 7,
       "keys": 1,
       "screens": 1,
-      "ms": 1620,
-      "why": "SH1393: Ctrl+K, Pricing's own row, the image, Search in the panel, the file, Select, Publish: one click fewer than the form. It was blocked while the panel drew the image widget read-only (SH1037), and the widget showed an empty upload box because the page reports the element, not the file id."
+      "ms": 2069,
+      "why": "SH1393: Ctrl+K, Pricing's own row, the image, Search in the panel, the file, Select, Publish and its confirmation: the form's own cost. It was blocked while the panel drew the image widget read-only (SH1037), and the widget showed an empty upload box because the page reports the element, not the file id. Publish asks with the form's own confirmation since SH1400, so the comparison is like for like."
     },
     "preview-draft-ue": {
       "clicks": 1,
@@ -72,11 +72,11 @@
       "why": "SH1399: Ctrl+K, the page's Edit fields row, the description replaced, then Actions, Publish and the confirmation (P7). The field is metadata, drawn by no element, so the form was the only place it could be edited."
     },
     "change-description-ue": {
-      "clicks": 3,
+      "clicks": 4,
       "keys": 1,
       "screens": 1,
-      "ms": 1035,
-      "why": "SH1399: Ctrl+K, the page's own row, Fields, the description replaced, Publish: the form drawn beside the page and saved with its other changes, one click fewer than the form, whose Publish asks for a confirmation."
+      "ms": 1401,
+      "why": "SH1399: Ctrl+K, the page's own row, Fields, the description replaced, Publish and its confirmation: the form drawn beside the page and saved with its other changes, at the form's own cost. Publish asks with the form's own confirmation since SH1400, so the comparison is like for like."
     }
   }
 }
