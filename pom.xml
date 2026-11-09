@@ -32,7 +32,7 @@
         <!-- turing-java-sdk — Turing's indexing client (SH84). The same artifact Dumont's
              DumTuringIndexingPlugin indexes through, so Shio speaks the ecosystem's existing
              contract (TurSNJobItems → POST /api/sn/import) rather than a second one. -->
-        <turing.version>2026.3.6</turing.version>
+        <turing.version>2026.3.8</turing.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -116,7 +116,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.15</version>
+                <version>0.8.16</version>
             </plugin>
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
@@ -202,12 +202,12 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
-                <version>1.6.5</version>
+                <version>1.6.6</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.6.5</version>
+                <version>1.6.6</version>
             </dependency>
             <!-- SH939 — not a declaration, a pin. org.json arrives transitively through
                  turing-java-sdk -> turing-commons at 20260522; this holds it at the current
@@ -235,7 +235,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>33.7.2-jre</version>
+                <version>33.8.0-jre</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -255,7 +255,7 @@
             <dependency>
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
-                <version>1.23.2</version>
+                <version>1.24.1</version>
             </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>
