@@ -170,7 +170,11 @@ limit on the line `--decides` files, which is not that sentence at all. **`weigh
 derived from the commits that shipped them, so whether the line being written is one task
 or two is a question with an answer. An entry whose commit wrote several is named under
 `batched` and left out of the percentiles, so a squashed adoption import skews nothing.
-What comes back is the distribution and what was elided from it, the sample those
+What a commit carried that is **not** the work comes out of both axes and is reported as
+`carried`: `[history] incidental` names it, a directory with a trailing slash where the
+paths are a generator's to name, so a project committing its generated art is not sized by
+its generator. `git show` still counts them, which is what the row says so the figure stays
+checkable. What comes back is the distribution and what was elided from it, the sample those
 percentiles summarise being `weight --block <x> --records` and 95% of the payload. It ranks
 nothing and lands
 on no line — the size field is a non-goal. **`remaining <id>` is that read's mirror**: what
@@ -179,6 +183,13 @@ block in the rationale section, one `<pathspec> :: <regex>` per line. **`evidenc
 that same read with the sign flipped**: a `roadkeep-evidence` block names the sites that
 must *exist* for the task to be done, so what `remaining` counts down `evidence` counts
 up — and neither is a verdict, the pattern being your claim and the count the answer.
+A clause may end on a **comparison** — `<pathspec> :: <regex> :: <op> <number>`, the pattern
+capturing the value — for a deliverable that is a number rather than a presence: a
+saturation percentile, a frame time, a file size. The number is your project's own, written
+by whatever already computes it; this reads it and does the arithmetic, and opens nothing.
+It filters matches rather than judging the task, so every count means what it did. A match
+whose capture is not a number is reported as `unparsed` and never as a value that missed the
+bar — an `n/a` is a query that did not run over that line.
 Derived for the same
 reason and stored for none: the first commit that closes a site changes the answer, which a
 number on the line could not, and a `ship` deletes the query with the section that made the
@@ -228,7 +239,21 @@ held, expired or stale, oldest first, where each id went and where the registry 
 sidecar — which governed files a verb wrote and which nothing did, moving no baseline
 where the `Stop` hook states it once and consumes it; `show <id>` joins one line, its
 section and its paths, and on a ledger entry whose bullet **wraps** it prints every line
-that entry owns — which is the count `record amend --lines` asks you to have read;
+that entry owns — which is the count `record amend --lines` asks you to have read; a quoted
+token is a path where the tree has it, where its directory is one the repository knows, or —
+for a name with no directory at all, which is how an asset is written — where exactly one
+tracked file carries it, so a section naming five sprites names five artefacts and a
+`Config.load` in prose still names none;
+`show <id> <id> …` is that join over **several ids in one read**, which is what a task
+fanning out over related lines wants — the design is where each awaited artefact is named,
+and one call per design costs more than reading the prose file, which is the read this tool
+replaces. One id answers with the object it always did; several add `asked` and `views`, so
+the shape says which it is. An id in neither file **refuses the whole call**, each absent one
+carrying its own reason: a join that came back short is the failure being replaced. Where the
+project declares `[reads] show`, a join over it comes back with `views` null at exit 1, naming
+the longest leading run of those ids that fits — the bound `list` applies to itself, for the
+same reason: the transport that refuses an answer cannot tell roadkeep it did. One id is never
+refused by it.
 `show <id> --no-body` is the same join with the prose left out, keeping the line and where
 the prose is, which is what a caller placing a call wants and not the paragraph; `deps
 <id>` walks the graph both ways; `gaps` resolves an id in neither file against the commit
@@ -236,9 +261,13 @@ that removed it, and `unclosed` is that question pointed the other way — an **
 line whose work a commit already names, which is what a session that shipped the code
 and forgot the line leaves behind — a commit touching only governed files is *this tool
 writing* and is not counted, so an amended `why` or a corrected rationale never reads as
-work that landed; `origin <id> --why` reads it out of history, and `origin §<anchor>`
-answers the other end of a pointer — a rationale address somebody's prose still cites
-after a ship deleted the section, which no file records, so the three answers are the
+work that landed; `unvalidated [--block <x>]` is its mirror on the ledger — each shipped
+entry no person has left a `validate` verdict on, with the commit that shipped it, a report
+and never a gate, and `stats` carries the two counts. It lists nothing until `[validation]`
+asks, and then only what shipped from its `from`, or after the table was declared; `origin
+<id> --why` reads it out of history, and `origin §<anchor>` answers the other end of a
+pointer — a rationale address somebody's prose still cites after a ship deleted the section,
+which no file records, so the three answers are the
 commit that wrote it, the one that took it, and "searched and nobody ever wrote it", which
 is what a typo looks like. `anchors [--family <x>]` is that question about the
 **addresses**: which a heading declares now, which a ship retired while every entry citing

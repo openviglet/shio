@@ -45,8 +45,9 @@ Three rules keep it from ever making things worse, and the first is the **guard'
     every cached version whether or not the project uses any of them — so under a
     ``CLAUDE_CONFIG_DIR`` pointing elsewhere it stood down in favour of a plugin that was
     never loaded, and a hand edit of two governed files passed a session with a guard.
-  * **Never block a turn.** If no engine is found, every mode exits 0 and emits nothing. A
-    missing roadkeep must degrade to "unenforced", never to a broken session.
+  * **Never block a turn.** If no engine is found, every mode exits 0 and emits nothing but
+    one line at ``SessionStart`` saying so (RK1705). A missing roadkeep must degrade to
+    "unenforced", never to a broken session — and never to an unguarded one nobody was told of.
   * **Never reach the network.** The cache is used where something else populated it; this
     file does not clone. A hook that fetches code is a hook that runs code the repository
     did not commit, and the environment this exists for is the one that reviews it least.
@@ -431,7 +432,31 @@ def _guard(argv: list[str], payload: bytes | None) -> int:
         )
         if done.returncode == 0:
             return 0
+    if _event(payload) == "SessionStart":
+        sys.stdout.write(UNGUARDED)
     return 0  # unenforced beats broken, whether none was found or none of them ran.
+
+
+#: What a session is told when no engine answered its first hook (RK1705). Unenforced beats
+#: broken, and it need not be unsaid: measured on 2026-09-25, two adopters whose launcher found
+#: no engine lost the guard for hours, and nothing in the session knew hand edits of the
+#: governed files were no longer refused. `SessionStart` alone, whose stdout the harness hands
+#: the session as context: said once, where every other event would say it on every tool call.
+UNGUARDED = (
+    "roadkeep: no engine answered .claude/hooks/roadkeep-launch.py, so hand edits of the "
+    "governed files are not refused this session - set ROADKEEP_HOME to a roadkeep checkout, "
+    "or run `roadkeep install --committed` from one to refresh this launcher\n"
+)
+
+
+def _event(payload: bytes | None) -> str:
+    """The hook event a payload names, or `""` where it names none or does not parse."""
+    try:
+        read = json.loads(payload or b"")
+    except ValueError:
+        return ""
+    event = read.get("hook_event_name") if isinstance(read, dict) else None
+    return event if isinstance(event, str) else ""
 
 
 def _windows() -> bool:

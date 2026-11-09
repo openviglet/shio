@@ -48,3 +48,6 @@
 shio-app/src/main/resources/public/js/dist linguist-vendored
 shio-app/src/main/resources/public/css linguist-vendored
 docs linguist-vendored
+docs/ROADMAP.md merge=roadkeep
+docs/CHANGELOG.md merge=roadkeep
+docs/IMPROVEMENTS.md merge=roadkeep

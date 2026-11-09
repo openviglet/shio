@@ -394,4 +394,4 @@ description = "The open source, agent-ready CMS."
 icon = "📰"
 
 [install]
-wired = "0.2.473"
+wired = "0.2.511"

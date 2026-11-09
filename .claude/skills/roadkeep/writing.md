@@ -18,7 +18,7 @@ tool list rather than typing it: the whole write path and the reads a task needs
 — `add`, `block_add`, `block_drop`, `block_merge`, `declare`, `claim`, `scope`, `status`, `amend`,
 `restate`, `ship`, `retire`, `supersede`, `revise`, `defer`, `resume`, `dismiss`, `reopen`,
 `record_add`, `record_amend`,
-`record_move`, `record_drop`, `record_renumber`, `non_goal_add`, `non_goal_amend`,
+`record_move`, `record_drop`, `record_renumber`, `validate`, `non_goal_add`, `non_goal_amend`,
 `non_goal_drop`, `criterion_add`, `criterion_amend`, `criterion_drop`, `criterion_list`,
 `section_add`, `section_amend`, `section_move`, `section_drop`, `budget`,
 `brief`, `pick`, `list`, `deps`, `lint`, `config`, `govern`, `engines`, `merge_check` — same engine and same
@@ -29,10 +29,12 @@ surface works, and a verb this CLI has is never respelled into another act.
 `init`, `adopt` and `install` run *before* a project is governed, or on its wiring, and want
 the CLI — `declare` above is the one write on a configured tree, which is why it is served
 and they are not. **It takes two vocabularies**: a *role* writes that file and the `[files]`
-key governing it, and one of the two *opt-in tables* — `criteria`, `non_goals` — opens the
-list a verb refuses over, empty, which is what opting in means; `govern` is what tunes the
-numbers in it afterwards. Reach for it when a write refuses over an undeclared role or
-table, which is the refusal that now names this command rather than a hand edit. **And it is
+key governing it, and an *opt-in table* — `criteria` or `non_goals` — opens the list a verb
+refuses over, empty, which is what opting in means; `govern` is what tunes the numbers in it
+afterwards. `validation` opens a question instead: whether a person tried what shipped, asked
+from the next ship on, or from the entry its `from` names. Reach for it when a write refuses
+over an undeclared role or table, which is the refusal that now names this command rather
+than a hand edit. **And it is
 what the tool list is composed from**: a verb that is one role's whole grammar — `defer` and
 `resume` for the store, `supersede` and `revise` for the decisions file, `dismiss` and
 `reopen` for the dismissed one — is published only where that role
@@ -219,6 +221,8 @@ spelling the file shows or the bare id — the `✅` is derived and is not yours
 — and one of the two forms per call, never both. A dep renders *into* the line and the
 line's ceiling is shared with the `why`, so an addition that does not fit is refused
 **naming the dep** rather than the sentence that did not move.
+`amend <id> --drop-requires <word>` takes off a need that was met, and dropping the last
+clears the group — `--requires` states one and cannot state none.
 **The `symptom` is not one of `amend`'s fields** — it is the falsifiable claim the
 line is, so a different one is a different task — and where the premise itself turned out
 false, `restate <id> --symptom "…"` is that correction and the only door to it: the id,
@@ -355,7 +359,8 @@ differ are two deliveries under one id, not one recorded twice: `record drop <id
 <n>` if you have read both, or `record renumber <id> --line <n> --to <new>` to give one its
 own address — the new id derived, one past the highest in its family, where you pass none.
 To *fix* an entry use `record amend <id> --why "…"` (or `record amend <id> --part "<which
-half>"` on a partial) —
+half>"` on a partial), and a line whose id the grammar refuses — an adopted `**SH-0f**` —
+by the number a finding printed, `record amend --line <n> --body -`, the whole line on stdin —
 never drop-and-re-add, which moves the line to the end of its block and shows a reviewer a
 deletion where a word changed. On a ledger written before the tool, where a bullet
 **wraps**, that correction is refused until `record amend <id> --lines <n>` says how many
@@ -370,7 +375,14 @@ wrapped partial, and it is the reason neither needs a `<br>`. The block is not o
 its fields, because filing an entry elsewhere **is** a move: `record move <id> --to-block
 <x>` is that one, and it says so — the line is re-placed under the named heading, both
 positions are reported, and a heading nothing declares is refused. Reach for it when
-`ship` filed an entry under the block its roadmap line was wrongly under. `section add
+`ship` filed an entry under the block its roadmap line was wrongly under. **What a person
+saw is `validate <id> <verdict> --saw "…"`**: one line under the entry, the verdict out of
+`worked`, `failed` and `nothing to see` and the sentence yours. `ship --checked` is the
+session verifying its own criterion and this is somebody using the thing, so write it when
+they tell you, never on their behalf. A second verdict rewrites the first in place; a line
+still open, or retired, is refused. A failure owes a line, and `validate <id> failed --saw
+"…" --files "<symptom>"` files it as an open line in the entry's block, `--saw` its why, in the
+same transaction — both or neither. `section add
 <id> --title "…"` is that same write for a line that already exists, and takes prose on
 **stdin**, within the word budget, filled to the configured width, under the task's block
 — or, where the pointer is an outline anchor, under the section that anchor extends, since

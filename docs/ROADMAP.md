@@ -29,7 +29,7 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- ⏳ **SH1374** (deps: SH1369 ✅, SH1370 ✅, SH1371 ✅, SH1372 ✅, SH1373 ✅) **No acceptance check compares the product site with the revised hub contract** — The opt-in browser layer remains: 390/768/1440 in both themes, keyboard and menu focus, consent states, kept screenshots. → §XIX.22
+- 🛠 **SH1374** (deps: SH1369 ✅, SH1370 ✅, SH1371 ✅, SH1372 ✅, SH1373 ✅) **No acceptance check compares the product site with the revised hub contract** — The opt-in browser layer remains: 390/768/1440 in both themes, keyboard and menu focus, consent states, kept screenshots. → §XIX.22
 
 ## Priority
 
