@@ -408,7 +408,7 @@ ${report(misses)}`);
     assert.deepEqual(unnamed(vocabulary.batchOps), [],
       "SH1365: the server dispatches an op no page names, so an agent reading the op table learns "
         + "the capability does not exist and works around it. Add it to the table in "
-        + "agent-surface.md § A batch of ops.");
+        + "agent-surface.mdx § A batch of ops.");
   });
 
   test("SH1366: every MCP resource the server registers is named on a published page", () => {

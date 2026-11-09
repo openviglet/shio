@@ -76,7 +76,6 @@ const BASELINE = {
   "administration-guide.md": ["frontmatter-description", "release-relative"],
   "agent-builds-it.mdx": ["frontmatter-description"],
   "agent-safety.md": ["frontmatter-description"],
-  "agent-surface.md": ["fence-language", "frontmatter-description", "release-relative"],
   "blueprints.md": ["fence-language"],
   "configuration-reference.md": ["frontmatter-description"],
   "content-as-files.md": ["fence-language", "frontmatter-description"],

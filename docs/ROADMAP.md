@@ -20,7 +20,6 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 🛠 **SH1404** (deps: SH1402 ✅) **agent-surface.md runs 4,600 words with procedures, reference and rationale mixed under one heading** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1405** (deps: SH1402 ✅) **content-console.md runs 4,300 words and describes console surfaces as prose instead of tasks a curator does** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1406** (deps: SH1402 ✅) **website-development.md runs 4,000 words with template reference and build procedures interleaved** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1407** (deps: SH1402 ✅) **replication.md runs 3,800 words with no single walk-through from a source URL to a published replica** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3

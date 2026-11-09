@@ -1,0 +1,537 @@
+---
+title: The Agent Surface
+description: "The /api/v2/agent/** REST surface: discover an instance in one call, read and write by address, and verify the result without anyone looking."
+sidebar:
+  label: The Agent Surface (REST)
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+This page is for developers building their own agent, or wanting to know what the MCP tools
+call. `/api/v2/agent/**` is Viglet Shio's REST surface for a program that builds and maintains
+a site: after reading it you can discover an instance, read and write its content by address,
+and prove a change is correct. If you drive Viglet Shio from Claude Code or another MCP client, use the
+[MCP server](/docs/mcp/) instead: it offers the same capabilities as tools.
+
+![The agent loop: discover, plan, write, verify, then hand over](/docs/img/diagrams/shio-agent-loop.svg)
+
+---
+
+## Make a change and prove it
+
+The whole loop for one change, from an empty session to a verified draft.
+
+**Before you start:** an API key of `AGENT` scope (see [Authenticating](#authenticating)).
+
+<Steps>
+
+1. Learn what the instance can do:
+
+   ```http
+   GET /api/v2/agent/manifest?format=terse
+   ```
+
+2. Load the content model, the sitemap and the remembered conventions in one call:
+
+   ```http
+   GET /api/v2/agent/context?site=mysite&format=terse
+   ```
+
+3. Describe the change as a [batch of ops](#a-batch-of-ops) with `"dryRun": true`, and read
+   what it would change. Nothing is written.
+
+4. Send the same batch without `dryRun`, asking for the proof in the same call:
+
+   ```http
+   POST /api/v2/agent/batch?verify=true&digest=true
+   ```
+
+5. Read the attached lint report. Each finding carries a fix; apply it and repeat step 4
+   until the report is clean.
+
+</Steps>
+
+The change sits in the posts' drafts, and the report says it is consistent. Nothing is live
+until a publish by a credential that may publish, and with `include=links` the read hands a
+curator the links to review it (see [Handing a page to a person](#handing-a-page-to-a-person)).
+
+---
+
+## Authenticating
+
+An agent authenticates with an **API key of `AGENT` scope**, in a `Key` header:
+
+```http
+GET /api/v2/agent/manifest HTTP/1.1
+Key: 7f3c9a12b4e05d68af1c2903b
+```
+
+| The scope | Means |
+|---|---|
+| Writes | Only on `/api/v2/agent/**` and `/mcp`. On the Content Delivery API the token stays read-only |
+| Reads | Draft-preferred: an agent reads what it just wrote |
+| Publishing | A separate permission, `mayPublish` on the token. Without it a token can write and change nothing a visitor sees |
+
+The surface is stateless: no cookie, no CSRF token, no login round trip. A logged-in console
+session also reaches it, so you can explore it in a browser.
+
+---
+
+## Addresses
+
+Content is reached by **path**, not by id. Every call on this page takes these forms:
+
+| Form | Names | Example |
+|---|---|---|
+| `post:<site>/<friendly-url>` | one post | `post:mysite/blog/hello-world` |
+| `folder:<site>/<name-chain>` | one folder and, where a verb says so, its descendants | `folder:mysite/blog` |
+| `site:<name>` | a site | `site:mysite` |
+| `id:<uuid>` | anything, by its raw id | `id:9f8c…` |
+
+- **Writes take only `post:` and `folder:`** (plus `site:` on the site ops). `id:` is for
+  reads.
+- **A site's home page is `post:<site>/`**: the trailing slash with nothing after it.
+- `GET /api/v2/agent/resolve?address=…` turns an address into the object it names, for the
+  id-keyed endpoints that need one.
+
+---
+
+## One call instead of a session
+
+### The manifest
+
+```http
+GET /api/v2/agent/manifest
+```
+
+The instance describing itself: version, capabilities, limits, the endpoint index, and what
+this deployment *cannot* do.
+
+| Parameter | Effect |
+|---|---|
+| `include=` | Comma-separated sections, when you need only one |
+| `format=terse` | Plain text, roughly a third to a half fewer tokens. An unknown `format` is a `400` that lists the valid ones |
+| `If-None-Match:` | An unchanged manifest answers `304` and costs nothing |
+
+Its `startHere` routes by intent, one line per situation:
+
+```text
+picking up where a previous session left off → GET /api/v2/agent/changes?site=<site>&format=terse
+before deriving a convention, check this instance already worked it out → GET /api/v2/agent/context?format=terse
+building a section: check something already applies it → GET /api/v2/agent/blueprints?format=terse
+creating or changing content without holding a UUID → POST /api/v2/agent/batch with dryRun:true
+proving what you just wrote is correct without asking anyone → GET /api/v2/agent/verify?site=<site>&format=terse
+a call answered 5xx and you need to know what failed → GET /api/v2/agent/diagnostics?format=terse
+```
+
+### The context pack
+
+```http
+GET /api/v2/agent/context
+```
+
+The content model, the sitemap **by path**, and the conventions this instance has been told
+to remember. Every parameter is optional: for a single site, a bare `GET` is enough.
+
+| Parameter | Effect |
+|---|---|
+| `site=` | One site, by id or name; omit for every readable site |
+| `depth=` | How deep to walk the folder tree |
+| `budget=` | An estimated-token ceiling; `0` is unbounded |
+| `include=` | `instance`, `sites`, `model`, `sitemap`, `conventions`, plus `manifest` and `ops`, which must be named explicitly |
+| `from=` | Resume cursor: the `budget.truncatedAfter` of a previous call |
+| `format=` | `json` (default), `terse`, or **`agents-md`**: the same pack rendered as project agent instructions, for a harness that loads a file instead of making a call |
+| `ids=true` | Put the raw UUID back on every row. Off by default: rows are addressable without one |
+
+A pack narrowed with `include=` lists the sections it dropped in `omitted`. That is separate
+from `budget.truncated`, which means the instance reached its ceiling: ask for a bigger
+`budget` or continue with `from=`.
+
+In the sitemap, a post that is also live carries `published: true`; the field is absent when
+it is not.
+
+---
+
+## Reading
+
+| Call | Returns |
+|---|---|
+| `GET /agent/find` | Posts as **addresses and titles, never bodies**: filter by `site`, `type`, `folder` (matches beneath it too), `q` full-text, `limit`; walk past the cap with `after=<cursor>` |
+| `GET /agent/read` | Whole documents by address. `address` is **repeatable**, so several posts cost one call; `fields=a,b` projects to named fields; `include=impact` attaches a template's blast radius; `state=published` reads what is **live** instead of the draft |
+| `GET /agent/changes` | What changed, resumably. Without `since` you get a window and a starting cursor; with it, everything after that position, oldest first. The response's `cursor` is always the next `since` |
+| `GET /agent/memory` | What earlier sessions worked out. `PUT` remembers one note by `(scope, key)`, rewriting the note when the key exists, with the author taken from the credential; `DELETE` forgets one |
+| `GET /agent/diagnostics` | Recent **asynchronous** failures (webhook deliveries, image transforms, scheduled publishes, 5xx). The response says when it started collecting |
+
+Reads are **draft-preferred**, so you always see your own unpublished edits. Reading one
+address with and without `state=published` shows what will change when it is published;
+`shio diff --against published` is that pair as one command.
+
+`GET /agent/find?scheduled=any` lists only posts with a publish or unpublish schedule, with
+the instants; a range such as `scheduled=2026-09-15T00:00:00Z..2026-09-22T00:00:00Z` narrows
+it. `include=schedule` on `GET /agent/read` attaches the schedule to one post.
+`include=fields` on `GET /agent/changes`, or `fields` on `shio_changes`, names the fields each
+update and publish changed.
+
+### Which version a read returns
+
+`state` is one grammar on every read that returns a page:
+
+| Value | Reads | Accepted by |
+|---|---|---|
+| `draft` | the editable row | every read below |
+| `published` | the live row | every read below |
+| `rev:<n>` | the revision with the number `shio versions` shows, rendered through the page's present layout under a banner naming it | `GET /agent/render`, `GET /agent/editable`, `/preview/<site>/<url>` |
+
+`GET /agent/find` and `GET /agent/verify` take `draft` or `published` and list or lint only
+those rows: `/agent/verify?state=draft` is the report to read before a publish. `shio_find`,
+`shio_verify` and `shio_digest` take the same `state`, and so do `shio digest --state` and
+`shio verify --state`.
+
+A `state` naming a row the post does not have is a `404` that says which; it never falls back
+to the draft. A value outside the grammar is refused with the three spellings, and a list
+asked for a revision is refused with the read that serves one.
+
+The Content Delivery API reads the same `state` within what its token may see: `published`
+works with any token, while `draft` and `rev:<n>` need a **preview** token and are refused
+with `403` for a production one.
+
+### When you want to be told instead of asking
+
+`GET /api/v2/events` is the same change feed, held open as [Server-Sent
+Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events). Use it for a
+screen that stays open; an agent walking the feed with a cursor does not need it.
+
+| Parameter | Effect |
+|---|---|
+| `Last-Event-ID:` | Resume after that event: each event is one page of the feed, and its `id` is the cursor after it, so nothing written while disconnected is lost |
+| `since=` | The same, for a client that cannot set the header |
+| `site=` | One site |
+| `include=fields` | Name the fields each write changed |
+
+With neither `Last-Event-ID` nor `since`, the stream starts from now. It reads with **your**
+rights: an entry you may not read is withheld from your connection. Scheduled publishes
+report their outcome on it, a failure with the command that retries it, and a form
+submission arrives marked as one, with the title and summary its form collected.
+
+From a terminal, `shio changes --follow` holds the connection open, prints each change,
+reconnects if the connection drops and stops if the server refuses it. `--json` prints one
+line per event, and `--fields` names the fields each write changed.
+
+---
+
+## Writing
+
+### A batch of ops
+
+```http
+POST /api/v2/agent/batch
+Content-Type: application/json
+
+{
+  "dryRun": true,
+  "ops": [
+    { "op": "folder.upsert", "address": "folder:mysite/blog" },
+    { "op": "post.upsert",  "address": "post:mysite/blog/hello-world",
+      "type": "Article", "folder": "folder:mysite/blog",
+      "data": { "TITLE": "Hello world", "TEXT": "<p>First post.</p>" } }
+  ]
+}
+```
+
+N addressed ops, applied **atomically**: either all of them or none. `dryRun: true` reports
+exactly what would change and writes nothing; it is also how you obtain the `confirm` token a
+destructive op requires.
+
+The vocabulary is closed: an op not in this table is refused, and the refusal lists the ones
+that exist. `GET /api/v2/agent/context?include=ops` returns the same table from the server,
+one line per op with the keys each one takes.
+
+| Op | What it does |
+|---|---|
+| `site.upsert` | Create a blank site, or fill an empty `url`/`description`/`furl` on one that exists. `data.postTypeLayout` binds a post type to a Page Layout title, per key. `data.reindex: true` back-fills the search index. **Never replaces a value somebody set.** |
+| `site.delete` | Trash a site and every folder and post in it. Needs `confirm` |
+| `site.restore` | Undo a site trash, with its content. Addressed `site:<name>`: a trashed site keeps its name |
+| `folder.upsert` | Create a folder at that whole name chain, or confirm it is there |
+| `folder.move` | Rename or relocate a section. `to` is the whole new name chain, so its last segment is the new name. **No post's URL changes** |
+| `folder.copy` | Duplicate a section and everything under it, **as drafts**. `to` is the copy's own name chain; an occupied one is refused rather than numbered. Unlike a move, it may cross sites |
+| `folder.delete` | Trash a folder and everything beneath it. Needs `confirm`; use `folder.move` to rename |
+| `folder.restore` | Undo a folder trash, with its posts. Addressed `id:` |
+| `folder.acl` | Who may **edit** the folder and everything below it, replaced whole: `data.acl` is a list of `{group\|user\|role, permission}`. It governs the console and this surface, never who may read a delivered page |
+| `folder.visibility` | Who may **read** the folder's delivered pages: `data.visibility` is `public` or `members`, and `data.groups` the groups a members-only section is for (none means any signed-in user) |
+| `post.visibility` | The same reader gate on a single post |
+| `post.upsert` | Declare a post's whole state at that address. Keys the post type does not declare are **refused**; use `post.move` to change the address. `expect` makes the write conditional on the digest you read |
+| `post.move` | Change a post's URL, its folder, or both, keeping its id and history. A published post's live URL changes immediately |
+| `post.redirect` | Keep an old URL working after a move: `address` is the **old** path, `to` is where readers go. Unlike every other write it lands **published**, because a draft redirect routes nobody. `302` unless `data.permanent: true` |
+| `post.publish` | Publish the draft, or schedule it with an ISO-8601 `when`; `cancel: true` calls off a pending one. Needs a credential with `mayPublish` |
+| `post.unpublish` | Withdraw the published row; the draft stays. Takes `when` and `cancel` the same way, so a takedown can be dated and a live page stays up until then |
+| `post.delete` | Trash a post. Needs `confirm` |
+| `post.restore` | Undo a trash. Addressed `id:`, from `find?trash=true` |
+| `post.rollback` | Put an earlier version back: `revision` is a number from a read with `include=revisions`. It restores into the **draft** and never publishes; nothing is deleted, so what it replaced can be rolled forward to again |
+| `asset.meta` | Describe an image or file: `data.alt`, `data.caption`, `data.tags`. It **merges** (a blank value clears that key), where a `post.upsert` on the asset would replace its whole state and lose the file |
+| `note.add` | Leave a note on a page for a curator: `data.body`, and optionally `field`, `revision`, `parent` (to reply) and `kind` (`comment`, `request`, `reply` or `reviewed`) |
+| `note.resolve` | Close the note `data.note` names; `cancel: true` re-opens it |
+| `release.upsert` | Plan a release, a named set of posts in one site that goes live as one unit, addressed `release:<site>/<name>`; or confirm one exists. `data.description` is optional |
+| `release.add` · `release.remove` | Put the posts `data.posts` names into a release that has not run, or take them out |
+| `release.run` | Publish every post in the release in **one transaction**, now or at an ISO-8601 `when`; `cancel: true` calls off a scheduled run. Needs `mayPublish`, and `confirm` when it runs now (scheduling or cancelling only moves a date) |
+| `release.rollback` | Undo a release that went live: each page reverts to what it was, and pages the release published for the first time come down. Needs `confirm` and `mayPublish` |
+| `release.archive` | Hide a release from the listing; `cancel: true` brings it back. Not a delete: the record of what went live together stays |
+| `render.provision` | Create the `PageLayout`/`Region`/`Theme` post types this instance renders with, idempotently. **Takes no address**: it acts on the instance's model. `data.reconcile: true` also adds fields an older instance is missing; `data.types` installs vocabulary types by name |
+
+Every delete goes to the **trash** and has a restore beside it. On any of the three,
+`data.purge: true` removes instead of trashing: it frees the file bytes, fires the `DELETE`
+webhook, and there is no undo.
+
+:::note
+Run `render.provision` **once before writing a layout**. `post.upsert` cannot create a system
+post type, and until those types exist the preview route has nothing to compose.
+:::
+
+### Destructive ops need a confirm token
+
+A delete answers `428 Precondition Required` with a `confirm-required` problem carrying the
+token its own dry run produced. Pass it back as `confirm` on the batch. The token describes
+that deletion only, so it cannot approve a different one.
+
+`release.run` (when it runs now) and `release.rollback` take the same two steps, since they
+change what visitors see across a whole set. Their token counts the release's posts, so a post
+added between the dry run and the run makes the token stale.
+
+### Desired state
+
+```http
+POST /api/v2/agent/plan     # what would change; never writes
+POST /api/v2/agent/apply    # make it true, atomically
+```
+
+Where a batch says *do these things*, a desired-state document says *this is what the site
+should look like*:
+
+```json
+{
+  "site": "mysite",
+  "createSite": true,
+  "postTypeLayout": { "Article": "Article Layout" },
+  "folders": [ { "path": "blog" } ],
+  "posts": [
+    { "url": "blog/hello-world", "type": "Article",
+      "data": { "TITLE": "Hello world" }, "publish": true }
+  ],
+  "moves": [ { "from": "blog/old-url", "to": "blog/new-url" } ],
+  "prune": false
+}
+```
+
+| Key | Effect |
+|---|---|
+| `prune: true` | Also removes what the document does not mention, so a plan that would delete needs `confirm`, as a batch does |
+| `moves` | Records a rename as a move, rather than as a delete plus a create |
+
+An empty `changed` count from `plan` means the document and the server agree.
+
+---
+
+## Closing the loop without asking anyone
+
+Both write calls can return the proof with the write:
+
+| Parameter | On `batch` / `apply` |
+|---|---|
+| `?verify=true` | Attach the lint report for what this write touched |
+| `?digest=true` or `?digest=40` | Attach the two structural hashes for **every page this write affected**, which for an edit to a shared layout is every page rendering through it. Capped, because each row is a real render |
+
+Both are also endpoints of their own:
+
+```http
+GET /api/v2/agent/verify?site=mysite&checks=content,routes
+GET /api/v2/agent/render?address=post:mysite/blog/hello-world
+```
+
+`verify` returns a machine-readable report with a **fix per finding**. Scope a run with
+`site`, `folder`, `address`, `checks`, `limit` or `since=<cursor>`, so a loop re-checks only
+what changed. The check groups:
+
+| Group | Checks |
+|---|---|
+| `content` | Fields, references, assets and friendly URLs are internally consistent |
+| `routes` | Every published URL resolves and links land. Reports `url-orphaned`, an error, for an address that no longer answers and is still linked from a published page; its fix is a `post.redirect` (see [Keeping an old address answering](/docs/content-lifecycle/#keeping-an-old-address-answering)). With search indexing on, `index-unroutable` warns about a site whose published content is routed to no search index |
+| `diagnostics` | The asynchronous failures that `GET /agent/diagnostics` lists |
+| `a11y` | Reads the rendered pages: `heading-skip`, `lang-missing`, `link-no-text`, `landmark-missing` and `form-label-missing`. Asked for by name, since it renders |
+| `delivery` | Fetches the published pages to prove they are served. Enabled by an operator setting, not by a caller |
+
+`render` returns a page's structural digest, heading outline, landmarks, link and image
+inventory with alt text and word count, plus an appearance hash. The two hashes are separate
+values, so a restyle and a structural break are told apart. It digests the markup Viglet Shio holds
+and needs no front end running; digesting a live delivery URL instead (`url=`) is off unless
+an operator turns it on.
+
+Whether a page is findable has its own read. `include=index` on `/agent/read` says whether
+indexing is on, which search site the page belongs in, whether it is indexed, and the last
+indexing failure recorded against it. `GET /api/v2/agent/index` (`shio://index`, and a card in
+the console) is the whole routing table: every site, the search site it feeds, and how many
+published pages it has.
+
+---
+
+## What a curator could change
+
+```http
+GET /api/v2/agent/editable?address=post:mysite/blog/hello-world
+```
+
+```json
+{
+  "address": "post:mysite/blog/hello-world",
+  "source": "rendered",
+  "fields": [
+    { "address": "post:mysite/blog/hello-world", "field": "title", "region": "main" },
+    { "address": "post:mysite/blog/hello-world", "field": "html",  "region": "main" }
+  ],
+  "regions": ["main", "sidebar"]
+}
+```
+
+The fields a curator can edit on the rendered page. It reads the **rendered page**, not the
+content model, through the same annotations the [Universal Editor](/docs/universal-editor/)
+uses, so a front end of your own that emits them answers this call too. Each entry is an
+address and a field name that `post.upsert` takes as they are.
+
+| Field | Means |
+|---|---|
+| `source: rendered` | The page composed; an empty `fields` means nothing on it is annotated |
+| `source: content` | The page does not render yet (no layout bound, or no friendly URL), the normal state of a site mid-build |
+| `regions` | Every region the page declares, including empty ones, where content can go |
+
+### Which console screen is which call
+
+`shio surfaces` lists each console screen and the agent call that does the same job:
+
+```bash
+shio surfaces
+```
+
+```text
+shio surfaces: 17
+content:
+  sites                /bento/content
+    browse a site's folders and posts
+    → tool shio_find
+administration:
+  admin                /bento/admin
+    the administration hub
+    ✗ navigation: a landing page listing the surfaces below it, which is a way of getting
+      somewhere rather than a capability
+```
+
+Every screen is answered by a `tool`, an `endpoint` or an `op`, or carries the reason it is
+not: `navigation`, `operator-only`, `rest-only`, `chrome`, `accessibility`, `cache`,
+`preference`, `contract-leg`, or `gap` for one that is missing. The same list is
+`include=surfaces` on the manifest and `shio://surfaces` over MCP.
+
+### Handing a page to a person
+
+A read carries the two links a handoff needs when you ask for them with `include=links`:
+
+```http
+GET /api/v2/agent/read?address=post:mysite/blog/hello-world&include=links
+```
+
+```json
+{
+  "address": "post:mysite/blog/hello-world",
+  "curatorUrl": "http://localhost:2710/bento/content/post/4f1c…",
+  "previewUrl": "http://localhost:2710/mysite/blog/hello-world"
+}
+```
+
+`shio_read` takes `links`, a batch takes `links: true` for the whole run, and a publish
+answers with `curatorUrl` on each change.
+
+---
+
+## Errors are instructions
+
+Every 4xx is an RFC 9457 problem document that says what to do next:
+
+```json
+{
+  "type": "https://shio.viglet.com/errors/unknown-field",
+  "title": "Field 'HEADLINE' is not declared by post-type 'Article'",
+  "status": 400,
+  "fix": "Use one of the declared fields, or add HEADLINE to the post-type first.",
+  "allowed": ["TITLE", "TEXT", "ABSTRACT", "HERO"],
+  "didYouMean": "TITLE",
+  "example": { "op": "post.upsert", "address": "post:mysite/blog/hello-world", "data": { "TITLE": "…" } }
+}
+```
+
+| Member | Carries |
+|---|---|
+| `fix` | The next move, in a sentence |
+| `allowed` | The values that would have been accepted |
+| `didYouMean` | The nearest valid value |
+| `example` | A request that would succeed |
+
+The same shape answers outside this surface:
+
+- **A field an op does not take**, a misspelled `cancel` say, is refused with
+  `undeclared-op-field`, the op's index and the nearest valid name. The op does not run.
+- **A rejected credential.** `401` means no usable credential, `403` one that authenticated
+  and does not reach this path. The `fix` names the credential the path wants (a `FORM` token
+  for `/cda/form`, an `AGENT` token for the agent surface and MCP, a CDA token for the
+  Content Delivery API and GraphQL, a console session elsewhere) and the call that mints one.
+- **An unknown post type name.** `GET /api/v2/post-type/Nope` answers `404` with `allowed`,
+  `didYouMean` and a `fix`.
+
+---
+
+## What a call costs
+
+Responses on this surface carry **measured size budgets**, enforced in CI. Three levers are
+yours:
+
+| Lever | Effect |
+|---|---|
+| `format=terse` | Plain text, roughly a third to a half fewer tokens |
+| `If-None-Match:` | On every read that supports it, an unchanged answer is a `304` and costs nothing |
+| `fields=` / `include=` | Ask for less |
+
+The `X-Shio-Est-Tokens` header reports the estimated cost of what you were sent.
+
+---
+
+## Endpoints that do not exist
+
+| Not there | Use instead |
+|---|---|
+| `POST /api/v2/post` | `post.upsert` on `/agent/batch`, or `/api/v2/post-unified` |
+| `DELETE /api/v2/object/{id}` | Delete by type: `/api/v2/post-unified/{id}` or `/api/v2/folder/{id}`, or `post.delete` / `folder.delete` here |
+| A console post type controller (`/api/v2/post/type`) | `/api/v2/post-type/**`: post types are **one name-keyed surface** |
+| `GET /agent/impact` | `include=impact` on `/agent/read` |
+| An upload of **bytes** on this surface | The static-file API; then reference the file by address. `post.upsert` takes JSON |
+
+---
+
+## How the surface relates to the console and the delivery API
+
+The agent surface is a shape over the same content the Content Delivery API and the console
+read, not a third contract: nothing here can do something the console cannot. What it adds is
+what a program needs and a person does not: one call to learn the instance, addresses instead
+of ids that would have to survive between calls, a closed op vocabulary that refuses what it
+does not know, and answers that carry their own next step.
+
+The guards are what keep an agent's credential from being more than a curator's. Its writes
+stay on this surface, where they land as drafts; a destructive op needs a token from its own
+dry run, so an agent cannot approve its own deletion; and publishing is a permission the token
+has to be given.
+
+---
+
+## Related pages
+
+| Page | Description |
+|---|---|
+| [MCP server](/docs/mcp/) | The same capabilities as tools, for Claude Code and other MCP clients |
+| [Pages, Layouts & Regions](/docs/website-development/) | What `render.provision` creates, and how a page is composed |
+| [Content Modeling](/docs/content-modeling/) | Post types and the fields `post.upsert` is checked against |
+| [Content Delivery API](/docs/headless/content-delivery-api/) | The read contract this surface is a shape over |
+| [Security](/docs/security/) | Token scopes, authentication and CSRF |
