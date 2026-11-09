@@ -1,0 +1,409 @@
+---
+title: The content console
+description: "Find, edit, move, select and restore content in the Viglet Shio console, and read what the assistant dock reports."
+sidebar:
+  label: The content console
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+This page is for curators: the people who review what an agent built and correct it. It covers
+the everyday tasks in the Viglet Shio console (finding a post, editing it, moving it, acting on
+many items at once, getting something back from the trash) and then describes each screen
+those tasks use.
+
+The console is at `/bento/content` on your instance. Addresses under `/console/**` redirect to
+the same screen under `/bento`, keeping the query string and anchor.
+
+---
+
+## Find a post
+
+<Steps>
+
+1. Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd>, or <kbd>/</kbd> when you are not typing
+   in a field.
+2. Type two letters or more of the post's title.
+3. Choose the post. A page opens in the [Universal Editor](/docs/universal-editor/); anything
+   else opens in its form.
+
+</Steps>
+
+To browse instead, open **Content**, choose a site, and click through its folders. To narrow a
+folder, type in the filter bar above the list (see [Filtering the list](#filtering-the-list)).
+
+## Edit a post
+
+<Steps>
+
+1. Open the post from the [content browser](#the-content-browser) or the command palette.
+2. Change the fields. A field marked `*` is required.
+3. Choose **Save** to stay on the form, or **Save and Close** to go back to the folder.
+
+</Steps>
+
+Saving writes the post's **draft**. Publishing is a separate act with its own permission: see
+[Letting an agent in](/docs/agent-safety/). If the server refuses the save, the reason and the
+fix appear in the [assistant dock](#the-assistant-dock) (see
+[When a save is refused](#when-a-save-is-refused)).
+
+## Copy or move items
+
+<Steps>
+
+1. In the content browser, select the items, or point at one row.
+2. Choose **Copy** or **Move**.
+3. In the dialog, walk down from the site root to the destination folder and confirm.
+
+</Steps>
+
+To copy an item into the folder it is already in, choose **Clone** on its row. What happens to
+names and URLs is in [Copy and move](#copy-and-move).
+
+## Act on several items at once
+
+<Steps>
+
+1. Open the folder and choose **Select** in the **⋯** menu.
+2. Choose what to select: **Folders**, **Content**, **Everything**, **Invert Selection** or
+   **Nothing** (see [Selecting more than one thing](#selecting-more-than-one-thing)).
+3. Choose **Action in Batch**, then the action.
+4. Read the plan, one row per item, and choose **Carry it out**.
+
+</Steps>
+
+Items the server refused stay selected, with the reason beside each, so you can deal with them
+and try again.
+
+## Get something back from the trash
+
+<Steps>
+
+1. Open **Content**, then **Trash**.
+2. Find the deletion. A deleted folder is one row.
+3. Choose **Restore**.
+
+</Steps>
+
+The deletion's items are back where they were. To remove an item for good, choose **Delete
+permanently** in its row's **⋯** menu instead; that cannot be undone.
+
+## Describe an image
+
+<Steps>
+
+1. Open **Content**, then **Media Library**.
+2. Select the image.
+3. Fill in **Alt text**, and **Caption** and **Tags** if you need them.
+
+</Steps>
+
+---
+
+## Finding your way
+
+| Part | What it does |
+|---|---|
+| **Navigation rail** | Down the left: **Home** and the two areas, **Content** and **Administration**. Each area opens its **hub**, every screen of that area as a tile in small groups (Content's *Library*, *Publishing* and *Content model*; Administration's *Access*, *Agent and audit*, *Integrations* and *This instance*) |
+| **Command palette** | <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> from anywhere, or <kbd>/</kbd> outside a field. Lists every screen and searches their descriptions as well as their names, so *restorable* finds the Trash and *credentials* finds API Tokens. From two letters it finds content too, and a page's row is followed by an **Edit fields** row for its form |
+| **Page hero** | The top of each page: its title and its way back. A folder or a post shows its location instead, as a **trail** of links above the title (*Sites › VigR3 › Home*) |
+| **Header** | The Viglet Shio name, which goes home; the search button, which opens the palette; and the theme button: **Light**, **Dark** or **System**, remembered in this browser and used by the login page too |
+
+From the keyboard, the first <kbd>Tab</kbd> on any page reaches **Skip to content**, which jumps
+past the rail and the header. After you move to another page, focus lands on its title, so a
+screen reader announces where you arrived. A button that is working keeps its focus and is
+announced as busy until it finishes.
+
+---
+
+## The assistant dock
+
+In the bottom-right corner is the **assistant dock**: the Viglet mascot and, beside it, a
+one-line caption saying how things ended. Click the mascot to open the dock and read its
+reports. Each report can be dismissed, and the count on the collapsed dock is what you have not
+read. The caption is announced to screen readers once; the mascot is decorative.
+
+| Report | Says | Actions |
+|---|---|---|
+| Your saves and actions | The result of a save, a publish or a delete | |
+| A refused save | The server's explanation and what to do about it | **Go to \<field\>** when it is about one field; **Use "\<suggestion\>"** when the server suggests a correction, which fills the field without saving |
+| Agent runs | While an agent writes, its name and the site; when the run goes quiet, the changes waiting for your review, or a summary. Runs already waiting when you sign in are reported once | **Open in review**, **See the activity** |
+| Scheduled publishing | A failure with its reason, or the page and when it went live. A failure while no console was open is reported the next time you open one | **Open the page**, **Retry now** |
+| Form submissions | The submission's title and summary; several arriving together are one report, which opens the newest | **Open the submission**, **Move to trash** |
+
+### Choosing what the dock reports
+
+Open the dock and choose the cog in its panel to reach **What the dock reports**. It has one
+switch per kind (your own saves, agent runs, scheduled publishing, form submissions) and
+**Animate the mascot**, which stops only the motion: reports still appear, all at once, and a
+screen reader still announces them. The choices are kept on your account, so they follow you to
+another browser.
+
+Failures are not a switch: a report about something that went wrong always reaches the dock.
+The Activity trail keeps every event whatever the dock shows.
+
+### Asking the connected agent
+
+Viglet Shio does not run a model of its own. When an agent is connected to your instance (a
+run has started in the last few hours) and you are on a page or a folder, the dock opens into a
+chat. What you type reaches that agent as a request about the page you are on, and its answer
+appears in the dock; an answer that arrives while the dock is closed counts as unread. With no
+agent connected, or no page open, the dock stays a status light.
+
+When the agent answers by changing the page, the answer comes with **Open the change**, which
+opens that run in the review queue, and **Approve and publish**, the same approval as in the
+review queue with the same permissions. To reject a change, open it in the review queue, where
+you can say why.
+
+---
+
+## The content browser
+
+A site is a tree of **folders** holding **posts**. Click a folder to go in; the **path** above
+the folder's title, from the site down, takes you back out, and the folders around this one are
+listed beside it.
+
+The folder's counts sit under its title, and the controls are on one row above the list:
+
+| Control | Does |
+|---|---|
+| Filter bar | Narrows the list (see below) |
+| **More filters** | The rest of the filters |
+| View buttons | Switch between table, list and grid |
+| **⋯** | A post of another type, **New Folder**, **Import**, **Search in this folder**, **Sort** and **Select** |
+| **Action in Batch** | Appears once something is selected |
+| **New \[Post Type]** | The one filled button: a post of the type you used last, remembered per browser |
+
+Each row shows the item's name, when it changed and its type, and, on hover, the actions for
+that item: view, edit, clone, copy, move, delete.
+
+### Filtering the list
+
+Type in the filter bar's search field to narrow the folder to items whose text matches, or press
+<kbd>/</kbd> anywhere on the page to jump to it.
+
+| Filter | Narrows to |
+|---|---|
+| **Post type** | One post type this instance has |
+| **State** | Draft or published |
+| **Language** | One language; shown only when the folder holds more than one |
+| **Changed** | A date range |
+| **More filters** | Who created or last changed an item, and whether to include the folders below this one |
+
+Each active filter shows as a chip under the bar; remove the chip to remove the filter. Every
+filter is part of the page's address, so a filtered view is a link you can send, and the
+filters are the ones `shio find` takes.
+
+**Search** has the same bar, with a **Site** menu when there is more than one site; a filter
+alone is a search, so choosing *Draft* with no text lists every draft. **The trash** has it too,
+by name and by post type.
+
+### Three ways to look at a folder
+
+| View | Shows |
+|---|---|
+| **Table** (the default) | Each item's type, state, language and when it last changed. Sorts by any column header, hides columns you do not need (remembered in this browser) and draws only the rows on screen. A post's title can be edited in place with the pencil; if somebody else changed the page while you typed, the save is refused and asks you to reload |
+| **List** | One row per item |
+| **Grid** | One card per item |
+
+The view is part of the address, like the filters. On a wide screen, the folder's ancestors and
+its own sub-folders sit beside the listing, each one a link.
+
+### The listing is paged, and folders are not
+
+Posts arrive **50 at a time**; a folder's sub-folders all arrive at once. The counter above the
+list is the folder's real post count, not the rows loaded, so a folder can say 480 while you
+see 50. **Select** › **Content** acts on all 480.
+
+---
+
+## The post form
+
+Opening a post gives you a form generated from its **post type**: the fields somebody modelled,
+in the order they modelled them.
+
+| Part | What it holds |
+|---|---|
+| Header | The post's title, the trail of folders it sits in, and a line with its type, its language and whether you are editing the draft or the published row. **Actions** holds every verb that commits or leaves; **Preview** and the language menu sit beside it |
+| Fields | Each is its label, its control and a help line; hover the label to see which widget draws it (see [Content Modeling](/docs/content-modeling/)). `*` marks a required field. Fields may be grouped into tabs |
+| Sections | A page's sections, by title, in the order the page renders them. Move one with its arrows, remove it with its ×, and add one by typing part of its title, or pasting its friendly URL, in the box below |
+| Save bar | Sticky at the top: the post's title, its type, its field count and whether you may publish it. **Save** keeps you on the form; **Save and Close** returns to the folder |
+
+Every field has a name a screen reader announces, says what it requires, and can be reached from
+the keyboard. Clicking a label puts the cursor in its field.
+
+### Previewing before you save
+
+The editor has two panes: the fields and the post's history on the left; the live preview, the
+page's insights and its notes on the right. Each scrolls on its own. Drag the divider to change
+the width, remembered in this browser. On a phone a switch at the top moves between **Fields**
+and **Live preview**, keeping what you typed.
+
+The **Preview** card renders the page from the values in the form, unsaved ones included, and
+saves nothing. It refreshes when you open the post, when you save and when you press
+**Refresh**; turn on **Live** to re-render after each pause in your typing. It is off by default
+because each render composes the whole page on the server. Buttons above the frame show phone,
+tablet and desktop widths.
+
+Only a post type the site renders as a page can be previewed: one bound to a layout in the
+site's post type layouts (`postTypeLayout`). A menu, a section or a theme says it has no page
+layout on this site; bind a layout to the type on the site to preview it.
+
+To see every open note across your sites, choose the **Open notes** tile on the home page, or
+**Content › Open notes**. Each row names the page and field, who left the note and when, and
+**Resolve** closes it without opening the page.
+
+### Leaving with unsaved work
+
+While the form holds unsaved changes, the console asks before they are lost: closing the tab,
+reloading or leaving the site gets the browser's question, and moving anywhere inside the
+console (the rail, the command palette, a link, Back, or **Cancel**) gets the console's.
+Changing a filter or a view on a list never asks. The Universal Editor asks the same way, naming
+how many edits are pending.
+
+### Asking the agent for a value
+
+When an agent is connected, text fields (titles, summaries, body text) show **Ask the agent**.
+It opens a short prompt, filled in from the field's name, that you can edit before sending. The
+agent answers in the [assistant dock](#the-assistant-dock), and **Apply to \<field\>** puts the
+value into the form as an unsaved edit, as if you had typed it.
+
+### When a save is refused
+
+A refused save gives the server's reason and what to do about it: the fix, the name you probably
+meant, or the values that are allowed. When the refusal is about one field (a URL another live
+post already uses, say), that field is marked in red with the message under it until your next
+save. The report stays in the [assistant dock](#the-assistant-dock) until you read it, with
+**Go to \<field\>** and **Use "\<suggestion\>"**. An agent receives the same refusal over the
+API.
+
+---
+
+## The media library
+
+**Content › Media Library** holds every file: images, video, audio, documents and archives.
+
+| Task | How |
+|---|---|
+| Upload | Pick the site, then drag files onto the page or choose **Upload**. A file added through a **File** field on a post lands here too |
+| Browse | As a grid or a list; filter by category (Images, Videos, Audio, Documents, Archives, Other) or search by name |
+| Share | **Copy URL** copies the file's public URL; **Download** fetches it |
+| Move, copy, delete | Select several files and choose the action. A media delete is **not** the reversible trash, and its confirmation says so |
+
+Each file shows its type, size, folder, upload date and, for images, its dimensions. Selecting
+one opens its details:
+
+| Field | Holds |
+|---|---|
+| **Alt text** | A description of the image, for accessibility and search engines |
+| **Caption** | Optional |
+| **Tags** | Type one and press <kbd>Enter</kbd> |
+| **Used in** | The content that references the file, or *Not referenced by any content*. Check it before deleting |
+
+Alt text, caption and tags are declared fields of the **File** post type, beside the path,
+checksum, size and image dimensions stamped on upload, so they also appear when the file is
+opened as a post and when it is read over the API.
+
+---
+
+## Copy and move
+
+A **copy** creates new items; a **move** relocates the same ones. **Clone** is a copy into the
+folder the item is already in.
+
+### What a copy does to names
+
+A copy takes names that are free. Cloning `Home` at `/home` gives `Home (2)` at `/home-2`, and
+copying a folder renames the folder the same way. A **title** is unique within its folder and a
+**URL** within the site, so a copy of `Home` into another folder of the same site keeps the
+title and gets a numbered URL.
+
+### Copying a folder copies its files
+
+Each copied file gets its own stored bytes, so deleting an image from the original folder leaves
+the copy's image working.
+
+### What a move does to names
+
+A move keeps the post's URL, since that URL may be live and linked from elsewhere; a post with
+no URL yet gets one. If the destination site already has something at that URL, the move is
+refused with an error naming what is in the way. It is never renamed.
+
+### What the dialog will not let you do
+
+You cannot move or copy a folder into itself or into anything inside it. Those folders appear in
+the picker greyed out, and the confirm button says why it is disabled.
+
+### Permission is checked at both ends
+
+| Action | Needs |
+|---|---|
+| Move | Write permission on the destination and on every item moved |
+| Copy | Write permission on the destination and read permission on every source |
+
+The check covers the whole selection before anything changes: a batch you may only partly act on
+changes nothing. The agent surface applies the same rule.
+
+---
+
+## Selecting more than one thing
+
+| Choice in **Select** | Selects |
+|---|---|
+| **Folders** | Every folder here. Folders are never paged, so this is all of them |
+| **Content** | Every post that matches, not only the 50 on screen; the rest are loaded first |
+| **Everything** | Both of the above |
+| **Invert Selection** | The rows currently loaded, inverted |
+| **Nothing** | Clears the selection |
+
+**Content** and **Everything** act on the whole folder, so on a folder of 480 posts the delete
+dialog says 480. **Invert Selection** acts on the screen only. The menu works the same in every
+view; the table's checkboxes, its count and **Clear selection** show and act on the same
+selection.
+
+A selection stops at **1000 items** and says how many of how many it took. The number in the
+confirmation dialog is always the number that will be acted on.
+
+Publishing, unpublishing or deleting a selection first shows the plan, one row per item, marked
+**added**, **removed**, **changed** or **unchanged**; a changed row names the change, such as
+*published* or *moved*, and an item the server would refuse is marked **refused** with the reason
+and the fix. **Carry it out** runs the plan as shown. A batch delete then reports what was deleted, not
+what was selected: refusals are listed with their reasons, the refused rows stay selected, and
+the list stays on the page you were on.
+
+---
+
+## Form submissions
+
+**Forms**, in the rail, lists what arrived through one site's form, newest first, with **Move to
+trash** on each row. Above the list is where that site's form sends things: the folder, the post
+types it invites, the browser origins it accepts, and the switch that turns it on. How a site
+renders a form and issues its token is in
+[website-development § Forms](/docs/website-development/#forms).
+
+## The trash
+
+Deleting a post or a folder moves it to the trash; nothing is removed until it is deleted
+permanently.
+
+| | Behaviour |
+|---|---|
+| Deleting a folder | Trashes everything beneath it, every post and sub-folder, as one deletion |
+| Trashed items | Gone from the browser, from search and from the Content Delivery API: to a reader the site behaves as though they are gone |
+| The trash page | One row per deletion: a deleted folder is one row, since the deletion is what you would undo |
+| **Restore** | Puts back exactly what that deletion removed. Items already in the trash before it stay there |
+| **Delete permanently** | In the row's **⋯** menu. Removes the content, cleans up its uploaded files and tells webhook subscribers it is gone. No undo |
+| Expiry | None: items stay until somebody deletes them permanently |
+| Deleting a **site** | Deletes permanently. There is no undo at site level |
+
+Every delete, restore and permanent delete is attributed to whoever did it and recorded in the
+activity history.
+
+---
+
+## Related pages
+
+- [Content Modeling](/docs/content-modeling/): the post types the form is generated from
+- [Letting an agent in](/docs/agent-safety/): drafts, publishing, the review queue
+- [Universal Editor](/docs/universal-editor/): editing on the rendered page itself
+- [Administration](/docs/administration-guide/): the console's admin and configuration screens

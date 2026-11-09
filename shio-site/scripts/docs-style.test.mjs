@@ -79,7 +79,6 @@ const BASELINE = {
   "blueprints.md": ["fence-language"],
   "configuration-reference.md": ["frontmatter-description"],
   "content-as-files.md": ["fence-language", "frontmatter-description"],
-  "content-console.md": ["frontmatter-description", "heading-sentence-case"],
   "content-i18n.md": ["fence-language", "frontmatter-description"],
   "content-lifecycle.md": ["frontmatter-description"],
   "content-modeling.md": ["frontmatter-description"],
