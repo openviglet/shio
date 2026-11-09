@@ -24,7 +24,9 @@ import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
+import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.tenant.ShTenantFilter;
+import com.viglet.shio.tenant.ShVigletTenantResolver;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -265,6 +267,20 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             response.setHeader("Retry-After", Long.toString(decision.retryAfterSeconds()));
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Rate limit exceeded\"}");
+            return;
+        }
+
+        // SH1378 — the tenant header is a person's way to name a tenant. A token carries its own,
+        // so a header naming another is refused rather than ignored: silently serving the token's
+        // tenant would answer a question the caller did not ask.
+        String namedTenant = request.getHeader(ShVigletTenantResolver.TENANT_HEADER);
+        String ownTenant = apiToken.getTenantId() != null ? apiToken.getTenantId() : ShTenantContext.DEFAULT_TENANT;
+        if (namedTenant != null && !namedTenant.isBlank() && !namedTenant.trim().equals(ownTenant)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"An API token carries its own tenant, '" + ownTenant
+                    + "'; drop the " + ShVigletTenantResolver.TENANT_HEADER
+                    + " header or issue a token in the tenant it names\"}");
             return;
         }
 

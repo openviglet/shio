@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.viglet.core.tenancy.VigletTenantResolver;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -32,6 +33,8 @@ import jakarta.servlet.http.HttpSession;
  *       {@link VigletTenantResolver.Resolution#trusted() trusted}, so the shared
  *       gate skips the per-user membership check (the token authorizes delivery to
  *       its tenant); a suspended tenant still blocks;</li>
+ *   <li>the {@value #TENANT_HEADER} header, for a person credential only (SH1378) —
+ *       membership-checked like the session's;</li>
  *   <li>the session attribute {@link ShTenantFilter#TENANT_SESSION_ATTR} (set by
  *       {@code POST /tenant/{name}/switch} and {@code /impersonate});</li>
  *   <li>the OIDC/OAuth2 {@code workspace_id} claim.</li>
@@ -51,6 +54,13 @@ public class ShVigletTenantResolver implements VigletTenantResolver {
 
     private static final String WORKSPACE_ID_CLAIM = "workspace_id";
 
+    /** SH1378 — the per-request tenant a session-less person sends. */
+    public static final String TENANT_HEADER = "X-Shio-Tenant";
+
+    private static boolean isApiToken(Authentication authentication) {
+        return authentication != null && authentication.getDetails() instanceof ShApiTokenContext;
+    }
+
     @Override
     public Resolution resolve(HttpServletRequest request, Authentication authentication) {
         // A CDA token resolved its own tenant in ShApiTokenFilter — token-scoped
@@ -58,6 +68,15 @@ public class ShVigletTenantResolver implements VigletTenantResolver {
         Object tokenTenant = request.getAttribute(ShTenantFilter.TENANT_REQUEST_ATTR);
         if (tokenTenant instanceof String tenant && StringUtils.hasText(tenant)) {
             return Resolution.trusted(tenant);
+        }
+        // SH1378 — a person with no session (a device token, HTTP Basic) names the tenant per
+        // request. Never trusted: the shared gate checks active membership and suspension exactly as
+        // it does for a session's switch. An API token never reaches here with the header, because
+        // ShApiTokenFilter refuses one naming a tenant other than its own; one without a tenant of
+        // its own is ignored here rather than read as a person.
+        String headerTenant = request.getHeader(TENANT_HEADER);
+        if (StringUtils.hasText(headerTenant) && !isApiToken(authentication)) {
+            return Resolution.of(headerTenant.trim());
         }
         // An explicit tenant switch / impersonation is held on the session.
         String sessionTenant = sessionTenant(request);

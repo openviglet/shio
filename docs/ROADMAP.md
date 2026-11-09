@@ -27,8 +27,7 @@
 ## Block F — Market positioning / bold bets
 
 - 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
-- 📋 **SH1378** (deps: —) **A person signed in without a session cannot create or choose a tenant: signup is 403, every call lands in the default** — A device token and the CLI's HTTP Basic both hold no session, and the tenant the console keeps on one has no way to reach them. → §VI.12
-- 📋 **SH1379** (deps: SH1378) **A device-token caller cannot mint an AGENT token for its tenant: api-token answers 403 without a session** — The phone's backend runs the agent with its tenant's AGENT token; a person may mint one without a session, a token never may. → §VI.13
+- 📋 **SH1379** (deps: SH1378 ✅) **A device-token caller cannot mint an AGENT token for its tenant: api-token answers 403 without a session** — The phone's backend runs the agent with its tenant's AGENT token; a person may mint one without a session, a token never may. → §VI.13
 - 📋 **SH1381** (deps: —) **A session-less 403 names five fixed agent ops, not the one covering the refused route, so a restore misses post.rollback** — A device token refused on restore had a working road, post.rollback then review approve, and the refusal pointed elsewhere. → §VI.14
 
 ## Priority

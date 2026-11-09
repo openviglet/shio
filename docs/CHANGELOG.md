@@ -1405,6 +1405,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1354** — A site is served at <furl>.<shio.sites.host-domain> when an operator sets it: the host resolves the site, links stay root-relative, canonical and live URLs say the host, an unclaimed host is a teaching 404 (design §VI.8 superseded: it was held as an idea pending the service domain; the domain became a setting, off by default, so no decision was needed to build it) (design §VI.8 recorded in `docs/agents/renderer.md`).
 - **SH1361** — The console's View published site opens a site at its own host: the site reads carry publishedUrl from ShSiteHost.publishedUrl, the one composition the agent's live field also uses, and the console uses it verbatim instead of mirroring a rule it cannot know (design §VI.9 recorded in `docs/agents/renderer.md`).
 - **SH1362** — An anonymous visitor on a members-only page at a site host is sent to the instance's own login (shio.url) and comes back to the page's /sites address on the instance, where the session the login sets applies, instead of a 404 at the site host (design §VI.10 recorded in `docs/agents/security.md`).
+- **SH1378** — A device token or Basic caller now signs up without a session and names its tenant per request with X-Shio-Tenant, membership-checked like a switch; a token naming another tenant gets 403, and password instances let any person sign up (design §VI.12 recorded in `docs/agents/database.md`).
 
 ## Block E — Console migration (in flight)
 

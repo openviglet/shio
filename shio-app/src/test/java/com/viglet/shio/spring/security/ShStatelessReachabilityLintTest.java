@@ -171,7 +171,10 @@ class ShStatelessReachabilityLintTest {
                 + "built to prevent — the one entry here that must never move"));
         byPath.put("/api/v2/tenant", new Requirement(Reason.CONSOLE_ADMIN,
                 "the SH22 tenant catalogue, ROLE_ADMIN-gated; a tenant is the isolation boundary "
-                + "the agent's own scoping is derived from"));
+                + "the agent's own scoping is derived from. Since SH1378 /signup is the exception, "
+                + "session-less for a person (device token, Basic), and /switch stays a session's: "
+                + "a session-less person names the tenant per request with X-Shio-Tenant. A sub-path, "
+                + "so the root stays classified and this sentence is the record"));
         byPath.put("/api/v2/group", new Requirement(Reason.CONSOLE_ADMIN, "identity administration"));
         byPath.put("/api/v2/role", new Requirement(Reason.CONSOLE_ADMIN, "identity administration"));
         byPath.put("/api/v2/user", new Requirement(Reason.CONSOLE_ADMIN, "identity administration"));

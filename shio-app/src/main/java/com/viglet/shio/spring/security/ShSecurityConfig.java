@@ -351,6 +351,11 @@ public class ShSecurityConfig {
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),
                         // SH1351 — see DEVICE_TOKEN_PATH: the native client's sign-in and sign-out.
                         new ShStatelessRequestMatcher(mvc.matcher(DEVICE_TOKEN_PATH), sessionCookieName),
+                        // SH1378 — a person on a device or the CLI creates a tenant of their own. A
+                        // bearer or Basic caller is not a CSRF vector; the console keeps the check.
+                        // Switch stays a session's: a session-less caller names its tenant per request.
+                        new ShStatelessRequestMatcher(mvc.matcher(HttpMethod.POST, TENANT_SIGNUP_PATH),
+                                sessionCookieName),
                         // SH677 — see MARKETPLACE_PATH. The narrowing is the usual one: the CLI
                         // holds Basic auth and no session, the console holds both and stays
                         // CSRF-checked. The privilege is carried by the ADMIN role below rather
@@ -570,6 +575,13 @@ public class ShSecurityConfig {
                                 .hasRole("ADMIN");
                         authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PUT, PATTERNS_PATH))
                                 .hasRole("ADMIN");
+                        // SH1378 — signup and switch are any person's, on this chain as on the OIDC one.
+                        // Only that chain carried the rule, so on a password or Basic instance the
+                        // admin catch-all below took signup: a person could not create a tenant at all.
+                        authorizeRequests.requestMatchers(
+                                mvc.matcher(HttpMethod.POST, TENANT_SIGNUP_PATH),
+                                mvc.matcher(HttpMethod.POST, TENANT_SWITCH_PATH))
+                                .authenticated();
                         // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                         authorizeRequests.requestMatchers(
                                 mvc.matcher(HttpMethod.POST, TENANT_PATH),

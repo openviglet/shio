@@ -95,6 +95,19 @@ maps onto it (the `ShOnStartup` seed inserts run real DML), and
 Note: most tables are **PascalCase** entity names (no `@Table`, e.g. `ShPostTypeAttr`),
 the backfill list must use those, not snake_case, or it silently no-ops.
 
+### A tenant without a session (SH1378)
+`ShVigletTenantResolver` reads, in order: the API token's tenant (trusted), the
+`X-Shio-Tenant` header, the `SH_TENANT` session attribute, the OIDC `workspace_id` claim.
+The header is a **person's** source (a device token or HTTP Basic, neither of which holds a
+session) and resolves as `Resolution.of`, never `trusted`, so the shared gate checks active
+membership and suspension exactly as for `/switch`. Under an API token the resolver ignores it,
+and `ShApiTokenFilter` refuses one naming a tenant other than the token's own with a 403. The
+tenant is not stored on the device-token row: that would fix one credential and leave the CLI
+where it was. `POST /tenant/signup` carries the narrowed CSRF exemption; `/switch` stays a
+session's. `ShTenantHeaderIT` drives both callers through the whole chain, and its first run found
+the password/Basic chain had never carried the "signup and switch are any person's" rule the OIDC
+chain has, so on those instances the admin catch-all took signup. Both chains carry it now.
+
 ### Multi-tenancy (SH22: core DB isolation)
 Tenant isolation uses Hibernate's native `@TenantId` (DISCRIMINATOR), gated by
 `shio.multi-tenant` (default `false`). `ShTenantFilter` resolves the tenant from the

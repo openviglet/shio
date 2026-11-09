@@ -92,8 +92,15 @@ It appears only when there is somewhere to go: the instance runs multi-tenancy *
 belong to more than one tenant. On a single-tenant install, or if you are a member of one
 tenant, there is no control and nothing to choose.
 
-`POST /api/v2/tenant/{name}/switch` is the same operation for a script, and an identity
-provider's `workspace_id` claim selects a tenant at sign-in.
+`POST /api/v2/tenant/{name}/switch` is the same operation for a script that holds a session,
+and an identity provider's `workspace_id` claim selects a tenant at sign-in.
+
+A caller with no session (the mobile app's device token, or a script using HTTP Basic)
+names the tenant on each request instead, with an `X-Shio-Tenant: <name>` header. It is
+checked exactly like a switch: you must be an active member, and a suspended tenant
+refuses you. The same caller can create a tenant of its own with
+`POST /api/v2/tenant/signup`. An API token already belongs to one tenant, so a header
+naming a different one is refused with a 403.
 
 ### Plan quotas
 

@@ -235,6 +235,39 @@ class ShApiTokenFilterTest {
                         "ROLE_AGENT");
     }
 
+    @Test
+    void sh1378ATokenNamingAnotherTenantInTheHeaderIsRefused() throws Exception {
+        ShApiToken alpha = token(ShApiTokenScope.READ, Set.of("siteA"));
+        alpha.setTenantId("alpha");
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(alpha));
+        MockHttpServletRequest req = request("GET", "/api/v2/cda/site");
+        req.addHeader(com.viglet.shio.tenant.ShVigletTenantResolver.TENANT_HEADER, "beta");
+        MockHttpServletResponse res = new MockHttpServletResponse();
+
+        filter().doFilter(req, res, new MockFilterChain());
+
+        assertThat(res.getStatus())
+                .as("SH1378: a token carries its own tenant; serving it under a header naming another "
+                        + "would answer a question the caller did not ask")
+                .isEqualTo(403);
+        assertThat(res.getContentAsString()).contains("alpha").contains("X-Shio-Tenant");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void sh1378ATokenNamingItsOwnTenantInTheHeaderPasses() throws Exception {
+        ShApiToken alpha = token(ShApiTokenScope.READ, Set.of("siteA"));
+        alpha.setTenantId("alpha");
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key")).thenReturn(Optional.of(alpha));
+        MockHttpServletRequest req = request("GET", "/api/v2/cda/site");
+        req.addHeader(com.viglet.shio.tenant.ShVigletTenantResolver.TENANT_HEADER, "alpha");
+
+        filter().doFilter(req, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .as("SH1378: a header agreeing with the token's tenant is harmless").isNotNull();
+    }
+
     /** A plain HTML form's POST: no header, the key in a hidden field of the urlencoded body. */
     private static MockHttpServletRequest formBodyPost(String uri) {
         MockHttpServletRequest req = new MockHttpServletRequest("POST", uri);

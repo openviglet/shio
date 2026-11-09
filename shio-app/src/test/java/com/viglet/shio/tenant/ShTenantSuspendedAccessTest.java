@@ -154,6 +154,57 @@ class ShTenantSuspendedAccessTest {
         verify(chain).doFilter(any(), any());
     }
 
+    /** A session-less person naming a tenant per request (SH1378). */
+    private MockHttpServletRequest headerRequestTo(String tenant) {
+        var request = new MockHttpServletRequest();
+        request.addHeader(ShVigletTenantResolver.TENANT_HEADER, tenant);
+        return request;
+    }
+
+    @Test
+    void sh1378AMembersTenantHeaderBindsThatTenant() throws Exception {
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.ACTIVE)));
+        when(store.isActiveMember("beta", "alice")).thenReturn(true);
+        authenticateAs("alice", "ROLE_USER");
+        var response = new MockHttpServletResponse();
+        var bound = new String[1];
+
+        filter().doFilter(headerRequestTo("beta"), response,
+                (req, res) -> bound[0] = context.getCurrentTenant());
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(bound[0])
+                .as("SH1378: a device token or Basic caller reaches its tenant by naming it, with no session")
+                .isEqualTo("beta");
+    }
+
+    @Test
+    void sh1378ANonMembersTenantHeaderIsRefused() throws Exception {
+        when(store.findById("beta")).thenReturn(Optional.of(ref("beta", VigletTenantStatus.ACTIVE)));
+        when(store.isActiveMember("beta", "alice")).thenReturn(false);
+        authenticateAs("alice", "ROLE_USER");
+        var response = new MockHttpServletResponse();
+
+        filter().doFilter(headerRequestTo("beta"), response, chain);
+
+        assertThat(response.getStatus())
+                .as("SH1378: the header is never trusted; membership is checked as for a session's switch")
+                .isEqualTo(HttpStatus.FORBIDDEN.value());
+        verify(chain, never()).doFilter(any(), any());
+    }
+
+    @Test
+    void sh1378AnApiTokensTenantHeaderIsNotReadAsAPerson() {
+        var authentication = new UsernamePasswordAuthenticationToken("system", null, List.of());
+        authentication.setDetails(new com.viglet.shio.spring.security.auth.ShApiTokenContext(
+                "tok", com.viglet.shio.persistence.model.token.ShApiTokenScope.READ, java.util.Set.of(),
+                com.viglet.shio.persistence.model.token.ShApiTokenEnv.PROD, false, null));
+
+        assertThat(resolver.resolve(headerRequestTo("beta"), authentication).rawTenant())
+                .as("SH1378: a token carries its own tenant; the header is a person's and is ignored here")
+                .isNull();
+    }
+
     @Test
     void unresolvedTenantDropsToDefaultAndIsServed() throws Exception {
         // No token / session / workspace_id claim — resolves to nothing, so the

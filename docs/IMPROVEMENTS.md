@@ -643,33 +643,6 @@ host has to see a session. Two ways to give it one, and the choice is a security
 Done when a person picks one, an anonymous visitor on a site host signs in and lands
 back on the site host signed in, and a test covers the returnUrl check and the session.
 
-### VI.12 A tenant for a device-token caller (SH1378)
-
-Filed by shio-mobile SHM2, measured against a multi-tenant 2026.3 instance on
-2026-11-09; widened on review the same day. A person signed in without a session (a
-device token, SH1351/SH1360, and equally HTTP Basic, which is what the `shio` CLI holds)
-cannot reach a tenant of their own:
-
-- `POST /api/v2/tenant/signup` answers 403 `csrf-token-unobtainable`: it is not on the
-  SH167 session-less list.
-- `ShVigletTenantResolver` reads a CDA token's tenant, then the `SH_TENANT` session
-  attribute `/switch` writes, then the OIDC `workspace_id` claim. A session-less person
-  supplies none, so every call resolves to the default `shio` tenant.
-
-The shape, chosen on review: a per-request `X-Shio-Tenant: <name>` header, read by the
-resolver as one more source and returned as `Resolution.of`, never `trusted`, so the
-shared gate checks active membership and suspension on every call exactly as it does for
-a session. Honoured for a person credential only: an API token carries its own tenant,
-and a header naming another is refused. A tenant stored on the device-token row would
-fix one credential and leave the CLI where it is. `signup` joins the narrowed exemption
-(a bearer is not a CSRF vector); `switch` stays a session's.
-
-The `/api/v2/tenant` row in `ShStatelessReachabilityLintTest` is re-split so signup is
-no longer classified admin-only.
-
-Done when: a device token and a Basic caller each sign up, send the header, and read
-`/tenant/current` answering that tenant; a non-member's header answers 403.
-
 ### VI.13 An agent token minted from a device (SH1379)
 
 Filed by shio-mobile SHM4, measured on a 2026.3 instance on 2026-11-09; narrowed on
