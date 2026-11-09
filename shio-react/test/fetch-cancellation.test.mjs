@@ -857,7 +857,9 @@ test("SH1156: the create form and the visual editor derive rather than mirror", 
    * nothing here is edited after it arrives. So there is no `seeded` guard and no second source of
    * truth — the src and the error are expressions over the query.
    */
-  assert.match(editor, /const fetchedSrc = site\.data \? withEditorFlag\(siteDestination\(site\.data\)\.url\) : ""/u,
+  // SH1392 — the path the address names is part of the same expression, not a state of its own.
+  assert.match(editor,
+    /const fetchedSrc = site\.data\s*\? withEditorFlag\(siteDestination\(site\.data, framePath\(requestedPath\)\)\.url\) : ""/u,
     "SH1156: the framed URL is derived from the query rather than mirrored into state");
   assert.doesNotMatch(editor, /setFetchedSrc|setSiteError/u,
     "SH1156: a local copy is back. Nothing here is edited after it arrives, so a second source of "

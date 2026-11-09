@@ -19,7 +19,8 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconEye, IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
-import { ChevronDown, Clock, Eye, EyeOff, History, Link2, LogOut, Save, Sparkles, Upload, X } from "lucide-react"
+import { ChevronDown, Clock, Eye, EyeOff, History, Link2, LogOut, MousePointerClick, Save, Sparkles, Upload, X } from "lucide-react"
+import { editorHref } from "@/lib/editor-path"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
@@ -611,6 +612,15 @@ export default function PostUnifiedEditPage() {
                 >
                   <Eye className="size-4" />
                   {t("content.preview")}
+                </Button>
+              )}
+              {/* SH1392 — a page opens in the Universal Editor on itself, not on the site's home. */}
+              {renderable === true && siteId && (
+                <Button asChild type="button" size="sm" variant="outline" title={t("content.editOnPageTitle")}>
+                  <Link to={editorHref(ROUTES.UNIVERSAL_EDITOR, siteId, post.furl)}>
+                    <MousePointerClick className="size-4" />
+                    {t("content.editOnPage")}
+                  </Link>
                 </Button>
               )}
               <PostTranslationsMenu postId={postId} siteId={post.shSite?.id ?? post.shFolder?.shSite?.id}

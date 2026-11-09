@@ -53,13 +53,16 @@ the only place the mapping from node to post exists.
 
 ## Opening a page
 
-In the console, go to **Universal Editor**. You get a list of sites, an entry field for an
-external URL, and a token selector: the editor saves through a delivery token with write
-scope, not through your console session, because the page being edited may be served from
-another origin entirely.
+The quickest way in is from the page itself: a page's editor has **Edit on the page** beside
+**Preview**, and each row of a site's **Pages** view has the same action. Either opens the
+Universal Editor on that page, drafts included, so a page that nothing links to yet can be
+edited where it will be read.
 
-Pick a site to edit Viglet Shio's own preview render, or paste the URL of your deployed front
-end.
+You can also go to **Universal Editor** in the console, which lists the sites and has an
+entry field for an external URL; picking a site opens its home. The page being edited is part
+of the editor's address (`?path=pricing`), and it follows you as you click through the site,
+so a reload or a shared link opens the same page. The editor saves on your console session,
+with the same permissions as everywhere else in the console.
 
 Behind the scenes, a preview URL with `?editor=true` gets a small bridge script injected at
 `/preview/_shio/editor.js`. An **ordinary preview ships no editor code at all**.

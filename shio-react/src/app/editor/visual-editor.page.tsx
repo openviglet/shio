@@ -32,6 +32,7 @@ import type {
   SelectedSection,
 } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
+import { EDITOR_PATH_PARAM, followedAddress, framePath } from "@/lib/editor-path"
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
 import { Spinner } from "@/components/spinner"
 
@@ -475,7 +476,25 @@ export default function VisualEditorPage() {
     queryFn: ({ signal }) => siteService.get(siteId ?? "", { signal }),
     enabled: !externalSrc && Boolean(siteId),
   })
-  const fetchedSrc = site.data ? withEditorFlag(siteDestination(site.data).url) : ""
+  /*
+   * SH1392 — the page to open, `?path=<friendly url>` (the part of `post:<site>/<path>` after the
+   * site), so a page reaches the editor without a link drawn on another one. Read for the frame's
+   * first src only: the address then follows the frame (followFrame below) by replacing the history
+   * entry, which changes no router state and so never reloads the page the curator is editing.
+   */
+  const requestedPath = searchParams.get(EDITOR_PATH_PARAM)
+  const fetchedSrc = site.data
+    ? withEditorFlag(siteDestination(site.data, framePath(requestedPath)).url) : ""
+  const followFrameRef = useRef<(reported: string) => void>(() => undefined)
+  // Refreshed after each render rather than during it: the message listener reads the ref, and the
+  // site it compares against is whatever the query holds now.
+  useEffect(() => {
+    followFrameRef.current = (reported: string) => {
+      if (!site.data || externalSrc) return
+      const next = followedAddress(reported, siteDestination(site.data, "/").url, globalThis.location.href)
+      if (next) globalThis.history.replaceState(globalThis.history.state, "", next)
+    }
+  })
   const siteError = site.isError && !isCancelled(site.error)
     ? t("universalEditor.siteNotFound", { key: siteId })
     : null
@@ -564,6 +583,7 @@ export default function VisualEditorPage() {
           const reported = (msg.data as { url?: string } | undefined)?.url
           if (reported && reported !== reportedPageRef.current) {
             reportedPageRef.current = reported
+            followFrameRef.current(reported)
             setSelected(null)
             setSelectedSection(null)
             setSectionRect(null)

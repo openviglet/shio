@@ -4406,6 +4406,26 @@ done when every `-ue` task costs no more than its post-form twin. Until then the
 everywhere it is today: making the editor the only door before it can replace an image would take a
 job away from the curator (P7).
 
+## The Universal Editor opens a named page (SH1392)
+
+`/bento/universal-editor/<site>?path=<friendly url>` frames `/preview/<site>/<path>?editor=true`;
+the home is the bare route. `src/lib/editor-path.ts` holds the three rules: `framePath` (one
+leading slash, so never a protocol-relative src), `editorHref` (what the entries link to; it takes
+`ROUTES.UNIVERSAL_EDITOR` as an argument so node's tests can load it), and `followedAddress`. **The
+address follows the frame by `history.replaceState`, not the router**: `?path=` is read for the
+frame's first src only, and each `sh:ready` whose url changed replaces the history entry, because
+writing the router's search params would change `src` and reload the page being edited. A frame that
+left the site's base or origin names no page and leaves the address alone. The `/console/...`
+redirect to `/bento/...` keeps the query, checked live.
+
+The entries: **Edit on the page** beside Preview in the post editor, for a post its site renders
+as a page (`renderable === true`, SH1167's check, linking with `post.furl`, which is the page's path
+within the site), and an icon on each page row of the site's Pages view (`node.path`). A palette or
+search result reaches it through the post editor, one hop; a direct palette entry is the rest of
+the line. Measured on a clean instance: `preview-draft-ue` completes at 2 clicks, 1 key, 2 screens,
+the form's own cost, and `change-headline-ue` went from 6 clicks over 4 screens to 4 over 2, plus one
+key (selecting the old heading, which the form's field does in place).
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a

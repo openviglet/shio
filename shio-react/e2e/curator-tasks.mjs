@@ -194,18 +194,6 @@ async function publish(page) {
     (url) => /\/publish\b/.test(url))
 }
 
-/**
- * SH1319 — the Universal Editor's way to a site: the rail's Content, the hub's Universal Editor
- * card, then the site. It lands on the site's home with no way to name another page, so the rest is
- * the frame's own links. Returns the frame once the bridge has turned edit mode on.
- */
-async function openInEditor(page) {
-  await page.getByRole("navigation").getByRole("link", { name: /^(conteúdo|content)$/i }).first().click()
-  await page.getByRole("link", { name: /^(editor universal|universal editor)/i }).first().click()
-  await page.getByRole("button", { name: new RegExp(`^${SITE}`) }).first().click()
-  return editorFrame(page, (url) => url.includes("editor=true"))
-}
-
 /** The framed page whose url passes `matches`, once the bridge says it is editing (SH185). */
 async function editorFrame(page, matches) {
   for (let waited = 0; waited < 20_000; waited += 250) {
@@ -216,10 +204,13 @@ async function editorFrame(page, matches) {
   throw new Error("the Universal Editor never framed an editing page")
 }
 
-/** A link inside the framed page: a new page for the curator, and one the main frame never sees. */
-async function followInFrame(page, frame, name, path, ctx) {
-  await frame.getByRole("navigation").getByRole("link", { name }).first().click()
-  ctx.screensExtra = (ctx.screensExtra ?? 0) + 1
+/**
+ * SH1392 — a page opens in the Universal Editor on itself: find it, then "Edit on the page" from its
+ * post editor. Returns the frame once the bridge is editing that page.
+ */
+async function openPageInEditor(page, title, path) {
+  await openFromSearch(page, title, "Page")
+  await page.getByRole("link", { name: /^(editar na página|edit on the page)$/i }).first().click()
   return editorFrame(page, (url) => url.includes(path) && url.includes("editor=true"))
 }
 
@@ -370,8 +361,8 @@ const TASKS = [
     ue: true,
     async run(page, ctx) {
       ctx.heading = `Pricing, plainly ${RUN}`
-      const home = await openInEditor(page)
-      const pricing = await followInFrame(page, home, "Pricing", "/pricing", ctx)
+      // SH1392 — straight to the page, rather than the hub, the site and the frame's own link.
+      const pricing = await openPageInEditor(page, "Pricing", "/pricing")
       // The heading is typed where it is drawn: select it, replace it, and the bridge reports it.
       const heading = pricing.locator("h1[data-shio-prop='heading']").first()
       await heading.click()
@@ -399,8 +390,7 @@ const TASKS = [
       await restoreHero({ image: old.id })
     },
     async run(page, ctx) {
-      const home = await openInEditor(page)
-      const pricing = await followInFrame(page, home, "Pricing", "/pricing", ctx)
+      const pricing = await openPageInEditor(page, "Pricing", "/pricing")
       await pricing.locator("[data-shio-prop='image']").first().click()
       // The panel draws the post form's own image widget for the selection (SH1037), read-only:
       // its Search is under `pointer-events: none`, so the click below is the step that cannot be taken.
@@ -431,12 +421,9 @@ const TASKS = [
       }])
     },
     async run(page, ctx) {
-      // The editor frames the site's home and nothing else: a page reaches the frame only through
-      // a link on another page, and a draft is linked from nowhere yet, which is why it is a draft.
-      const home = await openInEditor(page)
-      const link = home.getByRole("link", { name: ctx.title })
-      if (!await link.count()) throw new Error(`SH1392: the Universal Editor has no way to open '${ctx.title}', which no page links to`)
-      ctx.frame = await followInFrame(page, home, ctx.title, `draft-ue-${RUN}`, ctx)
+      // SH1392 — a draft is linked from nowhere, which is why it is a draft; the editor now opens a
+      // named page, so the way in is the page itself, not a link on another one.
+      ctx.frame = await openPageInEditor(page, ctx.title, `draft-ue-${RUN}`)
     },
     async check(ctx) {
       return (await ctx.frame.content()).includes(ctx.text)

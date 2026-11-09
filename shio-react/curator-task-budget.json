@@ -44,19 +44,22 @@
       "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
     },
     "change-headline-ue": {
-      "clicks": 6,
-      "keys": 1,
-      "screens": 4,
-      "ms": 1021,
-      "why": "SH1319: Content, the hub's Universal Editor card, the site, the frame's Pricing link, the heading, Ctrl+A and type, Publish. The editor opens only on a site's home, so three of the four screens are the way to the page."
+      "clicks": 4,
+      "keys": 2,
+      "screens": 2,
+      "ms": 1472,
+      "why": "SH1392: Ctrl+K, the Pricing page, Edit on the page, the heading, Ctrl+A and type, Publish. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319); the extra key against the form is selecting the old text, where the form's field is filled in place."
     },
     "replace-image-ue": {
       "blocked": "SH1393",
       "why": "SH1319: selecting the hero's image shows the post form's image widget in the properties panel, read-only (SH1037), so a curator can see the file and cannot change it."
     },
     "preview-draft-ue": {
-      "blocked": "SH1392",
-      "why": "SH1319: the editor frames a site's home and reaches another page only through a link on one, and a draft is linked from nowhere, so it cannot be opened there at all."
+      "clicks": 2,
+      "keys": 1,
+      "screens": 2,
+      "ms": 1329,
+      "why": "SH1392: Ctrl+K, the draft, Edit on the page, and the editor frames the draft itself, as the visitor will see it: the same cost as the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from."
     }
   }
 }

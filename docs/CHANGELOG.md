@@ -2116,6 +2116,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1383** — The console runs GraphiQL 1.0 / graphiql 6 on Monaco 0.57: worker imports spelled from the new exports root, the run button and radii back on the console's tokens, and the guards read what GraphiQL now emits (design §XI.112 recorded in `shio-react/test/monaco-workers-resolve.test.mjs`).
 - **SH1388** — The GraphQL explorer talks to /graphql through createTransport, POST-only and token-only as before, so it runs queries with GraphiQL's network stats and imports nothing the toolkit deprecates (design §XI.115 recorded in `shio-react/test/graphiql-transport.test.mjs`).
 - **SH1319** — The Universal Editor is the primary page editor, decided against tasks 1, 3 and 6 measured in both editors (form wins all three today: 4/1/1 vs 6/1/4, two blocked); the merge is SH1392-SH1394 (design §XI.85 recorded in `docs/agents/console-ui.md`).
+- **SH1392 (the editor opens a named page)** — The Universal Editor opens a named page (?path=), reached by Edit on the page from the post editor and the site's Pages view, and its address follows the frame; preview-draft-ue completes at the form's cost.
 
 ## Block BH — One content model, many languages
 

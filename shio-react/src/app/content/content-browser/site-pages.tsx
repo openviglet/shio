@@ -8,7 +8,8 @@
  */
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
-import { ChevronRight, FileText, Folder, Plus } from "lucide-react"
+import { ChevronRight, FileText, Folder, MousePointerClick, Plus } from "lucide-react"
+import { editorHref } from "@/lib/editor-path"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
@@ -64,7 +65,9 @@ export function SiteRootSwitch({ mode, onChange }: Readonly<{
 /** Where "new page" opens: the type's form in the site's root folder, beneath `under` when given. */
 type NewPageHref = (under?: string) => string | null
 
-function PageRowLink({ node, depth, newPage }: Readonly<{ node: PageNode; depth: number; newPage: NewPageHref }>) {
+function PageRowLink({ node, depth, newPage, siteId }: Readonly<{
+  node: PageNode; depth: number; newPage: NewPageHref; siteId?: string
+}>) {
   const { t } = useTranslation()
   const page = node.page
   const label = page?.title || node.segment || t("content.homePage")
@@ -84,6 +87,15 @@ function PageRowLink({ node, depth, newPage }: Readonly<{ node: PageNode; depth:
         )}
         <span className="text-muted-foreground hidden shrink-0 font-mono text-xs sm:inline">{node.path}</span>
         {page && <span className="text-muted-foreground w-24 shrink-0 text-right text-xs">{state}</span>}
+        {/* SH1392 — the page itself in the Universal Editor, beside opening its form. */}
+        {page && siteId && (
+          <Button asChild size="icon-sm" variant="ghost">
+            <Link to={editorHref(ROUTES.UNIVERSAL_EDITOR, siteId, node.path)} aria-label={t("content.editOnPage")}
+              title={t("content.editOnPageTitle")}>
+              <MousePointerClick className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
         {child && (
           <Button asChild size="icon-sm" variant="ghost">
             <Link to={child} aria-label={t("content.newPageHere", { path: node.path })}
@@ -95,7 +107,9 @@ function PageRowLink({ node, depth, newPage }: Readonly<{ node: PageNode; depth:
       </div>
       {node.children.length > 0 && (
         <ul className="divide-border/60 divide-y">
-          {node.children.map((each) => <PageRowLink key={each.path} node={each} depth={depth + 1} newPage={newPage} />)}
+          {node.children.map((each) => (
+            <PageRowLink key={each.path} node={each} depth={depth + 1} newPage={newPage} siteId={siteId} />
+          ))}
         </ul>
       )}
     </li>
@@ -152,7 +166,7 @@ export function SitePages({ site, folderId }: Readonly<{ site: PageSite; folderI
         <p className="text-muted-foreground py-12 text-center text-sm">{t("content.noPagesYet")}</p>
       ) : (
         <ul className="bg-card divide-border/60 divide-y overflow-hidden rounded-xl border">
-          <PageRowLink node={tree} depth={0} newPage={newPage} />
+          <PageRowLink node={tree} depth={0} newPage={newPage} siteId={site.id} />
         </ul>
       )}
       {/*
