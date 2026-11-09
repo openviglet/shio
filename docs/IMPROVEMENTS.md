@@ -284,6 +284,32 @@ What the upgrade has to settle, measured by the guards that went red:
 Then remove the hold in `shio-react/package.json` and, if Dependabot's group config can
 ignore a major, drop any ignore added in the meantime.
 
+### XI.114 Quilhara's forms take submissions out of the box (SH1387)
+
+**Where it showed.** On 2026-11-09, filming the Viglet Shio promo (chapter 10: someone
+asks about a trip, and the enquiry lands in the CMS as a draft) on a clean
+`ghcr.io/openviglet/shio:latest` (166cc6c) with Quilhara installed from the Marketplace.
+`/sites/quilhara/default/en-us/contact` and `/trips/wind-crest-overnight` render no
+`<form>` at all, in either language, and the console's Formulários page shows the site
+with no destination folder, no post types and no allowed origins.
+
+**What the showcase promises.** `docs/specs/SH1250-showcase-matrix.json` maps `/contact`
+to "A site form whose submissions land as drafts" and `/trips/wind-crest-overnight` to
+"One trip, with an enquiry form", and `site-forms` to `/contact`;
+`marketplace/quilhara/blueprint.json` carries no form section. SectionForm joined the
+vocabulary today (SH1386) and the small-business package already submits a contact form
+with script off (SH1356), so the parts exist.
+
+**What to do.** Give Quilhara's contact page and its trip page a SectionForm, and have
+the package set the site's form destination (a folder that exists in the package, the
+post type a submission becomes, the site's own origin), so an install from the
+Marketplace accepts a submission with nothing configured by hand. The tour page
+`/tour/curator` can then point at a real submission.
+
+**Done when** a clean release instance with Quilhara installed accepts a trip enquiry
+from `/trips/wind-crest-overnight` and the console lists it as a draft, and the coverage
+test holds the matrix's two form pages to it.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

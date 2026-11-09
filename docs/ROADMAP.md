@@ -12,11 +12,12 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
+- 📋 **SH1387** (deps: —) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — The showcase cannot show forms landing as drafts, and the promo's trip-enquiry chapter has nothing to film. → §XI.114
 
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1383** (deps: —) **The console cannot take GraphiQL 1.0: its Monaco imports miss the pinned editor and its explorer escapes the theme** — Dependabot offers the major on every run, and each time the group's other updates arrive red beside it. → §XI.112
+- 🛠 **SH1383** (deps: —) **The console cannot take GraphiQL 1.0: its Monaco imports miss the pinned editor and its explorer escapes the theme** — Dependabot offers the major on every run, and each time the group's other updates arrive red beside it. → §XI.112
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
