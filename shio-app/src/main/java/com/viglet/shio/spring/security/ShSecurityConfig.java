@@ -242,6 +242,14 @@ public class ShSecurityConfig {
      */
     private static final String DEVICE_AUTHORIZE_PATH = "/api/v2/device-token/authorize";
     private static final String DEVICE_EXCHANGE_PATH = "/api/v2/device-token/exchange";
+    /**
+     * SH1375 — signing in on a site host. Both public, in both chains, for SH1360's reason:
+     * {@code handoff} answers a person nobody has signed in yet with the login (the controller does
+     * that), and {@code exchange} runs on the site host, where no session exists, and is authenticated
+     * by its one-time code and the state cookie the same browser holds. Neither grants anything alone.
+     */
+    private static final String SITE_MEMBER_HANDOFF_PATH = "/api/v2/site-member/handoff";
+    private static final String SITE_MEMBER_EXCHANGE_PATH = "/api/v2/site-member/exchange";
     /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless, equally narrowed. */
     private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
@@ -433,6 +441,9 @@ public class ShSecurityConfig {
                         // SH1360 — see DEVICE_AUTHORIZE_PATH.
                         mvc.matcher(HttpMethod.GET, DEVICE_AUTHORIZE_PATH),
                         mvc.matcher(HttpMethod.POST, DEVICE_EXCHANGE_PATH),
+                        // SH1375 — see SITE_MEMBER_HANDOFF_PATH.
+                        mvc.matcher(HttpMethod.GET, SITE_MEMBER_HANDOFF_PATH),
+                        mvc.matcher(HttpMethod.GET, SITE_MEMBER_EXCHANGE_PATH),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
@@ -508,6 +519,9 @@ public class ShSecurityConfig {
                                 // SH1360 — see DEVICE_AUTHORIZE_PATH.
                                 mvc.matcher(HttpMethod.GET, DEVICE_AUTHORIZE_PATH),
                                 mvc.matcher(HttpMethod.POST, DEVICE_EXCHANGE_PATH),
+                                // SH1375 — see SITE_MEMBER_HANDOFF_PATH.
+                                mvc.matcher(HttpMethod.GET, SITE_MEMBER_HANDOFF_PATH),
+                                mvc.matcher(HttpMethod.GET, SITE_MEMBER_EXCHANGE_PATH),
                                 mvc.matcher("/__tur/**"),
                                 mvc.matcher("/"),
                                 mvc.matcher("/assets/**"),

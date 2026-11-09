@@ -955,6 +955,39 @@ the login's own host. Returning to the site host itself was rejected for now: it
 scoped to a parent domain every site host's scripts share, or a handoff code. The session the login
 sets is valid where the visitor lands. `ShSitesMembersOnlyTest` pins the target and the way back.
 
+## Signing in back onto a site host: a one-time handoff code (SH1375)
+
+SH1362 left the visitor signed in at the instance's `/sites` address. **Decided 2026-11-09: a
+one-time handoff code, not a parent-domain session cookie**, because a cookie scoped to the domain
+the instance and the site hosts share hands every site host the console session, and a replicated
+site in fidelity mode runs the source's scripts there with `/api` passed through. The flow is three
+redirects, in `ShSiteMemberAPI`:
+
+1. `ShSitesAPI.loginFor` on a site host sends the visitor to `shio.url/login` with
+   `returnUrl=/api/v2/site-member/handoff?to=<the page on the site host>&state=<random>`, and sets
+   `shio-site-member-state` (host-only, `HttpOnly`, path `/api/v2/site-member/exchange`, 15 min).
+   `returnUrl` stays a path, so SH1299's `safeReturnUrl` is untouched.
+2. `handoff`, on the instance and signed in, refuses a `to` whose host is not `<label>.<host-domain>`
+   of a site this instance serves (no userinfo, http(s) only), before anything else. It stores a code
+   in SH1360's `sh_device_auth_code` (it is what that table is: a browser sign-in's one-time code),
+   with the state's S256 as the challenge, the site host's origin as `redirect_uri` and `site host
+   <label>` as the device name, for 60 s, and redirects to `<origin>/api/v2/site-member/exchange`.
+3. `exchange`, on the site host (`/api` passes `ShSiteHostFilter` untouched), burns the code first,
+   then requires the state cookie's S256, the origin and the label to match. That binding is what
+   stops a person signing a victim into their own account by mailing them a link. It mints an
+   ephemeral `MEMBER` `ShApiToken` for that one site, 8 h, and sets `shio-site-member`: host-only,
+   `HttpOnly`, `SameSite=Lax`.
+
+**`MEMBER` is SHARE's shape on another surface.** `ShApiTokenFilter` reads the member cookie only on
+a request `ShSiteHostFilter` marked as site-host delivery, accepts no other scope there, and grants
+`ROLE_SITE_MEMBER` alone with the person's name, which is all `ShContentAclService.visibility` needs
+to read their groups. `ShSitesAPI.addressOf` clears the context when the token's site is not the
+host's (the site is checked where it is resolved, as SH1042 does). It skips the rate limiter, since
+the same pages answer an anonymous visitor unmetered. Ephemeral rows are not listed by
+`GET /api/v2/api-token` and are purged on the next exchange. `ShSiteMemberHandoffTest` drives the
+whole flow through the chain, including the replay, the missing state, another site, the
+instance's `/sites` address, `/api` and seven hostile `to` values.
+
 ## A user's password is encoded on create and never serialised (SH1334)
 
 `POST /api/v2/user/{username}` encodes the password with the application's `PasswordEncoder`

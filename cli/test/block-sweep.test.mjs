@@ -81,6 +81,14 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  F: {
+    swept: true,
+    why: "market positioning and bold bets, closed by SH1375: a visitor who signs in "
+      + "from a site host comes back to the site host signed in there alone, through a one-time handoff "
+      + "code. docs-shio moved: the administration guide's Members-only pages section says where the "
+      + "visitor lands and what the site-host sign-in opens, and COVERAGE's row names SH1375 with the "
+      + "mirror regenerated. README and shio-site are NOT moved: neither describes the members sign-in",
+  },
   A: {
     swept: true,
     why: "the headless foundation, re-closed by SH1360: a native app signs an OIDC user in through the "

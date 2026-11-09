@@ -180,6 +180,10 @@ class ShAgentReadReachabilityLintTest {
                 + "could use — the agent reads the draft itself through /agent/read, which is "
                 + "draft-preferred, and MINTS the link through /api/v2/preview-token, which is "
                 + "the reachable half of this feature"));
+        byRoot.put("/api/v2/site-member", notAgentFacing(
+                "SH1375: a visitor's browser signing in on a site host, through two redirects and a "
+                + "host-only cookie. It reads nothing; an agent reads a members-only page with its own "
+                + "credential through /agent/read, and the gate itself through /agent/manifest"));
 
         // SH1005 closed the last one. It was the audit trail per object: /agent/changes walked the
         // same rows by cursor and could not answer "what happened to this page", which is the

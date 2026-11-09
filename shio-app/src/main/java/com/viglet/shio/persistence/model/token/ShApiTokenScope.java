@@ -97,5 +97,25 @@ public enum ShApiTokenScope {
      * confines it to that prefix, and it is GET-only. What it can do is what the link promises:
      * read one site's preview until it expires.</p>
      */
-    SHARE
+    SHARE,
+
+    /**
+     * A person signed in on one site host (SH1375): the third scope bounded by data.
+     *
+     * <h2>Why a site host needs a credential of its own</h2>
+     *
+     * <p>A site served at {@code <furl>.<host-domain>} is another origin, so the console session the
+     * instance's login sets is never sent to it, and a members-only page there could only send its
+     * visitor back to the page's {@code /sites} address on the instance (SH1362). Scoping that
+     * session to a parent domain would have fixed the address and handed every site host the
+     * console session, where a replicated site's own scripts run and {@code /api} passes through.</p>
+     *
+     * <h2>It carries only {@code ROLE_SITE_MEMBER}, and its name is the person's</h2>
+     *
+     * <p>The members gate decides by the reader's groups, read by name, so the authentication is the
+     * person's name with one role no authorization rule accepts. The filter reads it only on a site
+     * host's delivery, from a host-only cookie, and the delivery route refuses it on any site but the
+     * one it was minted for. It cannot reach the console, the API, the preview or a second site.</p>
+     */
+    MEMBER
 }

@@ -375,10 +375,12 @@ class ShSitesMembersOnlyTest {
                     .andExpect(status().isFound())
                     .andExpect(result -> assertThat(result.getResponse().getHeader("Location"))
                             .as("SH1362: a relative /login asks the site host, which re-addresses it into "
-                                    + "delivery and answers 404; and the way back is the page's address on "
-                                    + "the instance, where the session the login sets is sent")
-                            .isEqualTo(instanceUrl() + "/login?returnUrl=" + java.net.URLEncoder.encode(
-                                    "/sites/" + siteName + "/default/en-us/lounge?from=card",
+                                    + "delivery and answers 404; SH1375: and the way back is the instance's "
+                                    + "handoff, which returns the visitor to this page on the site host")
+                            .startsWith(instanceUrl() + "/login?returnUrl=" + java.net.URLEncoder.encode(
+                                    ShSiteMemberAPI.HANDOFF + "?to=" + java.net.URLEncoder.encode(
+                                            "https://" + siteName + "." + domain + "/lounge?from=card",
+                                            java.nio.charset.StandardCharsets.UTF_8) + "&state=",
                                     java.nio.charset.StandardCharsets.UTF_8)));
         } finally {
             setMembersLogin(null);

@@ -148,9 +148,12 @@ second account system.
 - A site can send an anonymous visitor to **sign in** instead of the 404: with
   `membersLogin` on, the visitor goes to the console login and comes back to the page.
   On a site served at its own hostname, the visitor signs in at the instance's address
-  (`shio.url`) and comes back to the page's `/sites/...` address on the instance. That is
-  where the sign-in session applies, because a browser does not send the instance's
-  session cookie to a different hostname.
+  (`shio.url`) and comes back to the same page on the site's hostname, signed in there.
+  The console session never leaves the instance: the instance hands the site host a
+  one-time code, good for a minute and only in the browser that started the sign-in, and
+  the site host exchanges it for a sign-in of its own. That sign-in lasts eight hours,
+  opens that one site's members-only pages and nothing else (not the console, not the
+  API, not another site), and is never listed among your API tokens.
 - Administrators always read everything, and the preview still shows gated pages to
   editors, because that is where they are edited.
 

@@ -329,6 +329,31 @@ Judged by `curator-tasks.mjs`: every `-ue` task costs no more than its post-form
 before the default flips, and the post-form tasks for a page are then re-recorded
 through the editor.
 
+### XI.122 Signing out of a site host (SH1395)
+
+SH1375 signs a visitor in on a site host with an ephemeral `MEMBER` token in a host-only
+`shio-site-member` cookie, good for eight hours. Nothing ends it early. Signing out of
+the console (`/logout`, or Keycloak's back-channel logout) invalidates the instance
+session and leaves every site-host sign-in that person holds alive until it expires, and
+the site host itself has no address a "Sign out" link could point at: `ShSiteHostFilter`
+re-addresses every GET into delivery, and `/api/v2/site-member` has only `handoff` and
+`exchange`. A disabled user is the same case: the token filter does not ask whether the
+owner can still sign in.
+
+Build, in this order:
+
+1. `GET /api/v2/site-member/sign-out?to=/path` on the site host: disable the token the cookie
+   carries, clear the cookie (same name, path `/`, max-age 0), and redirect to the path (SH1299's
+   rule, `ShSiteMemberAPI.sitePath`). A template helper or a documented href is what a site's
+   own "Sign out" link uses.
+2. `ShLogoutHandler` (both chains) disables the person's enabled `MEMBER` tokens, so signing out
+   of Shio signs them out of every site host on their next request.
+3. The token filter refuses a `MEMBER` token whose owner is disabled or gone, the check
+   `ShDeviceTokenFilter` already makes for a device token.
+
+Assert each in `ShSiteMemberHandoffTest`: the cookie stops opening the gated page after
+each of the three, and a fresh sign-in still works afterwards.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -613,30 +638,6 @@ asserted at the level the agent surface is.
 > tools (§0.5), so they gained importance rather than becoming maintenance debt.
 
 ## VI. Market positioning
-
-### VI.11 Signing in back onto a site host (SH1375)
-
-SH1362 made sign-in from a members-only page on a site host work by sending the visitor
-to the instance login (`shio.url`) and back to the page's
-`/sites/<furl>/default/en-us/<path>` address on the instance, because that is the host
-the session cookie is sent to. The visitor ends signed in, but at the instance's address
-rather than the site's own, and every link they follow from there stays under `/sites`.
-
-Coming back to `<furl>.<shio.sites.host-domain>` needs two things. The login has to
-admit an absolute `returnUrl` whose origin is under the configured host domain
-(`safeReturnUrl` accepts only a path today, the SH1299 open-redirect rule), and the site
-host has to see a session. Two ways to give it one, and the choice is a security call:
-
-- scope the session cookie to a parent domain shared by the instance and the site hosts
-  (`server.servlet.session.cookie.domain`). Simple, but every site host then receives the
-  console session, and a replicated site in fidelity mode runs the source's scripts on that
-  host, where `/api` is passed through;
-- a one-time handoff code, minted after sign-in and exchanged on the site host for a
-  session scoped to that host alone, the shape SH1360 uses for device tokens.
-
-**Decided 2026-11-09: the one-time handoff code**; no site host receives the console
-session. Done when an anonymous visitor on a site host signs in and lands back on the
-site host signed in, and a test covers the returnUrl check and the session.
 
 ## VII. Content portability
 

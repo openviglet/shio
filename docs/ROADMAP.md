@@ -19,14 +19,11 @@
 - 📋 **SH1392** (deps: —) **The Universal Editor opens only on a site's home, so a page nothing links to cannot be opened there** — A draft cannot be previewed in the editor at all, and three of the four screens a headline costs there are the walk to the page. → §XI.119
 - 📋 **SH1393** (deps: —) **The Universal Editor's panel shows an image, date or reference field and cannot change it** — A curator who selects the hero's image there has to leave for the post form to replace it, so the editor cannot finish the job. → §XI.120
 - 📋 **SH1394** (deps: SH1392, SH1393) **Opening a page lands in the post form, while the Universal Editor, the primary editor, is a separate place** — Two entry points with two save models keep a curator learning both and split every editing improvement between surfaces. → §XI.121
+- 📋 **SH1395** (deps: —) **A visitor signed in on a site host cannot sign out there, and signing out of Shio leaves that sign-in alive** — A shared computer keeps a member's pages open for up to eight hours after they signed out. → §XI.122
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
 - ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — Every launch channel lacks a demo that opens without installing, and no production site exists. → §XCV.4
-
-## Block F — Market positioning / bold bets
-
-- 📋 **SH1375** (deps: SH1362 ✅) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Decided: a one-time handoff code, exchanged on the site host for a session scoped to that host alone. → §VI.11
 
 ## Priority
 

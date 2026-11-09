@@ -112,6 +112,10 @@ class ShAnonymousRouteAccessTest {
 			// answers 404 without a valid one. The draft itself stays behind /preview/**, which is
 			// still AUTHENTICATED below and which ShPreviewIsNotPublicTest still refuses to open.
 			new Route("/api/v2/preview-share/**", "/api/v2/preview-share/nope", Access.PUBLIC),
+			// SH1375 — PUBLIC for SH1042's reason and SH1360's shape: handoff answers a person nobody
+			// signed in yet with the login, and exchange runs on a site host where no session exists.
+			// Neither grants anything without a one-time code and the state cookie of the same browser.
+			new Route("/api/v2/site-member/**", "/api/v2/site-member/exchange", Access.PUBLIC),
 			// -- governed (authenticated()): a no-credential request is refused with 401 --
 			// SH359 lived here: /preview/** must never answer an anonymous caller.
 			new Route("/preview/**", "/preview/any-site/any-page", Access.AUTHENTICATED),

@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.http.CacheControl;
@@ -154,6 +155,8 @@ public class ShSitesAPI {
     private final ShSiteRepository shSiteRepository;
     /** SH1362 — {@code shio.url}, the instance's own address, where a site host's visitor signs in. */
     private final ShAppProperties appProperties;
+    /** SH1375 — the scheme a site host is reached on, for the address a sign-in comes back to. */
+    private final ShSiteHost siteHost;
 
     /** SH1299 — the console's login, which follows `returnUrl` back after sign-in. */
     static final String LOGIN = "/login?returnUrl=";
@@ -161,7 +164,8 @@ public class ShSitesAPI {
     public ShSitesAPI(ShPageRenderService shPageRenderService, ShPreviewLinks links,
                       ShSiteAssetDelivery assetDelivery, ShDraftAssetGrant draftAssetGrant,
                       ShContentAclService shContentAclService, ShSiteRepository shSiteRepository,
-                      ShAppProperties appProperties) {
+                      ShAppProperties appProperties, ShSiteHost siteHost) {
+        this.siteHost = siteHost;
         this.appProperties = appProperties;
         this.shContentAclService = shContentAclService;
         this.shSiteRepository = shSiteRepository;
@@ -290,10 +294,14 @@ public class ShSitesAPI {
             // with this page as the way back. A signed-in user outside the groups still gets the 404:
             // signing in again would not help them, and the redirect would say the page exists.
             if (shContentAclService.isAnonymous() && sendsMembersToLogin(rendered.siteId())) {
-                return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(java.net.URI.create(loginFor(request)))
-                        .cacheControl(CacheControl.noStore())
-                        .build();
+                Login login = loginFor(request);
+                var redirect = ResponseEntity.status(HttpStatus.FOUND)
+                        .location(java.net.URI.create(login.location()))
+                        .cacheControl(CacheControl.noStore());
+                if (login.cookie() != null) {
+                    redirect.header(HttpHeaders.SET_COOKIE, login.cookie().toString());
+                }
+                return redirect.build();
             }
             throw new ShPageRenderService.UnknownPageException(address.site(), address.path(),
                     ShPostState.PUBLISHED);
@@ -333,9 +341,11 @@ public class ShSitesAPI {
     private Address addressOf(HttpServletRequest request, String siteHeader, String format) {
         Object label = request.getAttribute(ShSiteHostFilter.SITE_LABEL);
         if (label instanceof String host) {
-            if (shPageRenderService.siteIdOf(host).isEmpty()) {
+            Optional<String> siteId = shPageRenderService.siteIdOf(host);
+            if (siteId.isEmpty()) {
                 throw new UnknownSiteHostException(host, request.getServerName());
             }
+            forgetAnotherSitesMember(siteId.get());
             return Address.ofHost(withinBase(request), host);
         }
         return Address.of(withinBase(request), siteHeader, format);
@@ -351,23 +361,47 @@ public class ShSitesAPI {
      * instance: the host where the session the login sets is sent. Coming back to the site host
      * instead would need that session there too, which is a cookie-scope decision, not a redirect.</p>
      */
-    String loginFor(HttpServletRequest request) {
+    Login loginFor(HttpServletRequest request) {
         String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
         Object label = request.getAttribute(ShSiteHostFilter.SITE_LABEL);
-        if (label instanceof String host) {
-            // The path form spells format and locale before the page; `/sites/**` redirects a page
-            // written in another locale to its own (SH1279), so the default reaches every page.
-            // A site-host label is a DNS label (ShSiteHost.LABEL), so it needs no escaping.
-            String back = BASE + "/" + host + "/" + DEFAULT_FORMAT + "/" + DEFAULT_LOCALE
-                    + withinBase(request) + query;
+        if (label instanceof String) {
+            // SH1375 — and back to the site host itself, through the one-time handoff: the login's way
+            // back is the instance's handoff route (a path, so SH1299's rule for `returnUrl` stands),
+            // naming this page's own address and a state this browser also keeps in a cookie here.
+            String state = ShSiteMemberAPI.random();
+            String page = ShSiteMemberAPI.originOf(request, siteHost) + withinBase(request) + query;
+            String back = ShSiteMemberAPI.HANDOFF + "?to=" + encode(page) + "&state=" + state;
             String instance = appProperties.getUrl() == null ? "" : appProperties.getUrl().trim();
             while (instance.endsWith("/")) {
                 instance = instance.substring(0, instance.length() - 1);
             }
-            return instance + LOGIN + java.net.URLEncoder.encode(back, java.nio.charset.StandardCharsets.UTF_8);
+            return new Login(instance + LOGIN + encode(back), ShSiteMemberAPI.stateCookie(state, request));
         }
-        return LOGIN + java.net.URLEncoder.encode(request.getRequestURI() + query,
-                java.nio.charset.StandardCharsets.UTF_8);
+        return new Login(LOGIN + encode(request.getRequestURI() + query), null);
+    }
+
+    /** Where a turned-away visitor is sent, and the cookie a site host sets on the way (SH1375). */
+    record Login(String location, org.springframework.http.ResponseCookie cookie) {
+    }
+
+    private static String encode(String value) {
+        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /**
+     * SH1375 — a sign-in on one site host is not one on another. The cookie is host-only, so a browser
+     * never sends it elsewhere; this is the check for a value carried by hand, made where the host has
+     * just been resolved to a site, which is the split SH1042 uses for a share link.
+     */
+    private static void forgetAnotherSitesMember(String siteId) {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication();
+        if (authentication != null
+                && authentication.getDetails() instanceof com.viglet.shio.spring.security.auth.ShApiTokenContext token
+                && token.scope() == com.viglet.shio.persistence.model.token.ShApiTokenScope.MEMBER
+                && (token.siteIds() == null || !token.siteIds().contains(siteId))) {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
     }
 
     private boolean sendsMembersToLogin(String siteId) {

@@ -1414,6 +1414,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1378** — A device token or Basic caller now signs up without a session and names its tenant per request with X-Shio-Tenant, membership-checked like a switch; a token naming another tenant gets 403, and password instances let any person sign up (design §VI.12 recorded in `docs/agents/database.md`).
 - **SH1379** — A device token or Basic caller who runs the tenant now issues an AGENT token there without a session, and it reads that tenant's sites; a plain member and every API token are refused (design §VI.13 superseded: an empty site allow-list already means every site of the token's tenant, so the fresh token reads them with no edit) (design §VI.13 recorded in `docs/agents/security.md`).
 - **SH1381** — A session-less 403 now names the agent op that does the refused route's job, with an example: a refused revision restore points at post.rollback, and the reachability lint reads the same table (design §VI.14 recorded in `docs/agents/security.md`).
+- **SH1375** — A visitor who signs in from a site host lands back on the site host, signed in there alone: a one-time handoff code bound to the browser's state cookie, exchanged for a host-only MEMBER cookie that opens only that site's delivery (design §VI.11 recorded in `docs/agents/security.md`).
 
 ## Block E — Console migration (in flight)
 

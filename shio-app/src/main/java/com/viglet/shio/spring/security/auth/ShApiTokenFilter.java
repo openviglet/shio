@@ -24,6 +24,7 @@ import com.viglet.shio.persistence.model.token.ShApiToken;
 import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
+import com.viglet.shio.render.ShSiteHostFilter;
 import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.tenant.ShTenantFilter;
 import com.viglet.shio.tenant.ShVigletTenantResolver;
@@ -136,6 +137,16 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
      */
     public static final String ROLE_PREVIEW_SHARE = "ROLE_PREVIEW_SHARE";
 
+    /**
+     * SH1375 — where a person signed in on a site host carries that sign-in. Host-only (no
+     * {@code Domain}), so the browser sends it to that one site host and to nothing else, and this
+     * filter reads it only on that host's delivery.
+     */
+    public static final String MEMBER_COOKIE = "shio-site-member";
+
+    /** SH1375 — the one authority a {@code MEMBER} token carries, and no rule accepts it. */
+    public static final String ROLE_SITE_MEMBER = "ROLE_SITE_MEMBER";
+
     private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
 
     private final ShApiTokenRepository shApiTokenRepository;
@@ -157,7 +168,11 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // following a link and browsers send no custom header. Everywhere else it stays the `Key`
         // header, so a cookie this instance set can never stand in for one on the delivery API.
         boolean preview = isPreviewPath(request);
-        String tokenValue = preview ? shareCookie(request) : request.getHeader(TOKEN_HEADER);
+        // SH1375 — a site host's delivery, which ShSiteHostFilter marked before this chain ran. Its
+        // credential is the member cookie and nothing else, so a `Key` there authenticates nobody.
+        boolean siteHost = request.getAttribute(ShSiteHostFilter.SITE_LABEL) instanceof String;
+        String tokenValue = siteHost ? cookie(request, MEMBER_COOKIE)
+                : preview ? cookie(request, SHARE_COOKIE) : request.getHeader(TOKEN_HEADER);
         // SH1382 — a page with no script sends no header, so on the form path alone the credential
         // may ride in the urlencoded body as a hidden field. It is honoured only for a FORM token
         // (checked below), so the field can never carry a key that does more than submit.
@@ -192,7 +207,7 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // The GraphQL delivery endpoint (SH4) and the agent surface (SH76) are the
         // second and third such surfaces.
         boolean graphQl = isGraphQlPath(request) || isMcpPath(request);
-        if (!isCdaPath(request) && !graphQl && !isAgentPath(request) && !preview) {
+        if (!isCdaPath(request) && !graphQl && !isAgentPath(request) && !preview && !siteHost) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -234,6 +249,13 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        // SH1375 — the same confinement for a site-host sign-in: a MEMBER token authenticates only a
+        // site host's delivery, and that delivery accepts no other scope. Which site is ShSitesAPI's
+        // to check, where the host has been resolved to one.
+        if ((scope == ShApiTokenScope.MEMBER) != siteHost) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         // SH1382 — the body field is a FORM credential and nothing else. A WRITE or AGENT key pasted
         // into a page's markup is left unauthenticated here, so a leaked field never writes content.
         if (fromBody && scope != ShApiTokenScope.FORM) {
@@ -260,9 +282,15 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
         // Per-token rate limit (SH3): keyed by token id, so clients sharing a key
         // share a budget. Done after the token is known but before granting access.
-        ShCdaRateLimiter.Decision decision = rateLimiter.tryConsume(apiToken.getId());
-        response.setHeader(RATE_LIMIT_REMAINING_HEADER, Long.toString(Math.max(decision.remaining(), 0)));
-        if (!decision.allowed()) {
+        // SH1375 — except a person reading a site: the same pages and assets answer an anonymous
+        // visitor with no limit at all, so limiting the signed-in one protects nothing and would stall
+        // a page with many images.
+        ShCdaRateLimiter.Decision decision = scope == ShApiTokenScope.MEMBER
+                ? null : rateLimiter.tryConsume(apiToken.getId());
+        if (decision != null) {
+            response.setHeader(RATE_LIMIT_REMAINING_HEADER, Long.toString(Math.max(decision.remaining(), 0)));
+        }
+        if (decision != null && !decision.allowed()) {
             response.setStatus(429); // 429 Too Many Requests
             response.setHeader("Retry-After", Long.toString(decision.retryAfterSeconds()));
             response.setContentType("application/json");
@@ -329,6 +357,10 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // renderer accepts.
         if (scope == ShApiTokenScope.SHARE) {
             return List.<GrantedAuthority>of(new SimpleGrantedAuthority(ROLE_PREVIEW_SHARE));
+        }
+        // SH1375 — and MEMBER, for the same reason: the members gate needs only the person's name.
+        if (scope == ShApiTokenScope.MEMBER) {
+            return List.<GrantedAuthority>of(new SimpleGrantedAuthority(ROLE_SITE_MEMBER));
         }
         var authorities = new ArrayList<GrantedAuthority>(List.of(
                 new SimpleGrantedAuthority("ROLE_CDA"),
@@ -404,14 +436,17 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         return path.equals(PREVIEW_PATH_PREFIX) || path.startsWith(PREVIEW_PATH_PREFIX + "/");
     }
 
-    /** The share credential, or {@code null} — this is the only cookie this filter reads. */
-    private static String shareCookie(HttpServletRequest request) {
+    /**
+     * A credential cookie, or {@code null}: the share cookie on the preview and the member cookie on a
+     * site host (SH1375) are the only two this filter reads, each only on its own surface.
+     */
+    private static String cookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
             return null;
         }
         for (Cookie cookie : cookies) {
-            if (SHARE_COOKIE.equals(cookie.getName())) {
+            if (name.equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }

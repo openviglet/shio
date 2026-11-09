@@ -45,27 +45,37 @@ public class ShSiteHost {
     /** One DNS label (RFC 1123), lower-case: what a browser will actually send back. */
     private static final Pattern LABEL = Pattern.compile("[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?");
 
-    private final String domain;
-    private final String scheme;
+    /**
+     * Read on every call rather than copied (SH1375), so a test can set the domain on the one
+     * properties bean and restore it, the SH1063 shape, instead of spending a context on a property.
+     */
+    private final ShSitesProperties properties;
 
     @Autowired
     public ShSiteHost(ShSitesProperties properties) {
-        this(properties.getHostDomain(), properties.getHostScheme());
+        this.properties = properties;
     }
 
     public ShSiteHost(String domain, String scheme) {
-        this.domain = normalizeDomain(domain);
-        this.scheme = scheme == null || scheme.isBlank() ? "https" : scheme.trim().toLowerCase(Locale.ROOT);
+        this.properties = new ShSitesProperties();
+        this.properties.setHostDomain(domain);
+        this.properties.setHostScheme(scheme);
     }
 
     /** Whether site hosts are configured at all. */
     public boolean enabled() {
-        return !domain.isEmpty();
+        return !domain().isEmpty();
+    }
+
+    /** The scheme a site host is reached on, {@code https} unless configured (SH1375). */
+    public String scheme() {
+        String scheme = properties.getHostScheme();
+        return scheme == null || scheme.isBlank() ? "https" : scheme.trim().toLowerCase(Locale.ROOT);
     }
 
     /** The configured service domain, or the empty string when site hosts are off. */
     public String domain() {
-        return domain;
+        return normalizeDomain(properties.getHostDomain());
     }
 
     /**
@@ -74,7 +84,7 @@ public class ShSiteHost {
      * @param serverName the request's host, with or without a port
      */
     public Optional<String> labelOf(String serverName) {
-        return labelOf(serverName, domain);
+        return labelOf(serverName, domain());
     }
 
     /** {@link #labelOf(String)} against a given domain, so the rule is testable without a context. */
@@ -114,7 +124,7 @@ public class ShSiteHost {
         if (furl == null || !LABEL.matcher(furl).matches()) {
             return Optional.empty();
         }
-        return Optional.of(scheme + "://" + furl + "." + domain);
+        return Optional.of(scheme() + "://" + furl + "." + domain());
     }
 
     /**
