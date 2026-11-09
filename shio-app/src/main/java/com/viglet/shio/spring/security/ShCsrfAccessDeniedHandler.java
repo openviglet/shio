@@ -108,6 +108,22 @@ public class ShCsrfAccessDeniedHandler implements AccessDeniedHandler {
                             + "header.")
                     .withExample("GET /api/v2/csrf");
         }
+        // SH1381 — name the op that does this route's job, not five generic ones: a device token
+        // refused on a revision restore was pointed away from post.rollback, which is that restore.
+        java.util.Optional<ShAgentEquivalents.Equivalent> covering =
+                ShAgentEquivalents.of(request.getMethod(), path);
+        if (covering.isPresent()) {
+            ShAgentEquivalents.Equivalent equivalent = covering.get();
+            return ShProblem.of("csrf-token-unobtainable", HttpStatus.FORBIDDEN,
+                            "A stateless caller cannot write to " + path)
+                    .withDetail("This request holds no session, so it cannot obtain a CSRF token, and "
+                            + path + " is not exempted for session-less callers (SH167). Its job has "
+                            + "an address-native form on the agent surface, which is.")
+                    .withFix("Send " + equivalent.op() + " to POST /api/v2/agent/batch, which is exempt "
+                            + "for callers holding no session. For a write a reviewer should see, send "
+                            + "X-Shio-Intent and Mcp-Session-Id so the run lands in the review queue.")
+                    .withExample("{\"ops\":[" + equivalent.example() + "]}");
+        }
         return ShProblem.of("csrf-token-unobtainable", HttpStatus.FORBIDDEN,
                         "A stateless caller cannot write to " + path)
                 .withDetail("This request holds no session, so it cannot obtain a CSRF token — and "

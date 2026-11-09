@@ -106,6 +106,8 @@ class ShStatelessReachabilityLintTest {
      * the source actually declares. A verb the agent form does not cover fails the build with the
      * verb in the message.</p>
      */
+    // SH1381 — the covered verbs are read from ShAgentEquivalents, the table the session-less refusal
+    // names its op from, so this inventory and that refusal are one list and cannot disagree.
     private static Requirement agentEquivalent(Set<String> covered, String why) {
         return new Requirement(Reason.AGENT_EQUIVALENT, why, covered);
     }
@@ -119,13 +121,13 @@ class ShStatelessReachabilityLintTest {
     private static Map<String, Requirement> sessionRequired() {
         Map<String, Requirement> byPath = new TreeMap<>();
 
-        byPath.put("/api/v2/folder", agentEquivalent(Set.of("POST", "PUT", "DELETE"),
+        byPath.put("/api/v2/folder", agentEquivalent(ShAgentEquivalents.verbsOf("/api/v2/folder"),
                 "folder.upsert / folder.move / folder.delete on POST /api/v2/agent/batch — SH137's "
                 + "whole point is that the agent form is safer than the console pair"));
         // SH463 found this one, and it is the instrument paying for itself on its first run: the
         // entry said POST and the controller's two gestures are both PUT. Neither is a gap, and
         // neither had ever been written down as a decision.
-        byPath.put("/api/v2/object", agentEquivalent(Set.of("PUT"),
+        byPath.put("/api/v2/object", agentEquivalent(ShAgentEquivalents.verbsOf("/api/v2/object"),
                 "copyto/moveto are the console's gestures. `moveto` is post.move and folder.move, "
                 + "which share the same writers (SH139). `copyto` has no op and needs none: a copy "
                 + "is a read plus a post.upsert at the new address, which is not merely equivalent "
@@ -133,7 +135,7 @@ class ShStatelessReachabilityLintTest {
                 + "to its id, and SH79's whole point is that the agent never holds one"));
         // SH463 found the PATCH here too - SH335's partial merge, which had no classification
         // because the row was written before it existed.
-        byPath.put("/api/v2/post-unified", agentEquivalent(Set.of("POST", "PUT", "DELETE", "PATCH"),
+        byPath.put("/api/v2/post-unified", agentEquivalent(ShAgentEquivalents.verbsOf("/api/v2/post-unified"),
                 "post.upsert / post.move / post.publish / post.delete, and since SH342 a scheduled "
                 + "publish is `when` on post.publish. What is still uncovered is /{id}/translate — "
                 + "SH342's other half, and the harder one: a locale is part of a post's identity in "
@@ -146,7 +148,7 @@ class ShStatelessReachabilityLintTest {
         // SH463 — this row is why the verb granularity exists. It said `site.upsert` and covered
         // POST and PUT; the controller also declares DELETE, and nothing on the agent surface
         // removed a site. The entry passed anyway, which is an inventory measuring its own table.
-        byPath.put("/api/v2/site", agentEquivalent(Set.of("POST", "PUT", "DELETE"),
+        byPath.put("/api/v2/site", agentEquivalent(ShAgentEquivalents.verbsOf("/api/v2/site"),
                 "site.upsert (SH170) and site.delete (SH463) — and this path is the reason SH170 "
                 + "exists, since a stateless caller here gets a bodiless 403 and the CLI's "
                 + "e2e/provision.mjs walked the CSRF dance by hand. /{id}/locales (SH1056) is "
@@ -164,7 +166,7 @@ class ShStatelessReachabilityLintTest {
         // SH1003 — every operation here has an addressed op: `note.add` says something about a
         // page and `note.resolve` closes it, both on /agent/batch and both taking the same address
         // a caller already holds. This route is the console's door to the same rows.
-        byPath.put("/api/v2/note", agentEquivalent(Set.of("POST"),
+        byPath.put("/api/v2/note", agentEquivalent(ShAgentEquivalents.verbsOf("/api/v2/note"),
                 "note.add / note.resolve"));
         // SH1379 — /api/v2/api-token left this list, and the escalation it was held against did not
         // move with it: it is "never for a token, yes for a person" now. Issuing (POST) is reachable

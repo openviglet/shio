@@ -105,6 +105,54 @@ class ShCsrfRefusalBodyTest {
     }
 
     @Test
+    @DisplayName("SH1381: a refused revision restore names post.rollback, with an example")
+    void aRefusedRestoreNamesPostRollback() throws Exception {
+        String body = secured.perform(post("/api/v2/post-unified/abc/revisions/3/restore"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body)
+                .as("SH1381: a device token refused on restore had a working road, post.rollback then "
+                        + "review approve, and the refusal pointed at five other ops")
+                .contains("csrf-token-unobtainable")
+                .contains("post.rollback")
+                .contains("\\\"op\\\":\\\"post.rollback\\\"")
+                .contains("X-Shio-Intent");
+    }
+
+    @Test
+    @DisplayName("SH1381: every agent-equivalent route's refusal names its own op")
+    void everyEquivalentRouteNamesItsOp() throws Exception {
+        java.util.List<String> wrong = new java.util.ArrayList<>();
+        for (ShAgentEquivalents.Equivalent row : ShAgentEquivalents.all()) {
+            String path = row.root() + row.route().replace("*", "abc");
+            String body = secured.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                            .request(org.springframework.http.HttpMethod.valueOf(row.method()), path)
+                            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andReturn().getResponse().getContentAsString();
+            if (!body.contains("Send " + row.op() + " to POST /api/v2/agent/batch")) {
+                wrong.add(row.method() + " " + path + " -> " + body);
+            }
+        }
+        assertThat(wrong)
+                .as("SH1381: the refusal reads the same table the SH339 inventory reads; a route whose "
+                        + "refusal names another op points a session-less caller away from its road")
+                .isEmpty();
+        assertThat(ShAgentEquivalents.all()).as("SH1381: the walk covered something").hasSizeGreaterThan(20);
+    }
+
+    @Test
+    @DisplayName("SH1381: a route with no agent equivalent keeps the generic answer")
+    void aRouteWithNoEquivalentKeepsTheGenericAnswer() throws Exception {
+        String body = secured.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v2/post-unified/abc/purge"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body)
+                .as("SH1381: a purge past the trash has no op, so the refusal must not invent one")
+                .contains("csrf-token-unobtainable")
+                .contains("If this path has no agent equivalent");
+    }
+
+    @Test
     @DisplayName("SH339: a session-bearing caller is told to fetch the token")
     void aSessionBearingCallerIsToldToFetchTheToken() throws Exception {
         MockHttpServletResponse response = secured.perform(post(SESSION_REQUIRED)

@@ -425,6 +425,17 @@ Two ordering facts that are easy to get wrong and would both fail closed:
   "should" be allow-listed. It must not be: the page carries the token, and the token is the
   authorization, allow-listing it would turn a scoped write into an anonymous one.
 
+## A session-less refusal names the op that covers it (SH1381)
+
+`ShCsrfAccessDeniedHandler`'s `csrf-token-unobtainable` used to name five generic ops whatever was
+refused, so a device token refused on `…/revisions/{v}/restore` was pointed away from `post.rollback`,
+which is that restore (then `review approve` publishes it). It now reads `ShAgentEquivalents`, an
+ordered table of (root, method, route, op, example), most specific first, and answers with that op, an
+example batch body and the `X-Shio-Intent`/`Mcp-Session-Id` hint for a reviewed write. A route with no
+op (purge, translate, bulk, a published-to-draft restore) keeps the generic text. The table is also
+what `ShStatelessReachabilityLintTest` reads for each root's covered verbs (SH463), so the inventory
+and the refusal are one list; `ShCsrfRefusalBodyTest` walks every row through the chain.
+
 ## Issuing a token without a session (SH1379)
 
 `POST /api/v2/api-token` carries the narrowed CSRF exemption (POST on the root only; list, edit and

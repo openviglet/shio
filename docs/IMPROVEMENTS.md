@@ -592,34 +592,6 @@ host has to see a session. Two ways to give it one, and the choice is a security
 Done when a person picks one, an anonymous visitor on a site host signs in and lands
 back on the site host signed in, and a test covers the returnUrl check and the session.
 
-### VI.14 A session-less refusal that names the op covering it (SH1381)
-
-Filed by shio-mobile SHM17 as "a device token cannot restore a revision, and a person's
-restore has no road through review"; restated on review on 2026-11-09. The road exists,
-and was run end to end with a `shd_` device token on a clean instance: `post.rollback`
-(SH987) on `POST /api/v2/agent/batch`, which is session-less exempt and has no role
-gate, restored revision 1 into the draft; with `Mcp-Session-Id` and `X-Shio-Intent` on
-the call the run appeared in `GET /api/v2/review/sessions`; and `POST
-/review/sessions/{run}/approve`, also exempt, published it through the site's gates. A
-second session-less route for the REST restore would be two contracts for one capability
-(P10).
-
-What the reporter met instead is the refusal. `POST
-/post-unified/{id}/revisions/{v}/restore` answers 403 `csrf-token-unobtainable`, and its
-`fix` (`ShCsrfAccessDeniedHandler`) names five generic ops (site.upsert, folder.upsert,
-post.upsert, post.move, post.publish) whatever path was refused. So a caller refused on
-restore is pointed away from `post.rollback`, and on unpublish, trash or untrash away
-from theirs (P6).
-
-The fix: the refusal names the op that covers the refused path and method, with an
-`example` and, for a write a reviewer should see, the session header. The mapping is the
-one the SH339 inventory already holds (`agentEquivalent` rows in
-`ShStatelessReachabilityLintTest`), moved where the handler can read it, so the two
-cannot disagree. A path with no equivalent keeps today's text.
-
-Done when: the restore refusal names `post.rollback` with an example, and a test walks
-every agent-equivalent row asserting its refusal names its op.
-
 ## VII. Content portability
 
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.
