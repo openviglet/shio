@@ -2105,6 +2105,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1344** — The save-bar probe passes a form whose hero Save is still in view at the bottom, so bento-token-new passes the console check; the form always had Save reachable (design §XI.105 superseded: the form was right and the probe wrong: at the check's viewport the token form scrolls 256 px, its hero Save stays in view, and the bar only appears once the hero's actions leave).
 - **SH1347** — A filtered --record keeps every task it did not run and updates only those it measured, while a full run still drops tasks the runner no longer has; a test holds both.
 - **SH1384** — pnpm test is green again in the console: GraphiQL held at 0.39/0.12/5 while the other 23 updates stay, and the design-system pin read and moved to 2026.3.25 (design §XI.113 recorded in `shio-react/test/design-system-waits.test.mjs`).
+- **SH1380** — An upload into an unknown folder, a create naming an unknown post type and a restore of an uncaptured revision now answer 404 with a problem detail naming the id, not Spring's 500 (design §XI.111 recorded in `docs/agents/content-api.md`).
 
 ## Block BH — One content model, many languages
 

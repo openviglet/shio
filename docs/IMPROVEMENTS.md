@@ -261,31 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.111 An upload into an unknown folder (SH1380)
-
-Filed by shio-mobile SHM8, measured on a 2026.3 instance on 2026-11-09 and re-measured
-on a clean one on review: `POST /api/v2/staticfile/upload` with a `folderId` no folder
-has answers 500 with Spring's default body, for any caller. A client cannot tell that
-from the instance being down, so the phone's retry with backoff spends three attempts on
-a request that can never succeed.
-
-The cause is one seam, not this route. `ShPostUnifiedWriteService` signals "not found"
-with a bare `IllegalArgumentException` (the container folder in
-`resolveContainerFolder`, the post type in `create`, the revision in `restoreRevision`),
-and nothing maps it, so every REST caller that does not catch it answers 500: the
-upload, `POST /post-unified` with an unknown post type, and `…/revisions/{v}/restore`
-with a version that was never captured (the last two read, not run).
-
-The fix is at the writer, in the project's own error type: each of those throws a
-`ShTeachingException` answering 404 with the id it could not find, a `fix` naming the
-read that lists what exists (`GET /api/v2/object/{id}/list` for a folder) and an
-`example`. The revision case reuses `ShPostStateNotFoundException.noSuchRevision`, which
-the GET of a revision already answers. A blanket `IllegalArgumentException` advice is
-not the fix: it would relabel genuine server faults as the caller's.
-
-Done when: the three requests answer 404 with a problem detail, a test holds each, and
-the upload's names SH1380.
-
 ### XI.112 Adopting GraphiQL 1.0 (SH1383)
 
 The fix for the red suite held `@graphiql/react` at 0.39, `@graphiql/toolkit` at 0.12

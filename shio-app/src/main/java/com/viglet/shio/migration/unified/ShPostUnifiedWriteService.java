@@ -186,8 +186,8 @@ public class ShPostUnifiedWriteService {
     private ShFolder resolveContainerFolder(String containerId) {
         return shFolderRepository.findById(containerId).orElseGet(() -> {
             ShSite site = shSiteRepository.findById(containerId)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Folder or site not found: " + containerId));
+                    // SH1380 — a 404 naming the id, not a 500 nobody can tell from an outage.
+                    .orElseThrow(() -> ShWriteTargetNotFoundException.noSuchFolder(containerId));
             // SH279 — the writer's landing folder was the database's choice too, which is the
             // worst of the eight: a post created at a site id would have landed in whichever root
             // came back, and where a post lives is not a thing to leave to a Set's iteration.
@@ -201,7 +201,7 @@ public class ShPostUnifiedWriteService {
     public ShPostUnified create(CreateRequest req) {
         ShFolder folder = resolveContainerFolder(req.folderId());
         ShPostType postType = shPostTypeRepository.findById(req.postTypeId())
-                .orElseThrow(() -> new IllegalArgumentException("Post type not found: " + req.postTypeId()));
+                .orElseThrow(() -> ShWriteTargetNotFoundException.noSuchPostType(req.postTypeId()));
 
         ShPostState state = req.state() != null ? req.state() : ShPostState.DRAFT;
 
@@ -650,8 +650,10 @@ public class ShPostUnifiedWriteService {
     @Transactional
     public ShPostUnified restoreRevision(String postId, int versionNo, String modifier) {
         ShPostRevision revision = shPostRevisionService.revision(postId, versionNo)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No revision " + versionNo + " of post " + postId));
+                // SH1380 — the answer GET of a revision already gives, with the numbers it holds.
+                .orElseThrow(() -> com.viglet.shio.api.post.unified.ShPostStateNotFoundException
+                        .noSuchRevision(postId, versionNo, shPostRevisionService.rows(postId).stream()
+                                .map(com.viglet.shio.api.post.revision.ShRevisionRow::version).toList()));
 
         ShPostUnified draft = shPostUnifiedRepository
                 .findByIdAndState(postId, ShPostState.DRAFT)

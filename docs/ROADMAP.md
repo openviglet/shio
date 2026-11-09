@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1380** (deps: —) **A write naming a folder, post type or revision that does not exist answers 500, so a client retries what cannot succeed** — A 500 reads as the instance being down; a 404 problem detail naming the missing id is what every other refusal on the surface gives. → §XI.111
 - 📋 **SH1383** (deps: —) **The console cannot take GraphiQL 1.0: its Monaco imports miss the pinned editor and its explorer escapes the theme** — Dependabot offers the major on every run, and each time the group's other updates arrive red beside it. → §XI.112
 
 ## Block BJ — What a visitor finds first: release, links and a demo

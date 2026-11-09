@@ -931,6 +931,17 @@ observation rather than the second.
 service's `Optional`, and was verified by reverting the controller to the bare 404: two of its
 three assertions fail, and the `published` control stays green.
 
+## A write naming nothing answers 404, not 500 (SH1380)
+
+`ShPostUnifiedWriteService` signalled "not found" with a bare `IllegalArgumentException` that nothing
+maps, so an upload into an unknown folder, a create with an unknown post type and a restore of a
+revision never captured all answered Spring's default 500, which a client (the phone's retry) cannot
+tell from an outage. The writer now throws teaching 404s at the seam:
+`ShWriteTargetNotFoundException.noSuchFolder` and `.noSuchPostType`, and the revision case reuses
+`ShPostStateNotFoundException.noSuchRevision`, the answer `GET …/revisions/{v}` already gives. A blanket
+advice for `IllegalArgumentException` was refused: it would relabel genuine server faults as the
+caller's. `ShWriteTargetNotFoundTest` drives the three requests through the chain.
+
 ## The primary key is the server's, and one endpoint let a client choose it (SH924)
 
 `POST /api/v2/group` took the id from its request body and persisted it verbatim. A blank one,
