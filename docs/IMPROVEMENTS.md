@@ -286,6 +286,22 @@ to reach it, and the opening line. It ships a Contact post-type for the form,
 verify.posts promises the three pages, and the apply benchmark in
 token-budgets.properties takes a row for it.
 
+### XI.111 An upload into an unknown folder (SH1380)
+
+Filed by shio-mobile SHM8, measured on a 2026.3 instance on 2026-11-09: `POST
+/api/v2/staticfile/upload` with a `folderId` no folder has answers 500 with Spring's
+default body (`"error":"Internal Server Error"`), as a device-token caller and the same
+way for any caller. A client cannot tell that from the instance being down, so the
+phone's retry with backoff spends three attempts on a request that can never succeed.
+
+The answer the rest of the surface gives: a 404 problem detail naming the folder id,
+with a `fix` that points at the read which lists a site's folders (`GET
+/api/v2/object/{id}/list`) and an `example`, the shape SH167's and the agent surface's
+refusals already take.
+
+Done when: an upload into an unknown folder answers 404 with a problem detail, and a
+test holds it.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
