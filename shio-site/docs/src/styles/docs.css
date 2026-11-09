@@ -111,3 +111,14 @@ site-search dialog {
   display: block;
   overflow-x: auto;
 }
+
+/*
+ * SH1413: on a wide screen the text starts at the navigation's edge. Starlight centres the column
+ * in the viewport, which on a 2000px monitor leaves a band of empty page between the sidebar and
+ * the text; its content panel reads this property for the column's inline margins.
+ */
+@media (min-width: 72rem) {
+  [data-has-sidebar][data-has-toc] .main-pane {
+    --sl-content-margin-inline: 0 auto;
+  }
+}

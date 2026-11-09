@@ -1492,6 +1492,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1403** — The Universal Editor page reads as one guide: how-tos as Starlight Steps with the console's real labels, a reference section for annotations and save endpoints, a short explanation of drafts and merges, and no style-lint debt.
 - **SH1404** — The Agent Surface page opens on one how-to in Steps (discover, dry-run, write with verify), keeps every reference table and anchor, ends with a short explanation, and is off the style-lint baseline.
 - **SH1405** — The content console page opens on six curator tasks in Steps with the console's real labels, then describes each screen in tables under the anchors COVERAGE cites, and is off the style-lint baseline.
+- **SH1413** — On a wide screen the docs text starts 24px from the navigation instead of centred in the viewport, measured at 2000px and 1280px; the table of contents keeps its place.
 
 ## Block S — The public site (shio.viglet.org)
 
