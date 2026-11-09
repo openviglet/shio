@@ -174,7 +174,7 @@ The coverage column is the page's verdict and matches the cluster row above that
 | `assetUsage` | where an asset is referenced | [content-console § The Media Library](./content-console.mdx#the-media-library) | ✅ |
 | `postTypesAsCode` | post types authored in TypeScript | [content-modeling § Authoring in TypeScript](./content-modeling.md#authoring-in-typescript) | ✅ |
 | `serverRender` | the instance renders pages itself | [website-development](./website-development.mdx) | ✅ |
-| `universalEditor` | a rendered page is editable in place | [universal-editor](./universal-editor.mdx) | ✅ |
+| `universalEditor` | a rendered page is editable in place; the Open External URL hint names the bridge and its origin meta tag (SH1410) | [universal-editor](./universal-editor.mdx#make-your-own-front-end-editable) | ✅ |
 | `teachingErrors` | a refusal carries `fix`, `allowed`, `didYouMean` and `example` | [agent-surface § Errors are instructions](./agent-surface.mdx#errors-are-instructions) | ✅ |
 | `agentContext` | the context pack, one call instead of a session | [agent-surface § One call instead of a session](./agent-surface.mdx#one-call-instead-of-a-session) | ✅ |
 | `terseResponses` | `format=terse` | [token-economy](./token-economy.md) | ✅ |

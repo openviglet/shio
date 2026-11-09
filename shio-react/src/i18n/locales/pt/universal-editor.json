@@ -67,7 +67,7 @@
   "universalEditor.noSitesDescription": "Crie um site primeiro na seção de Conteúdo, depois volte aqui para editá-lo visualmente.",
   "universalEditor.openUrl": "Abrir URL Externa",
   "universalEditor.urlPlaceholder": "https://seu-site.com/pagina",
-  "universalEditor.urlHint": "Abra qualquer página instrumentada com atributos data-sh-* para edição visual.",
+  "universalEditor.urlHint": "Abra uma página do seu próprio front end. Ela precisa da ponte @viglet/shio-editor-cors e de uma meta tag urn:shio:system:editor-origin com o endereço deste console.",
   "universalEditor.open": "Abrir",
   "universalEditor.save": "Salvar rascunho",
   "universalEditor.saving": "Salvando suas alterações",

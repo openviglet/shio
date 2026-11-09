@@ -240,7 +240,10 @@ const SWEEP = {
       + "Editor page gained composing, patterns and the save line, content-lifecycle gained the share "
       + "link section, the verify table gained section-not-accepted, and COVERAGE names every id and "
       + "the block. README moved (47 verbs, for shio share). shio-site did NOT move: its verb list is a "
-      + "sample, and nothing it claims about the editor or preview changed",
+      + "sample, and nothing it claims about the editor or preview changed. Reopened for SH1410 and "
+      + "re-closed with it: the Open External URL hint names the editor bridge and its origin meta tag "
+      + "instead of the retired data-sh-* prefix. COVERAGE's universalEditor row names it and the "
+      + "mirror moved; README and shio-site are NOT moved, neither quotes the hint",
   },
   BE: {
     swept: true,
