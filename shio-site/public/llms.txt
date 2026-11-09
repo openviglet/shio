@@ -137,4 +137,4 @@ A feature that breaks one is wrong even if it was requested.
 - The design laws: https://github.com/openviglet/shio/blob/HEAD/agents.md
 - The concept spec: https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md
 - Development roadmap: https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md
-- Viglet Turing, the sibling enterprise search product: https://turing.viglet.org
+- Viglet Turing, the portfolio's search product. Viglet Shio can index published content into it; indexing is optional, off by default, runs only on publish and never sends drafts: https://turing.viglet.org

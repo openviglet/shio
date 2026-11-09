@@ -300,10 +300,24 @@ shio init --blueprint corporate --site acme`,
       body: "Read for published content, preview for drafts, write for the editing path, and a separate agent scope that reads like preview and writes only on the agent surface. They are four scopes rather than a hierarchy on purpose: the agent's credential is deliberately not a superset of the one that can patch published content.",
       law: "P7",
     },
+    {
+      // SH1373: the portfolio relationship the hub describes, stated with its real boundary.
+      title: "Search in Viglet Turing, if you want it",
+      body: "Site search runs in your own database with nothing else installed. For faceted navigation, autocomplete and semantic search, Viglet Shio can index published content into Viglet Turing, the portfolio's search product. Indexing is off by default and you turn it on per instance, it happens only when a person publishes, and a draft is never sent. An installation that leaves it off sends content nowhere.",
+      code: {
+        caption: "application.properties",
+        text: `shio.turing.enabled=true   # default false
+shio.turing.url=https://turing.example.com
+shio.turing.default-site=acme-search`,
+      },
+      law: "P7",
+    },
   ],
   related: [
     { label: "Rendering and themes", href: withBase("/features/rendering/") },
     { label: "The curator’s half", href: withBase("/curator/") },
+    { label: "Viglet Turing indexing, in the docs", href: withBase("/docs/search-caching/#viglet-turing-indexing") },
+    { label: "Viglet Turing", href: "https://turing.viglet.org" },
   ],
 };
 

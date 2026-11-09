@@ -1,6 +1,6 @@
 ---
 title: MCP Server
-description: "Drive Viglet Shio from Claude Code, Cursor or any MCP client: POST /mcp, twelve tools, six resources, four prompts, and the Claude Code plugin."
+description: "Drive Viglet Shio from Claude Code (with its plugin) or any other MCP client: POST /mcp, twelve tools, six resources, four prompts, and the Claude Code plugin."
 sidebar:
   label: MCP Server
 ---

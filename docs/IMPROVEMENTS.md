@@ -654,32 +654,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.21 Portfolio relationship and optional integrations (SH1373)
-
-Review of 2026-11-08: published pages and current source, compared with viglet.org. The
-hub describes published-content indexing in Viglet Turing; site-content.ts mainly
-exposes a footer link to that product. docs/agents/turing.md documents indexing off by
-default, enabled configuration and explicit site routing. The primary agent example is
-Claude Code, not evidence that every agent host has an equivalent plugin.
-
-Add a compact ecosystem explanation at the relevant delivery/search point: authors and
-agents create drafts, a person publishes, configured indexing makes published content
-searchable in Viglet Turing. Link to the user guide,
-shio-site/docs/src/content/docs/search-caching.md (Viglet Turing indexing), and the
-Viglet Turing product site. State that indexing is optional and off by default; do not
-imply that all installations send content to another service, need Viglet Dumont, or
-bundle an LLM. Explain Viglet Dumont only where importing external sources is relevant.
-Distinguish verified Claude Code plugin instructions from generic MCP access: the docs
-name Cursor with no Cursor setup (mcp.md:3, agent-builds-it.mdx:10 and :27,
-getting-started/intro.md:13 under shio-site/docs/src/content/docs), and 'any MCP client'
-appears in shio-site/src/entry-server.tsx:38, components/sections/self-host.tsx:79 and
-pages/claude-code.tsx:105. The site names no Codex plugin today; keep it so. Reuse the
-existing SH1342 hosted-demo work and keep scripted sessions labelled until a real
-instance exists.
-
-Acceptance: compare the published wording, linked documentation and source capability;
-assert the corrected boundary in generated HTML and machine-readable text.
-
 ### XIX.22 Rendered brand and journey regression coverage (SH1374)
 
 Review of 2026-11-08: published pages and current source, compared with viglet.org. The

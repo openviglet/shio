@@ -1508,6 +1508,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1370** — The section bands, both footers, the header's plugin link and the docs page titles now follow the hub's grammar too: themed surfaces, solid violet, no fixed dark blocks, grids, orbs or gradient text, and a lint holds each.
 - **SH1371** — One typed destination map drives the marketing nav and footer, the docs header and footer and llms.txt: Get started is the install guide everywhere, release notes and download are the hub's pages, and the roadmap is labelled as development (design §XIX.19 recorded in `shio-site/README.md`).
 - **SH1372** — The home keeps eleven deciding sections and indexes the depth as cards that keep their anchors; the agent protocol renders in full on /claude-code/, taking the phone-width home from 36,097 to 20,809 pixels (design §XIX.20 recorded in `shio-site/README.md`).
+- **SH1373** — The delivery page and llms.txt explain the optional Viglet Turing indexing with its boundary (off by default, on publish only, never drafts), and the docs name Claude Code as the one host with a plugin, every other MCP client using the generic endpoint.
 
 ## Block T — End-user documentation, round two (the curator's half)
 

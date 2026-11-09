@@ -7,7 +7,7 @@ tableOfContents: false
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Most CMSs are built for a person clicking. Shio is built for a **coding agent**: 
-Claude Code, Cursor, or anything that speaks MCP, and the curator stays in the loop
+Claude Code through its plugin, or any other MCP client through the generic endpoint, and the curator stays in the loop
 as the curator, not the typist. The instance describes itself in **one call**
 (a manifest of every capability plus a context pack of the site as it stands), so an
 agent does not spend a session exploring before it can write. Content is addressed by
@@ -24,7 +24,7 @@ overwritten by a push. When a change lands, the agent verifies it without asking
 anyone to look: content lint, route proof, render digest.
 
 <CardGrid>
-  <LinkCard title="MCP Server" href="/docs/mcp/" description="Drive Viglet Shio from Claude Code, Cursor or any MCP client: POST /mcp, twelve tools, six resources, four prompts, and the Claude Code plugin." />
+  <LinkCard title="MCP Server" href="/docs/mcp/" description="Drive Viglet Shio from Claude Code (with its plugin) or any other MCP client: POST /mcp, twelve tools, six resources, four prompts, and the Claude Code plugin." />
   <LinkCard title="The Agent Surface" href="/docs/agent-surface/" description="/api/v2/agent/**: one call to discover the instance, addressed reads, an atomic op vocabulary, desired-state apply, and a verification loop that needs nobody to look." />
   <LinkCard title="Content as Files" href="/docs/content-as-files/" description="Project a Shio site to disk as Markdown and edit it with ordinary tools: the tree layout, sidecars, assets, and the three-way merge that protects a curator's edit." />
   <LinkCard title="The shio CLI" href="/docs/cli/" description="@viglet/shio, the shio command: scaffold a site, sync content and post types both ways, verify, replicate an existing site, and gate a pipeline on drift." />

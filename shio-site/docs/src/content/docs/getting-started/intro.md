@@ -10,8 +10,9 @@ difference that shapes everything else: every capability is built for a **coding
 first, and a person can still do all of it from the console.
 
 Most CMSs are designed for a person clicking through forms, with an API added afterwards
-for developers. Viglet Shio is designed the other way round. An agent, Claude Code, Cursor,
-anything that speaks MCP, builds and maintains the site. A curator **approves**: reviewing,
+for developers. Viglet Shio is designed the other way round. An agent builds and maintains
+the site: Claude Code through its plugin, or any other MCP client through the generic MCP
+endpoint. A curator **approves**: reviewing,
 correcting, publishing. And the Content Delivery API serves the result to whatever front
 end you like.
 
