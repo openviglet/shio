@@ -97,6 +97,8 @@
   "content.previewDraft": "Visualizar Rascunho",
   "content.editOnPage": "Editar na página",
   "content.editOnPageTitle": "Abrir esta página no Editor Universal, onde ela é editada como os visitantes a veem",
+  "content.editFields": "Editar campos",
+  "content.editFieldsTitle": "Todos os campos desta página, no formulário",
   "content.previewNoUrl": "Este site não tem uma URL de front-end configurada para visualização.",
   "content.previewError": "Não foi possível abrir a visualização do rascunho.",
   "content.modelPostType": "Modele seu Post Type {{title}}",

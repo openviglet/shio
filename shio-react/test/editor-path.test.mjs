@@ -74,3 +74,17 @@ test("SH1392: the editor frames the requested page, and the page entries offer i
   assert.match(read("app", "content", "content-browser", "site-pages.tsx"), /editorHref\(ROUTES\.UNIVERSAL_EDITOR, siteId, node\.path\)/u,
     "SH1392: and so does each page row of the site's pages view")
 })
+
+test("SH1394: a page opens in the Universal Editor by default, and its form is a mode of it", () => {
+  const palette = read("app", "system", "bento.root.page.tsx")
+  assert.match(palette, /\[\{ \.\.\.form, route: editorHref\(ROUTES\.UNIVERSAL_EDITOR, page\.siteId, page\.path\) \}/u,
+    "SH1394: a page's own palette row opens the editor, not the form")
+  assert.match(palette, /id: `\$\{row\.address\}\|fields`/u,
+    "SH1394: and its form is the Edit fields row after it")
+  const pages = read("app", "content", "content-browser", "site-pages.tsx")
+  assert.match(pages, /<Link to=\{siteId \? editorHref\(ROUTES\.UNIVERSAL_EDITOR, siteId, node\.path\) : /u,
+    "SH1394: a page's title in the Pages view opens the editor")
+  const editor = read("app", "editor", "visual-editor.page.tsx")
+  assert.match(editor, /post\/\$\{selected\?\.postId \?\? selectedSection\?\.postId \?\? pageOfFrame\}/u,
+    "SH1394: Fields opens the form of the selection, else the section, else the page")
+})

@@ -163,8 +163,12 @@ async function login(page) {
 async function openFromSearch(page, title, type) {
   await page.keyboard.press("Control+k")
   await page.getByRole("combobox").first().fill(title)
-  // The option reads "<title><type> <state>" with no separator, so the type is matched after the title.
-  await page.getByRole("option", { name: new RegExp(`^${title}.*${type}\\b`) }).first().click()
+  // SH1394 — a page's own row opens the Universal Editor, so its form is the "Edit fields" row. Any
+  // other option reads "<title><type> <state>" with no separator, so the type is matched after it.
+  const option = type === "Page"
+    ? new RegExp(`^(editar campos|edit fields): ${title}`, "i")
+    : new RegExp(`^${title}.*${type}\\b`)
+  await page.getByRole("option", { name: option }).first().click()
   await page.waitForURL(/\/content\/post\//, { timeout: 15_000 })
   await page.getByRole("heading", { level: 1 }).first().waitFor({ timeout: 15_000 })
 }
@@ -205,14 +209,13 @@ async function editorFrame(page, matches) {
 }
 
 /**
- * SH1392 — a page opens in the Universal Editor on itself: Ctrl+K, the title, and the palette's
- * "Edit on the page" row for it. Returns the frame once the bridge is editing that page.
+ * SH1392 — a page opens in the Universal Editor on itself: Ctrl+K, the title, and the page's own row,
+ * which opens the editor since SH1394. Returns the frame once the bridge is editing that page.
  */
 async function openPageInEditor(page, title, path) {
   await page.keyboard.press("Control+k")
   await page.getByRole("combobox").first().fill(title)
-  await page.getByRole("option", { name: new RegExp(`^(editar na página|edit on the page): ${title}`, "i") })
-    .first().click()
+  await page.getByRole("option", { name: new RegExp(`^${title}.*Page\\b`) }).first().click()
   return editorFrame(page, (url) => url.includes(path) && url.includes("editor=true"))
 }
 
@@ -296,12 +299,12 @@ const TASKS = [
   {
     name: "find-page",
     what: "find a page by its title and open it",
-    async run(page) {
-      await openFromSearch(page, "Pricing", "Page")
+    // SH1394 — opening a page lands in the Universal Editor on it, so that is what finding one costs.
+    async run(page, ctx) {
+      ctx.frame = await openPageInEditor(page, "Pricing", "/pricing")
     },
-    async check(_ctx, page) {
-      return /\/content\/post\//.test(page.url())
-        && await page.getByRole("heading", { level: 1, name: "Pricing" }).isVisible()
+    async check(ctx, page) {
+      return /\/universal-editor\//.test(page.url()) && (await ctx.frame.content()).includes("Pricing")
     },
   },
   {
@@ -366,10 +369,8 @@ const TASKS = [
       // SH1392 — straight to the page, rather than the hub, the site and the frame's own link.
       const pricing = await openPageInEditor(page, "Pricing", "/pricing")
       // The heading is typed where it is drawn: select it, replace it, and the bridge reports it.
-      const heading = pricing.locator("h1[data-shio-prop='heading']").first()
-      await heading.click()
-      await page.keyboard.press("Control+a")
-      await page.keyboard.type(ctx.heading)
+      // Replaced the way the form task replaces its field, so the two measure the same act (SH1394).
+      await pricing.locator("h1[data-shio-prop='heading']").first().fill(ctx.heading)
       await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
       await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
         (url) => /\/post-unified\//.test(url))
@@ -386,8 +387,8 @@ const TASKS = [
     ue: true,
     async setup(page, ctx) {
       const sections = await api(`/agent/resolve?address=${encodeURIComponent(`folder:${SITE}/sections`)}`)
-      const old = await upload(page, sections.id, `hero-old-${RUN}.png`)
-      ctx.file = `hero-new-${RUN}.png`
+      const old = await upload(page, sections.id, `hero-old-ue-${RUN}.png`)
+      ctx.file = `hero-new-ue-${RUN}.png`  // its own name: the form task's file is in the same folder, under the same run
       ctx.fileId = (await upload(page, sections.id, ctx.file)).id
       await restoreHero({ image: old.id })
     },

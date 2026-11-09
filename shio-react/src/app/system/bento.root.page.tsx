@@ -249,15 +249,15 @@ function BentoShellRoot() {
       route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
       confirm: false,
     }
-    // SH1392 — a page is also offered on itself, in the Universal Editor, beside its form.
+    // SH1394 — a page opens on itself, in the Universal Editor, which is where a page is edited
+    // (SH1319); its form is the row after it. Every other type keeps opening its form (SH1392 had
+    // offered the editor as the second row; the default is what flipped).
     const page = pageOnSite(row.address, row.type, sites ?? [])
     return page
-      ? [form, {
-          id: `${row.address}|on-page`,
-          label: t("palette.editOnPage", { title: row.title || row.address }),
-          description,
-          route: editorHref(ROUTES.UNIVERSAL_EDITOR, page.siteId, page.path),
-          confirm: false,
+      ? [{ ...form, route: editorHref(ROUTES.UNIVERSAL_EDITOR, page.siteId, page.path) }, {
+          ...form,
+          id: `${row.address}|fields`,
+          label: t("palette.editFields", { title: row.title || row.address }),
         }]
       : [form]
   }), [read.data, sites, t])

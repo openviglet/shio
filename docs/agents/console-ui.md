@@ -4451,6 +4451,28 @@ With SH1392 that makes all three of SH1319's tasks at or under the form's clicks
 the pending badge before Publish, as a curator does: pressed in the same instant the picker
 closes, Publish ran before the change had reached the pending set.
 
+## A page opens in the Universal Editor; its form is a mode of it (SH1394, first slice)
+
+The default flipped where SH1319's gate allowed it: every `-ue` task now costs no more than its
+form twin. In the palette a page's own row (title, type, state) opens `editorHref`, and an **Edit
+fields: <title>** row after it opens the form; in the site's Pages view the row's title opens the
+editor and a list icon opens the form. A page is `pageOnSite`'s answer, so a section, menu, theme or
+any type no layout binds keeps opening its form. Inside the editor, **Fields** in the header opens the
+form of the selection: the selected field's post, else the selected section, else the page
+(`pageOfFrame`); leaving with pending changes asks, as every exit does.
+
+**The measurement was made fair first.** The form task replaces the heading with `fill`, which
+counts no key; the editor task selected the old text with Ctrl+A, which counted one, and that one
+key was the only figure keeping the gate shut. Both now replace the field the same way. Figures on a
+clean instance: headline 2/1/1 against the form's 4/1/1, image 6/1/1 against 7/1/1, preview 1/1/1
+against 2/1/2; `find-page` stays 1/1/1 and now lands in the editor. Two harness defects found on the
+way: the image tasks shared a file name within a run, so the editor's picker chose the form task's
+file; and Publish pressed in the same instant the picker closed ran before the change was pending.
+
+Not yet: the search page, home's inbox and a note's link still open a page's form; Fields leaves for
+the form rather than drawing it beside the page with the selection kept; and the two still save
+through two paths.
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a

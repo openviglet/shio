@@ -40,7 +40,7 @@
   "common.refresh": "Refresh",
   "palette.group": "Actions and content",
   "palette.searchContent": "Search content",
-  "palette.editOnPage": "Edit on the page: {{title}}",
+  "palette.editFields": "Edit fields: {{title}}",
   "palette.newPageIn": "New page in {{site}}",
   "palette.newPost": "Create a post here",
   "palette.publishPage": "Publish this page",

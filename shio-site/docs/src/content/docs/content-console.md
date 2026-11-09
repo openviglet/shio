@@ -32,7 +32,9 @@ the fastest route to a named screen is not a menu:
 - **The command palette**: <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> from anywhere,
   or just <kbd>/</kbd> when you are not typing in a field. It lists every surface in the
   console and searches their descriptions as well as their names, so *restorable* finds
-  the Trash and *credentials* finds API Tokens.
+  the Trash and *credentials* finds API Tokens. Type two letters or more and it finds content
+  too: a page opens in the [Universal Editor](/docs/universal-editor/) on itself, with an
+  **Edit fields** row after it for its form, and anything else opens in its form.
 - **Each page names itself** in a hero at the top, which carries the page's title and its
   way back. A folder or a post shows its whole location there instead, as a **trail** of
   links above the title (*Sites › VigR3 › Home*), and the title is the folder or the post

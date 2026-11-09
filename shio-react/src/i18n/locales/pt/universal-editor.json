@@ -1,5 +1,7 @@
 {
   "universalEditor.title": "Editor Universal",
+  "universalEditor.fields": "Campos",
+  "universalEditor.fieldsTitle": "Todos os campos da seção selecionada, ou da página, no formulário",
   "universalEditor.description": "Edite o conteúdo do seu site visualmente, diretamente na página renderizada.",
   "universalEditor.edit": "Editar",
   "universalEditor.preview": "Visualizar",

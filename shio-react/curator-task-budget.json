@@ -27,7 +27,7 @@
       "keys": 1,
       "screens": 1,
       "ms": 953,
-      "why": "Ctrl+K, the title, and the result: the floor every other task's first step is measured against."
+      "why": "Ctrl+K, the title, and the page's own row, which since SH1394 opens it in the Universal Editor on itself: the floor every other task's first step is measured against. Its form is the Edit fields row beside it."
     },
     "create-page": {
       "clicks": 3,
@@ -44,25 +44,25 @@
       "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
     },
     "change-headline-ue": {
-      "clicks": 3,
-      "keys": 2,
+      "clicks": 2,
+      "keys": 1,
       "screens": 1,
-      "ms": 862,
-      "why": "SH1392: Ctrl+K, the palette's Edit on the page row for Pricing, the heading, Ctrl+A and type, Publish, on one screen. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319); the extra key against the form is selecting the old text, which the form's field replaces in place."
+      "ms": 884,
+      "why": "SH1394: Ctrl+K, Pricing's own row (a page opens in the Universal Editor), the heading replaced the way the form task replaces its field, Publish, on one screen: two clicks fewer than the form. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319)."
     },
     "replace-image-ue": {
       "clicks": 6,
       "keys": 1,
       "screens": 1,
       "ms": 1620,
-      "why": "SH1393: Ctrl+K, Edit on the page, the image, Search in the panel, the file, Select, Publish: one click fewer than the form. It was blocked while the panel drew the image widget read-only (SH1037), and the widget showed an empty upload box because the page reports the element, not the file id."
+      "why": "SH1393: Ctrl+K, Pricing's own row, the image, Search in the panel, the file, Select, Publish: one click fewer than the form. It was blocked while the panel drew the image widget read-only (SH1037), and the widget showed an empty upload box because the page reports the element, not the file id."
     },
     "preview-draft-ue": {
       "clicks": 1,
       "keys": 1,
       "screens": 1,
       "ms": 648,
-      "why": "SH1392: Ctrl+K and the palette's Edit on the page row for the draft, and the editor frames the draft itself as the visitor will see it: one click and one screen fewer than the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from."
+      "why": "SH1394: Ctrl+K and the draft's own row, which opens the Universal Editor on it as the visitor will see it: one click and one screen fewer than the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from (SH1392)."
     }
   }
 }

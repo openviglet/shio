@@ -8,7 +8,7 @@
  */
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
-import { ChevronRight, FileText, Folder, MousePointerClick, Plus } from "lucide-react"
+import { ChevronRight, FileText, Folder, ListTree, Plus } from "lucide-react"
 import { editorHref } from "@/lib/editor-path"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -79,7 +79,9 @@ function PageRowLink({ node, depth, newPage, siteId }: Readonly<{
     <li>
       <div className="flex items-center gap-3 px-4 py-2.5" style={{ paddingLeft: `${1 + depth * 1.25}rem` }}>
         {page?.id ? (
-          <Link to={`${ROUTES.CONTENT_ROOT}/post/${page.id}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
+          // SH1394 — a page opens on itself, in the Universal Editor; its form is the icon beside it.
+          <Link to={siteId ? editorHref(ROUTES.UNIVERSAL_EDITOR, siteId, node.path) : `${ROUTES.CONTENT_ROOT}/post/${page.id}`}
+            className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
             {label}
           </Link>
         ) : (
@@ -87,12 +89,11 @@ function PageRowLink({ node, depth, newPage, siteId }: Readonly<{
         )}
         <span className="text-muted-foreground hidden shrink-0 font-mono text-xs sm:inline">{node.path}</span>
         {page && <span className="text-muted-foreground w-24 shrink-0 text-right text-xs">{state}</span>}
-        {/* SH1392 — the page itself in the Universal Editor, beside opening its form. */}
-        {page && siteId && (
+        {page?.id && siteId && (
           <Button asChild size="icon-sm" variant="ghost">
-            <Link to={editorHref(ROUTES.UNIVERSAL_EDITOR, siteId, node.path)} aria-label={t("content.editOnPage")}
-              title={t("content.editOnPageTitle")}>
-              <MousePointerClick className="h-4 w-4" />
+            <Link to={`${ROUTES.CONTENT_ROOT}/post/${page.id}`} aria-label={t("content.editFields")}
+              title={t("content.editFieldsTitle")}>
+              <ListTree className="h-4 w-4" />
             </Link>
           </Button>
         )}

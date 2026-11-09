@@ -1,5 +1,7 @@
 {
   "universalEditor.title": "Universal Editor",
+  "universalEditor.fields": "Fields",
+  "universalEditor.fieldsTitle": "Every field of the selected section, or of the page, in its form",
   "universalEditor.description": "Visually edit your site content inline, directly on the rendered page.",
   "universalEditor.edit": "Edit",
   "universalEditor.preview": "Preview",

@@ -4,14 +4,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { ROUTES } from "@/app/routes.const"
-import { ArrowDown, ArrowLeft, ArrowUp, Copy, Monitor, Plus, RefreshCw, Save, Smartphone, Trash2, Undo2, Upload } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowUp, Copy, ListTree, Monitor, Plus, RefreshCw, Save, Smartphone, Trash2, Undo2, Upload } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import type { ShSite } from "@/models/site/site"
 import { isCancelled } from "@/lib/read-options"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoStatusDock } from "@/app/system/bento-status-dock"
 import { pushReport, setWorking } from "@/lib/dock-reports"
@@ -1330,6 +1330,19 @@ export default function VisualEditorPage() {
           <Button variant="ghost" size="icon-sm" title={t("universalEditor.refresh")} onClick={refresh}>
             <RefreshCw className="h-4 w-4" />
           </Button>
+          {/*
+            SH1394 — the form as a mode of the editor: every field of the selected post (a section),
+            or of the page, including the ones no element draws (SEO, dates, references). Leaving
+            with pending changes asks first, as every exit from here does.
+          */}
+          {(selected?.postId ?? selectedSection?.postId ?? pageOfFrame) && (
+            <Button asChild variant="outline" size="sm" title={t("universalEditor.fieldsTitle")}>
+              <Link to={`${ROUTES.CONTENT_ROOT}/post/${selected?.postId ?? selectedSection?.postId ?? pageOfFrame}`}>
+                <ListTree className="h-4 w-4 mr-1" />
+                {t("universalEditor.fields")}
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => persist(true)} disabled={saving}>
             <Upload className="h-4 w-4 mr-1" />
             {t("universalEditor.publish")}
