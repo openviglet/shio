@@ -489,7 +489,7 @@
       "folder": "/en/sections",
       "data": {
         "heading": "One package, three jobs",
-        "body": "<p>Quilhara was installed from one marketplace package. An agent builds and maintains a Shio site, a curator approves what it did, and the content delivery API serves it. Each page below shows one part of that, on this site's own content.</p><ul><li><a href=\"/tour/agent\">How an agent reads this site</a></li><li><a href=\"/tour/writes\">How the agent wrote it</a></li><li><a href=\"/tour/verification\">How the agent proved it</a></li><li><a href=\"/tour/curator\">What the curator did</a></li><li><a href=\"/tour/files\">The same site as files</a></li><li><a href=\"/tour/delivery\">The same content over REST and GraphQL</a></li><li><a href=\"/tour/media\">Where each image is used</a></li><li><a href=\"/tour/replication\">How an existing site becomes an authorable one</a></li><li><a href=\"/search\">Site search</a></li></ul><p>Every page ends with the console screen, the MCP call, the CLI line and the delivery request behind it. They run against the instance you are reading, so you can copy one and try it.</p>"
+        "body": "<p>Quilhara was installed from one marketplace package. An agent builds and maintains a Viglet Shio site, a curator approves what it did, and the content delivery API serves it. Each page below shows one part of that, on this site's own content.</p><ul><li><a href=\"/tour/agent\">How an agent reads this site</a></li><li><a href=\"/tour/writes\">How the agent wrote it</a></li><li><a href=\"/tour/verification\">How the agent proved it</a></li><li><a href=\"/tour/curator\">What the curator did</a></li><li><a href=\"/tour/files\">The same site as files</a></li><li><a href=\"/tour/delivery\">The same content over REST and GraphQL</a></li><li><a href=\"/tour/media\">Where each image is used</a></li><li><a href=\"/tour/replication\">How an existing site becomes an authorable one</a></li><li><a href=\"/search\">Site search</a></li></ul><p>Every page ends with the console screen, the MCP call, the CLI line and the delivery request behind it. They run against the instance you are reading, so you can copy one and try it.</p>"
       },
       "publish": true,
       "locale": "en-us"
@@ -514,7 +514,7 @@
       "folder": "/en/tour",
       "data": {
         "title": "How this site was built",
-        "description": "The feature tour: which Shio capability each page of Quilhara shows, and how to do the same.",
+        "description": "The feature tour: which Viglet Shio capability each page of Quilhara shows, and how to do the same.",
         "sections": [
           "/en/sections/tour-index",
           "/en/sections/tour-index-built"
@@ -729,7 +729,7 @@
       "folder": "/en/sections",
       "data": {
         "heading": "One content store, several front ends",
-        "body": "<p>Shio renders this site itself, and the same content is open to any other front end. The REST delivery API reads a page by its address and language, lists a folder or a post type, and searches. GraphQL asks for exactly the fields a component needs. A webhook tells another system when a page is published, so a static build or a cache knows to refresh.</p>"
+        "body": "<p>Viglet Shio renders this site itself, and the same content is open to any other front end. The REST delivery API reads a page by its address and language, lists a folder or a post type, and searches. GraphQL asks for exactly the fields a component needs. A webhook tells another system when a page is published, so a static build or a cache knows to refresh.</p>"
       },
       "publish": true,
       "locale": "en-us"
@@ -809,7 +809,7 @@
       "folder": "/en/sections",
       "data": {
         "heading": "Capture, propose, convert",
-        "body": "<p>Quilhara was written for the package, but most sites already exist somewhere. Shio captures one by crawling it into an inventory of pages, markup and assets, and writes no content while it does. A proposal then names which repeated blocks could become sections and what each would lose.</p><p>Converting applies the accepted plan as drafts: post types for the sections, a theme from the captured styles, and pages a curator can edit. Nothing is published until someone reviews it.</p>"
+        "body": "<p>Quilhara was written for the package, but most sites already exist somewhere. Viglet Shio captures one by crawling it into an inventory of pages, markup and assets, and writes no content while it does. A proposal then names which repeated blocks could become sections and what each would lose.</p><p>Converting applies the accepted plan as drafts: post types for the sections, a theme from the captured styles, and pages a curator can edit. Nothing is published until someone reviews it.</p>"
       },
       "publish": true,
       "locale": "en-us"

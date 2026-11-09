@@ -287,31 +287,6 @@ to reach it, and the opening line. It ships a Contact post-type for the form,
 verify.posts promises the three pages, and the apply benchmark in
 token-budgets.properties takes a row for it.
 
-### XI.110 Full product names in the Quilhara package (SH1376)
-
-SH1369 applied the hub's naming decision (viglet.org docs/STRATEGY.md section I.7: every
-visitor-facing mention is Viglet Shio, Viglet Turing or Viglet Dumont, repeated mentions
-included) to shio.viglet.org, its docs pages and the marketplace catalogue's
-description. It left the Quilhara package's own pages alone, because they are sample
-content a user applies and publishes, not the product's site, and changing them moves
-more than copy.
-
-They still name the product bare: `marketplace/quilhara/content/en-us.json` (the about
-page's "a Shio site", the feature tour's "which Shio capability", the delivery page's
-"Shio renders this site itself", the replication page's "Shio captures one") and the
-same four in `pt-br.json` ("um site Shio", "O Shio renderiza"). The showcase page on
-shio.viglet.org shows screenshots of exactly these pages, so the public site still
-displays the bare name in an image.
-
-What to change: the eight strings, in both languages, to the full name. Then re-run what
-the package feeds: `ShBlueprintAccessibilityTest` (the apply report's token ceiling,
-`blueprint.apply.quilhara`), the marketplace build (`shio-site/scripts/marketplace.mjs`,
-whose zip must stay byte-stable), and the showcase screenshots if any of the changed
-text is visible in them.
-
-Done when the package's content carries no bare product name, the Java and site suites
-are green, and the showcase screenshots match the text.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

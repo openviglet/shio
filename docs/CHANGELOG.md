@@ -419,6 +419,7 @@
 - **SH1302** — The content browser locks a members-only row and the site form saves its sign-in switch, both checked in a browser, which also found and fixed the site request dropping that switch (design §XI.68 recorded in `docs/agents/console-ui.md`).
 - **SH1303** — The console's site save stores the page type it sends, and a test now fails the build when the site form writes a key ShSiteRequest does not declare (design §XI.69 recorded in `docs/agents/console-ui.md`).
 - **SH1356 (SectionGallery)** — SectionGallery joined the vocabulary: photos with captions whose alt is each asset's own, drawn by the union layout through {{#image}} and by a React Gallery, emitted into every package.
+- **SH1376** — The Quilhara sample pages name Viglet Shio in full in both languages, the tour screenshot is retaken from a clean instance with the package applied from this tree, and the full-names lint reads the package's content.
 
 ## Block M — Token economy, measured (SH74)
 

@@ -95,6 +95,17 @@ test("SH1369/SH1377: the docs pages, .mdx and card descriptions included, name e
       + "they are, but a sentence names the product in full");
 });
 
+test("SH1376: the Quilhara showcase pages name the product in full, in both languages", () => {
+  // The showcase on this site shows screenshots of these pages, so their text is visitor text here.
+  const BARE_ANY = /(?<!Viglet )(?<![\w/.@-])(Shio|Turing|Dumont)\b/u;
+  const found = ["en-us", "pt-br"].flatMap((locale) => {
+    const file = `../marketplace/quilhara/content/${locale}.json`;
+    return readFileSync(join(SITE, file), "utf8").split("\n").flatMap((line, index) =>
+      BARE_ANY.test(line) ? [`${locale}.json:${index + 1}: ${line.trim().slice(0, 120)}`] : []);
+  });
+  assert.deepEqual(found, [], "SH1376: a bare product name in the Quilhara sample content");
+});
+
 test("SH1369: the breadcrumbs crawlers read name the product in full", () => {
   for (const file of ["scripts/prerender.mjs", "docs/src/components/Head.astro"]) {
     assert.match(readFileSync(join(SITE, file), "utf8"), /name: "Viglet Shio", item:/u, `SH1369: ${file}`);

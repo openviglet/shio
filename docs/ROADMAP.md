@@ -13,7 +13,6 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1356** (deps: decision: how a FORM token reaches a script-free form) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; a script-free form must carry the FORM token, a security choice. → §XI.109
-- 📋 **SH1376** (deps: SH1369 ✅) **The Quilhara sample pages still name the product bare, in both languages and in the showcase screenshots** — The hub's full-name rule covers what a visitor reads, and the showcase displays these pages on the public site. → §XI.110
 
 ## Block BG — The console as an application: cost, resilience and access
 

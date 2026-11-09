@@ -506,7 +506,7 @@
       "folder": "/pt/secoes",
       "data": {
         "heading": "Um pacote, três papéis",
-        "body": "<p>A Quilhara foi instalada a partir de um único pacote do marketplace. Um agente constrói e mantém um site Shio, uma pessoa curadora aprova o que ele fez, e a API de entrega de conteúdo o serve. Cada página abaixo mostra uma parte disso, sobre o conteúdo deste próprio site.</p><ul><li><a href=\"/visita/agente\">Como um agente lê este site</a></li><li><a href=\"/visita/escrita\">Como o agente o escreveu</a></li><li><a href=\"/visita/verificacao\">Como o agente o comprovou</a></li><li><a href=\"/visita/curadoria\">O que a curadoria fez</a></li><li><a href=\"/visita/arquivos\">O mesmo site como arquivos</a></li><li><a href=\"/visita/entrega\">O mesmo conteúdo por REST e GraphQL</a></li><li><a href=\"/visita/midia\">Onde cada imagem é usada</a></li><li><a href=\"/visita/replicacao\">Como um site existente vira um site editável</a></li><li><a href=\"/busca\">Busca no site</a></li></ul><p>Cada página termina com a tela do console, a chamada MCP, a linha de CLI e a requisição de entrega por trás dela. Elas rodam contra a instância que você está lendo, então dá para copiar uma e testar.</p>"
+        "body": "<p>A Quilhara foi instalada a partir de um único pacote do marketplace. Um agente constrói e mantém um site Viglet Shio, uma pessoa curadora aprova o que ele fez, e a API de entrega de conteúdo o serve. Cada página abaixo mostra uma parte disso, sobre o conteúdo deste próprio site.</p><ul><li><a href=\"/visita/agente\">Como um agente lê este site</a></li><li><a href=\"/visita/escrita\">Como o agente o escreveu</a></li><li><a href=\"/visita/verificacao\">Como o agente o comprovou</a></li><li><a href=\"/visita/curadoria\">O que a curadoria fez</a></li><li><a href=\"/visita/arquivos\">O mesmo site como arquivos</a></li><li><a href=\"/visita/entrega\">O mesmo conteúdo por REST e GraphQL</a></li><li><a href=\"/visita/midia\">Onde cada imagem é usada</a></li><li><a href=\"/visita/replicacao\">Como um site existente vira um site editável</a></li><li><a href=\"/busca\">Busca no site</a></li></ul><p>Cada página termina com a tela do console, a chamada MCP, a linha de CLI e a requisição de entrega por trás dela. Elas rodam contra a instância que você está lendo, então dá para copiar uma e testar.</p>"
       },
       "publish": true,
       "locale": "pt-br",
@@ -533,7 +533,7 @@
       "folder": "/pt/visita",
       "data": {
         "title": "Como este site foi feito",
-        "description": "A visita guiada: qual recurso do Shio cada página da Quilhara mostra, e como fazer o mesmo.",
+        "description": "A visita guiada: qual recurso do Viglet Shio cada página da Quilhara mostra, e como fazer o mesmo.",
         "sections": [
           "/pt/secoes/tour-index",
           "/pt/secoes/tour-index-built"
@@ -764,7 +764,7 @@
       "folder": "/pt/secoes",
       "data": {
         "heading": "Um repositório de conteúdo, vários front ends",
-        "body": "<p>O Shio renderiza este site sozinho, e o mesmo conteúdo fica aberto a qualquer outro front end. A API REST de entrega lê uma página pelo endereço e pelo idioma, lista uma pasta ou um tipo de post, e faz buscas. O GraphQL pede exatamente os campos de que um componente precisa. Um webhook avisa outro sistema quando uma página é publicada, para que um build estático ou um cache saiba que deve atualizar.</p>"
+        "body": "<p>O Viglet Shio renderiza este site sozinho, e o mesmo conteúdo fica aberto a qualquer outro front end. A API REST de entrega lê uma página pelo endereço e pelo idioma, lista uma pasta ou um tipo de post, e faz buscas. O GraphQL pede exatamente os campos de que um componente precisa. Um webhook avisa outro sistema quando uma página é publicada, para que um build estático ou um cache saiba que deve atualizar.</p>"
       },
       "publish": true,
       "locale": "pt-br",
@@ -850,7 +850,7 @@
       "folder": "/pt/secoes",
       "data": {
         "heading": "Capturar, propor, converter",
-        "body": "<p>A Quilhara foi escrita para o pacote, mas a maioria dos sites já existe em algum lugar. O Shio captura um site percorrendo-o e montando um inventário de páginas, marcação e arquivos, sem escrever conteúdo nesse passo. Uma proposta então diz quais blocos repetidos podem virar seções e o que cada um perderia.</p><p>A conversão aplica o plano aceito como rascunho: tipos de post para as seções, um tema a partir dos estilos capturados e páginas que a curadoria pode editar. Nada é publicado antes de alguém revisar.</p>"
+        "body": "<p>A Quilhara foi escrita para o pacote, mas a maioria dos sites já existe em algum lugar. O Viglet Shio captura um site percorrendo-o e montando um inventário de páginas, marcação e arquivos, sem escrever conteúdo nesse passo. Uma proposta então diz quais blocos repetidos podem virar seções e o que cada um perderia.</p><p>A conversão aplica o plano aceito como rascunho: tipos de post para as seções, um tema a partir dos estilos capturados e páginas que a curadoria pode editar. Nada é publicado antes de alguém revisar.</p>"
       },
       "publish": true,
       "locale": "pt-br",
