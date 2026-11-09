@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.121 Every page opens in the Universal Editor, the form a mode of it (SH1394)
-
-SH1319 decided the Universal Editor is the primary way to edit a page, with the form as
-its side panel, and measured why the merge cannot simply be a redirect: the editor
-cannot yet open a named page (SH1392) or change a non-text field (SH1393). This line is
-the merge itself, after both.
-
-Build: opening a **page** from anywhere (search, the palette, the site's pages view,
-home's inbox, a note's link) lands in the editor on that page. A page is what
-`pageTypesOf` says it is (SH1316); every other type keeps opening the post form, which
-stays the builder's default for types with no rendered page. Inside the editor, a
-"Fields" mode shows the whole post form for the page (SEO, dates, references, everything
-no element draws) and keeps the selection: switching with the hero's heading selected
-opens the form on that section's field, and switching back reselects it. One save model,
-the editor's (SH335), so a change made in either mode is one pending set.
-
-Judged by `curator-tasks.mjs`: every `-ue` task costs no more than its post-form twin
-before the default flips, and the post-form tasks for a page are then re-recorded
-through the editor.
-
 ### XI.122 Signing out of a site host (SH1395)
 
 SH1375 signs a visitor in on a site host with an ephemeral `MEMBER` token in a host-only
@@ -329,6 +309,28 @@ before writing it), and that the CDA endpoints remain for an external front end'
 editor (`@viglet/shio-editor-cors`). Then run the docs suites and `shio-docs-sync`'s
 judgement pass over the rest of the page, which has not been read against the code since
 SH335 either.
+
+### XI.125 The form drawn beside the page, one save (SH1399)
+
+SH1394 made the Universal Editor where a page opens (the palette, the Pages view, the
+search page) and gave its header a **Fields** button. That button leaves: it opens the
+post form of the selection (the selected field's post, else the section, else the page)
+as another screen. So the form is a separate place with its own save, a field selected
+on the page is not the field the form opens on, and coming back with Edit on the page
+lands on the page with nothing selected. SH1319's decision asked for the form as the
+editor's side panel, with one save model.
+
+Build: Fields toggles a mode inside the editor that draws the post form
+(`PostFormFields`, the form's own widgets) in the properties panel's place, for the
+selected post or the page, scrolled to and focusing the selected field's control when
+there is one. Its edits join the editor's `changes` the way SH1393's widget edits do
+(type `widget`, `was` kept), so Save and Publish write both modes through `persist` and
+the SH335 merge verb, and Revert works the same. Leaving the mode reselects the element
+the field is drawn on, through the bridge's selection message. The post editor stays the
+route for content that is not a page, and for notes and insights.
+
+Judged by a curator task that changes a page field no element draws (the SEO
+description) and publishes it, in both: it costs no more in the editor than in the form.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

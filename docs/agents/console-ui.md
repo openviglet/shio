@@ -4469,9 +4469,12 @@ against 2/1/2; `find-page` stays 1/1/1 and now lands in the editor. Two harness 
 way: the image tasks shared a file name within a run, so the editor's picker chose the form task's
 file; and Publish pressed in the same instant the picker closed ran before the change was pending.
 
-Not yet: the search page, home's inbox and a note's link still open a page's form; Fields leaves for
-the form rather than drawing it beside the page with the selection kept; and the two still save
-through two paths.
+**Second slice: the search page** opens a page on itself too (`pageOnSite` over the sites it already
+reads for its filter). **Three links keep the form, on purpose**: a note's (the note rail is the
+form's), a failed check's (`?tab=insights`), and home's own page drafts, because home reads no site
+list (SH1050's one summary read, held by the route-cost budget) and a page's form has Edit on the
+page one click away. Drawing the form beside the page with the selection kept and one save is
+SH1399's.
 
 ## The content browser has one control row (SH1307)
 

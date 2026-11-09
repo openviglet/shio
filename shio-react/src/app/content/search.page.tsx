@@ -5,6 +5,7 @@ import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ROUTES } from "@/app/routes.const"
+import { editorHref, pageOnSite } from "@/lib/editor-path"
 import {
   BentoDataTable, BentoFilterBar, BentoIdentityCell, type BentoDataTableColumn, type BentoFilterValue,
 } from "@viglet/viglet-design-system/bento"
@@ -138,7 +139,11 @@ export default function SearchPage() {
     },
   ], [t])
   const openRow = (row: ShConsoleSearchRow) => {
-    if (row.id) navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)
+    // SH1394 — a page opens on itself in the Universal Editor, as it does from the palette; every
+    // other type opens its form. The sites are this page's own read, already loaded for its filter.
+    const page = pageOnSite(row.address, row.type, sites)
+    if (page) navigate(editorHref(ROUTES.UNIVERSAL_EDITOR, page.siteId, page.path))
+    else if (row.id) navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)
   }
 
   /**

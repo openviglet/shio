@@ -88,3 +88,14 @@ test("SH1394: a page opens in the Universal Editor by default, and its form is a
   assert.match(editor, /post\/\$\{selected\?\.postId \?\? selectedSection\?\.postId \?\? pageOfFrame\}/u,
     "SH1394: Fields opens the form of the selection, else the section, else the page")
 })
+
+test("SH1394: the search page opens a page in the editor; notes, insights and home's drafts keep the form", () => {
+  assert.match(read("app", "content", "search.page.tsx"),
+    /if \(page\) navigate\(editorHref\(ROUTES\.UNIVERSAL_EDITOR, page\.siteId, page\.path\)\)/u,
+    "SH1394: a page found on the search page opens on itself, as it does from the palette")
+  const home = read("app", "system", "home.page.tsx")
+  // Deliberate: a note and a page's insights are drawn by the form (the note rail, the Insights
+  // tab), and home reads no site list (SH1050), so its page drafts keep the form, one click from the page.
+  assert.match(home, /content\/post\/\$\{note\.objectId\}/u, "SH1394: a note still opens where it is resolved")
+  assert.match(home, /content\/post\/\$\{page\.id\}\?tab=insights/u, "SH1394: a failed check still opens its insights")
+})

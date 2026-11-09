@@ -16,9 +16,9 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- ⏳ **SH1394** (deps: SH1392 ✅, SH1393 ✅) **Opening a page lands in the post form, while the Universal Editor, the primary editor, is a separate place** — The search page, home's inbox and notes still open a page's form, and Fields leaves the editor rather than keeping the selection. → §XI.121
 - 📋 **SH1395** (deps: —) **A visitor signed in on a site host cannot sign out there, and signing out of Shio leaves that sign-in alive** — A shared computer keeps a member's pages open for up to eight hours after they signed out. → §XI.122
 - 📋 **SH1398** (deps: —) **The Universal Editor docs say it saves through a write-scope delivery token, which SH335 removed** — A reader following the page looks for a token setting the console no longer has. → §XI.124
+- 📋 **SH1399** (deps: SH1394 ✅) **The Universal Editor's Fields button leaves for the post form, which saves on its own and forgets the selection** — A page's unseen fields are still edited in a second place with a second save, not beside the page. → §XI.125
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
@@ -39,13 +39,6 @@
   the site link a hosted instance where the Quilhara showcase renders publicly and a
   guest role can browse, edit drafts and see the review queue but not publish, reset
   from the blueprint on a schedule.
-
-## Done when — SH1394
-
-- **Every link to a page opens the editor, and Fields keeps the selection** Search
-  results, home's inbox and a note's link to a page open the Universal Editor; Fields
-  draws the form beside the page on the selected field, and switching back reselects it,
-  with one pending set.
 
 ## Non-goals (do NOT add as tasks)
 
