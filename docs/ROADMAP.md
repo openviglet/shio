@@ -17,7 +17,7 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1380** (deps: —) **An upload into a folder that does not exist answers 500, so a client retries what can never succeed** — A 500 reads as the instance being down; a 404 problem detail naming the folder is what every other refusal on the surface gives. → §XI.111
+- 📋 **SH1380** (deps: —) **A write naming a folder, post type or revision that does not exist answers 500, so a client retries what cannot succeed** — A 500 reads as the instance being down; a 404 problem detail naming the missing id is what every other refusal on the surface gives. → §XI.111
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
@@ -26,9 +26,9 @@
 ## Block F — Market positioning / bold bets
 
 - 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
-- 📋 **SH1378** (deps: —) **A device-token caller cannot create or choose a tenant: signup and switch answer 403, every call lands in the default** — A native app signs a person in with a stateless bearer, and the tenant the console keeps on a session has no way to reach it. → §VI.12
-- 📋 **SH1379** (deps: SH1378) **A device-token caller cannot mint an AGENT token for its tenant: api-token answers 403 without a session** — The phone's backend runs the agent with the tenant's AGENT token, and only a console session can mint one today. → §VI.13
-- 📋 **SH1381** (deps: SH1378) **A device-token caller cannot restore a revision, and a person's restore has no road through review to live** — The phone's history restores a version as a draft and sends it through review; restore refuses a bearer and review lists agent runs only. → §VI.14
+- 📋 **SH1378** (deps: —) **A person signed in without a session cannot create or choose a tenant: signup is 403, every call lands in the default** — A device token and the CLI's HTTP Basic both hold no session, and the tenant the console keeps on one has no way to reach them. → §VI.12
+- 📋 **SH1379** (deps: SH1378) **A device-token caller cannot mint an AGENT token for its tenant: api-token answers 403 without a session** — The phone's backend runs the agent with its tenant's AGENT token; a person may mint one without a session, a token never may. → §VI.13
+- 📋 **SH1381** (deps: —) **A session-less 403 names five fixed agent ops, not the one covering the refused route, so a restore misses post.rollback** — A device token refused on restore had a working road, post.rollback then review approve, and the refusal pointed elsewhere. → §VI.14
 
 ## Priority
 

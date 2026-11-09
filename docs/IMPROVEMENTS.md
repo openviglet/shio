@@ -288,19 +288,28 @@ token-budgets.properties takes a row for it.
 
 ### XI.111 An upload into an unknown folder (SH1380)
 
-Filed by shio-mobile SHM8, measured on a 2026.3 instance on 2026-11-09: `POST
-/api/v2/staticfile/upload` with a `folderId` no folder has answers 500 with Spring's
-default body (`"error":"Internal Server Error"`), as a device-token caller and the same
-way for any caller. A client cannot tell that from the instance being down, so the
-phone's retry with backoff spends three attempts on a request that can never succeed.
+Filed by shio-mobile SHM8, measured on a 2026.3 instance on 2026-11-09 and re-measured
+on a clean one on review: `POST /api/v2/staticfile/upload` with a `folderId` no folder
+has answers 500 with Spring's default body, for any caller. A client cannot tell that
+from the instance being down, so the phone's retry with backoff spends three attempts on
+a request that can never succeed.
 
-The answer the rest of the surface gives: a 404 problem detail naming the folder id,
-with a `fix` that points at the read which lists a site's folders (`GET
-/api/v2/object/{id}/list`) and an `example`, the shape SH167's and the agent surface's
-refusals already take.
+The cause is one seam, not this route. `ShPostUnifiedWriteService` signals "not found"
+with a bare `IllegalArgumentException` (the container folder in
+`resolveContainerFolder`, the post type in `create`, the revision in `restoreRevision`),
+and nothing maps it, so every REST caller that does not catch it answers 500: the
+upload, `POST /post-unified` with an unknown post type, and `…/revisions/{v}/restore`
+with a version that was never captured (the last two read, not run).
 
-Done when: an upload into an unknown folder answers 404 with a problem detail, and a
-test holds it.
+The fix is at the writer, in the project's own error type: each of those throws a
+`ShTeachingException` answering 404 with the id it could not find, a `fix` naming the
+read that lists what exists (`GET /api/v2/object/{id}/list` for a folder) and an
+`example`. The revision case reuses `ShPostStateNotFoundException.noSuchRevision`, which
+the GET of a revision already answers. A blanket `IllegalArgumentException` advice is
+not the fix: it would relabel genuine server faults as the caller's.
+
+Done when: the three requests answer 404 with a problem detail, a test holds each, and
+the upload's names SH1380.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
@@ -612,79 +621,83 @@ back on the site host signed in, and a test covers the returnUrl check and the s
 
 ### VI.12 A tenant for a device-token caller (SH1378)
 
-Filed by shio-mobile SHM2, measured against a multi-tenant instance built from 2026.3 on
-2026-11-09. A person signed in with a device token (SH1351, SH1360) cannot reach a
-tenant of their own, for two reasons that are one seam:
+Filed by shio-mobile SHM2, measured against a multi-tenant 2026.3 instance on
+2026-11-09; widened on review the same day. A person signed in without a session (a
+device token, SH1351/SH1360, and equally HTTP Basic, which is what the `shio` CLI holds)
+cannot reach a tenant of their own:
 
-- `POST /api/v2/tenant/signup` and `POST /api/v2/tenant/{name}/switch` answer 403
-  `csrf-token-unobtainable`: they are not on the SH167 list of paths exempt for
-  session-less callers, and a `shd_` bearer holds no session by design.
-- Even with a tenant, every bearer request resolves to the default `shio` tenant.
-  `ShVigletTenantResolver` reads the CDA token attribute, then the `SH_TENANT` session
-  attribute `/switch` writes, then the OIDC `workspace_id` claim; a device token supplies
-  none of the three.
+- `POST /api/v2/tenant/signup` answers 403 `csrf-token-unobtainable`: it is not on the
+  SH167 session-less list.
+- `ShVigletTenantResolver` reads a CDA token's tenant, then the `SH_TENANT` session
+  attribute `/switch` writes, then the OIDC `workspace_id` claim. A session-less person
+  supplies none, so every call resolves to the default `shio` tenant.
 
-What the phone needs, in the console's own terms: the person creates a tenant they own,
-and every later call made with that device lands in a tenant they chose, with the
-membership gate applied as it is for a session.
+The shape, chosen on review: a per-request `X-Shio-Tenant: <name>` header, read by the
+resolver as one more source and returned as `Resolution.of`, never `trusted`, so the
+shared gate checks active membership and suspension on every call exactly as it does for
+a session. Honoured for a person credential only: an API token carries its own tenant,
+and a header naming another is refused. A tenant stored on the device-token row would
+fix one credential and leave the CLI where it is. `signup` joins the narrowed exemption
+(a bearer is not a CSRF vector); `switch` stays a session's.
 
-Two shapes, and the choice is Shio's: a per-request header (`X-Shio-Tenant: <name>`),
-honoured only for a person credential and checked against active membership on every
-call; or the active tenant stored on the device-token row, set by `/switch` for a
-device. The header keeps the token stateless; the row spares every request a parameter.
-Signup and switch join the session-less exemption either way, since a bearer is not a
-CSRF vector.
+The `/api/v2/tenant` row in `ShStatelessReachabilityLintTest` is re-split so signup is
+no longer classified admin-only.
 
-Done when: a device token can sign up, switch, and read `/tenant/current` answering the
-tenant it chose.
+Done when: a device token and a Basic caller each sign up, send the header, and read
+`/tenant/current` answering that tenant; a non-member's header answers 403.
 
 ### VI.13 An agent token minted from a device (SH1379)
 
-Filed by shio-mobile SHM4, measured on a 2026.3 instance on 2026-11-09. The phone's
-backend runs the agent for a tenant with that tenant's AGENT token, and nothing
-stateless can obtain one: `POST /api/v2/api-token` answers 403 `csrf-token-unobtainable`
-to HTTP Basic and to a `shd_` device token alike, so only a console session can mint it.
-A fresh AGENT token's site allow-list is also empty, so it reads no site until someone
-edits it.
+Filed by shio-mobile SHM4, measured on a 2026.3 instance on 2026-11-09; narrowed on
+review the same day. The phone's backend runs the agent with its tenant's AGENT token,
+and nothing session-less can obtain one: `POST /api/v2/api-token` answers 403
+`csrf-token-unobtainable` to HTTP Basic and to a `shd_` device token alike. A fresh
+AGENT token's site allow-list is also empty, so it reads no site until someone edits it.
 
-What the app needs: right after a person creates a tenant (SH1378), their device mints
-an AGENT token for that tenant, scoped to the sites the tenant owns, and hands it to the
-backend; the person can see and revoke it in the console like any token.
+Joining the SH167 exemption as it stands would be an escalation. The matcher sees only
+the cookie, and a WRITE-scope CDA token carries `ROLE_USER` and may POST outside the
+agent paths (`ShApiTokenFilter`), so it could mint credentials: the case
+`ShStatelessReachabilityLintTest` holds this row against. And "minted by its OWNER" is
+not a gate that exists: `ShApiTokenAPI.create` lets any authenticated member mint.
 
-Two shapes, Shio's choice: `/api/v2/api-token` joins the session-less exemption for a
-person credential (a bearer is not a CSRF vector, the reasoning SH1378 uses for signup),
-or signup itself returns an AGENT token for the tenant it created. Either way the token
-is the tenant's, minted by its OWNER, and an AGENT token still never reaches a review
-decision.
+The shape, chosen on review: a session-less mint is accepted from a person credential
+only (device token or Basic), from an OWNER or ADMIN of the tenant SH1378 resolves, and
+any API-token principal is refused with a problem detail naming the console. The token
+lands in that tenant through `@TenantId`. "Signup returns a token" is not taken: it
+couples creating a tenant to issuing a credential. The lint row changes from "never" to
+"never for a token, yes for a person", asserted both ways.
 
-Done when: a device token mints an AGENT token for its tenant, and that token reads the
-tenant's sites over MCP.
+Done when: a device token mints an AGENT token for its tenant, that token reads the
+tenant's sites over MCP, a member who is not OWNER is refused, and a WRITE token is
+refused.
 
-### VI.14 A rollback from a device, reviewed (SH1381)
+### VI.14 A session-less refusal that names the op covering it (SH1381)
 
-Filed by shio-mobile SHM17, measured on a 2026.3 instance on 2026-11-09. The phone's
-history screen lists a site's publications and offers "restore as a draft", which then
-goes through review and publish again. Two things stop it for a person signed in with a
-device token:
+Filed by shio-mobile SHM17 as "a device token cannot restore a revision, and a person's
+restore has no road through review"; restated on review on 2026-11-09. The road exists,
+and was run end to end with a `shd_` device token on a clean instance: `post.rollback`
+(SH987) on `POST /api/v2/agent/batch`, which is session-less exempt and has no role
+gate, restored revision 1 into the draft; with `Mcp-Session-Id` and `X-Shio-Intent` on
+the call the run appeared in `GET /api/v2/review/sessions`; and `POST
+/review/sessions/{run}/approve`, also exempt, published it through the site's gates. A
+second session-less route for the REST restore would be two contracts for one capability
+(P10).
 
-- `POST /api/v2/post-unified/{id}/revisions/{version}/restore` answers 403
-  `csrf-token-unobtainable`: it is not on the SH167 session-less list.
-- A restored draft has no road back to live from the phone. The review queue lists agent
-  runs, and a person's restore is not one, so it never appears there; the direct publish
-  route has the same CSRF refusal.
+What the reporter met instead is the refusal. `POST
+/post-unified/{id}/revisions/{v}/restore` answers 403 `csrf-token-unobtainable`, and its
+`fix` (`ShCsrfAccessDeniedHandler`) names five generic ops (site.upsert, folder.upsert,
+post.upsert, post.move, post.publish) whatever path was refused. So a caller refused on
+restore is pointed away from `post.rollback`, and on unpublish, trash or untrash away
+from theirs (P6).
 
-The seam is SH1378's and SH1379's: a person's own writes, made with a bearer that is not
-a CSRF vector. Restore can join that exemption. For the second half, Shio's choice: a
-restore recorded as a review session of its own (actor the person, intent "restore
-version N"), so the queue that already gates publishing gates the rollback too; or a
-publish route a device token may call, behind the same gates and waiver as an approve.
+The fix: the refusal names the op that covers the refused path and method, with an
+`example` and, for a write a reviewer should see, the session header. The mapping is the
+one the SH339 inventory already holds (`agentEquivalent` rows in
+`ShStatelessReachabilityLintTest`), moved where the handler can read it, so the two
+cannot disagree. A path with no equivalent keeps today's text.
 
-A rollback reviewed like any change is what the phone's design assumes, and it keeps
-"the agent never approves itself" and "nothing goes live untapped" both true for an
-undo.
-
-Done when: a device token restores a revision, the restore appears in the review queue,
-and approving it publishes the restored content.
+Done when: the restore refusal names `post.rollback` with an example, and a test walks
+every agent-equivalent row asserting its refusal names its op.
 
 ## VII. Content portability
 
