@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -184,6 +185,89 @@ public class ShSitesAPI {
                                    HttpServletRequest request) {
         Address address = addressOf(request, siteHeader, format);
         requireKnownLocale(address);
+        try {
+            return deliver(address, request);
+        } catch (ShPageRenderService.UnknownPageException missing) {
+            // SH1391 — a person gets a page of the site; an agent or an API client keeps the problem.
+            if (!wantsHtml(request)) {
+                throw missing;
+            }
+            return notFoundPage(address, request);
+        }
+    }
+
+    /** SH1391 — the address a site's own not-found page answers at, the convention static hosts use. */
+    public static final String NOT_FOUND_PAGE = "/404";
+
+    /**
+     * SH1391 — whether the reader is a browser: one that names {@code text/html} in what it accepts.
+     *
+     * <p>A browser always does, and the clients the teaching problem is for (an agent, {@code curl},
+     * {@code fetch} with its default {@code *}{@code /*}) do not, so the JSON stays where it is read.</p>
+     */
+    static boolean wantsHtml(HttpServletRequest request) {
+        String accept = request.getHeader(HttpHeaders.ACCEPT);
+        return accept != null && accept.toLowerCase(java.util.Locale.ROOT).contains(MediaType.TEXT_HTML_VALUE);
+    }
+
+    /**
+     * SH1391 — a missing or members-only page, answered to a browser as a page of the site.
+     *
+     * <p>A visitor asking for a page they may not read, or one that is not there, got the delivery
+     * route's teaching problem as raw JSON, naming the agent API: an error written for an agent, on
+     * the showcase's own members-only page. Now the site's published {@value #NOT_FOUND_PAGE} page
+     * answers, in the reader's language where it has a translation, with the same 404 and both cases
+     * alike, so the denial still does not say the page exists (SH1285). A site without one gets a
+     * plain page that says so and links home. Never cached: a member signing in must not meet a
+     * shared cache's copy of the refusal.</p>
+     */
+    private ResponseEntity<String> notFoundPage(Address address, HttpServletRequest request) {
+        String html;
+        try {
+            ShRenderedPage page = notFoundRendered(address, request);
+            Map<String, Set<String>> locales = address.isHeaderForm() ? Map.of()
+                    : links.publishedLocalesByUrl(page.siteId());
+            boolean segmentIsALocale = segmentIsALocale(address, locales);
+            html = links.rewriteInto(page.html(), address.prefix(), page, address.path(), null,
+                    path -> linkPrefix(address, locales, segmentIsALocale, path));
+        } catch (com.viglet.shio.api.error.ShTeachingException none) {
+            // No such page, or one its author left undrawable (an unbound layout, say): the plain page
+            // is the honest answer to both, and verify names the second to the author.
+            html = plainNotFound(address);
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.TEXT_HTML)
+                .cacheControl(CacheControl.noStore())
+                .body(html);
+    }
+
+    private ShRenderedPage notFoundRendered(Address address, HttpServletRequest request) {
+        ShRenderedPage page;
+        try {
+            page = shPageRenderService.render(address.site(), NOT_FOUND_PAGE, ShPostState.PUBLISHED,
+                    readerParams(request), address.selectedLocale());
+        } catch (ShPageRenderService.ShPageRedirectException translated) {
+            // The reader's language keeps its not-found page at its own address: draw that one here.
+            page = shPageRenderService.render(address.site(), translated.to(), ShPostState.PUBLISHED,
+                    readerParams(request));
+        }
+        if (!shContentAclService.visibility(page.postId()).allowed()) {
+            throw new ShPageRenderService.UnknownPageException(address.site(), NOT_FOUND_PAGE,
+                    ShPostState.PUBLISHED);
+        }
+        return page;
+    }
+
+    static String plainNotFound(Address address) {
+        String home = org.springframework.web.util.HtmlUtils.htmlEscape(address.prefix() + "/");
+        return "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+                + "<meta name=\"robots\" content=\"noindex\">\n<title>Page not found</title>\n</head>\n<body>\n"
+                + "<main>\n<h1>Page not found</h1>\n<p>There is no page at this address.</p>\n"
+                + "<p><a href=\"" + home + "\">Go to the home page</a></p>\n</main>\n</body>\n</html>\n";
+    }
+
+    private ResponseEntity<?> deliver(Address address, HttpServletRequest request) {
         ShRenderedPage rendered;
         try {
             // SH1057 — the segment reaches the resolution. The route's own default is every link it

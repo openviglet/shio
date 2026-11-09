@@ -154,6 +154,66 @@ class ShSitesMembersOnlyTest {
                         .doesNotContain("members lounge"));
     }
 
+    // --- SH1391: what a turned-away browser is shown ---
+
+    private static final String BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
+
+    @Test
+    @DisplayName("SH1391: a browser turned away from a members-only page gets a page, not the API's JSON")
+    void aBrowserGetsAPageNotTheProblem() throws Exception {
+        for (String path : List.of("lounge", "no-such-page-sh1391")) {
+            mockMvc.perform(get(page(path)).header("Accept", BROWSER))
+                    .andExpect(status().isNotFound())
+                    .andExpect(result -> {
+                        assertThat(result.getResponse().getContentType()).startsWith("text/html");
+                        assertThat(result.getResponse().getContentAsString())
+                                .as("SH1391: %s answered a visitor with an error written for an agent", path)
+                                .contains("<h1>Page not found</h1>")
+                                .contains("href=\"/sites/" + siteName + "/default/en-us/\"")
+                                .doesNotContain("render-page-unknown").doesNotContain("/api/v2/agent")
+                                .doesNotContain("members lounge");
+                        assertThat(result.getResponse().getHeader("Cache-Control"))
+                                .as("SH1391: a member signing in must not meet a shared copy of the refusal")
+                                .contains("no-store");
+                    });
+        }
+    }
+
+    @Test
+    @DisplayName("SH1391: an API client asking the same URL keeps the teaching problem")
+    void anApiClientKeepsTheProblem() throws Exception {
+        mockMvc.perform(get(page("lounge")).header("Accept", "application/json"))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("render-page-unknown"));
+    }
+
+    @Test
+    @DisplayName("SH1391: a site's own published /404 page answers both a missing and a members-only page")
+    void theSitesOwnNotFoundPageAnswers() throws Exception {
+        String[] id = new String[1];
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager.find(ShSite.class, siteId);
+            ShFolder root = entityManager.find(ShFolder.class, rootId);
+            ShPostType pageType = postType("Sh1285Page", (byte) 0, Instant.parse("2026-01-01T00:00:00Z"));
+            id[0] = post(site, root, pageType, "Lost", ShSitesAPI.NOT_FOUND_PAGE,
+                    "{\"TEXT\":\"not on our map\"}", Instant.parse("2026-01-01T00:00:00Z"));
+        });
+        try {
+            for (String path : List.of("lounge", "no-such-page-sh1391")) {
+                mockMvc.perform(get(page(path)).header("Accept", BROWSER))
+                        .andExpect(status().isNotFound())
+                        .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                                .as("SH1391: %s is drawn in the site's own layout", path)
+                                .contains("not on our map").doesNotContain("members lounge"));
+            }
+        } finally {
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> entityManager
+                    .createQuery("delete from ShPostUnified p where p.id = :id").setParameter("id", id[0])
+                    .executeUpdate());
+        }
+    }
+
     @Test
     @DisplayName("SH1285: a signed-in user outside the group is turned away the same way")
     void aStrangerIsTurnedAway() throws Exception {

@@ -13,7 +13,6 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1387** (deps: decision: may an install open a form) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — Opening it at install is what SH632 keeps out of templates; a person decides if the Marketplace may offer it. → §XI.114
-- 📋 **SH1391** (deps: —) **A visitor asking for a members-only page gets the delivery API's JSON error instead of a page of the site** — The showcase promises a page only members see, and a visitor meets an error written for an agent. → §XI.118
 
 ## Block BG — The console as an application: cost, resilience and access
 

@@ -378,6 +378,33 @@
       "translationOf": "/contact"
     },
     {
+      "url": "/pt/secoes/not-found",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Esta trilha não está no nosso mapa",
+        "body": "<p>A página que você pediu não está aqui, ou é só para membros do escritório de trilhas.</p><p>Recomece pela <a href=\"/inicio\">página inicial</a> ou veja as <a href=\"/trilhas\">trilhas</a>.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/not-found"
+    },
+    {
+      "url": "/pagina-nao-encontrada",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Página não encontrada",
+        "description": "A página que você pediu não está no site da Quilhara.",
+        "sections": [
+          "/pt/secoes/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/404"
+    },
+    {
       "url": "/inicio",
       "type": "Home",
       "folder": "/pt/paginas",

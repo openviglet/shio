@@ -2296,6 +2296,17 @@ editor outside the group still sees and edits the gated page there. On an instan
 check is one `count()` that loads no entity, which is what `ShRenderListingPageBenchmarkTest`
 measures. `ShSitesMembersOnlyTest` renders one public page for a visitor, a member, and in preview.
 
+## A turned-away browser sees a page of the site (SH1391)
+
+A missing page and a members-only page refused to a visitor are one `UnknownPageException` on
+`/sites/**`, and the global handler wrote it as the teaching problem, raw JSON naming the agent API.
+`ShSitesAPI.serve` now answers a reader whose `Accept` names `text/html` with the site's published
+`/404` page (`NOT_FOUND_PAGE`), following its locale redirect to the translation, with the same 404
+and `no-store`; a site with none, or one whose `/404` will not render, gets `plainNotFound`. Any
+other `Accept` keeps the problem, which is what an agent and `curl` read. The two catches are
+declared in `ShSilentCatchInventoryTest` as control flow. Quilhara ships `/404` and
+`/pagina-nao-encontrada`; `ShSitesMembersOnlyTest` holds both the plain and the site's own page.
+
 ## A site can have a host of its own (SH1354)
 
 `shio.sites.host-domain` (empty by default, so nothing changes until an operator sets it) makes

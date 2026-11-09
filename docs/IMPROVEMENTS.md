@@ -287,32 +287,6 @@ package, is the decision.
 instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
 line as the closed form it already is.
 
-### XI.118 A refused page looks like the site (SH1391)
-
-**Where it showed.** On 2026-11-09, on a clean `ghcr.io/openviglet/shio:latest`
-(166cc6c) with Quilhara installed from the Marketplace. In the console, Conteúdo ›
-quilhara › pt › trilhas, the trail "Cachoeira das Samambaias" was set to "Quem pode ler
-a página publicada: Somente membros" in its Permissões and saved ("Permissões salvas").
-A browser with no session then asked for
-`/sites/quilhara/default/pt-br/trilhas/cachoeira-das-samambaias` and got a 404 whose
-body is the delivery API's JSON problem, shown as raw text: `{"detail":"Looked for a
-PUBLISHED post whose friendly URL is '/trilhas/cachoeira-das-samambaias'
-…","status":404,"type":"https://shio.viglet.com/errors/render-page-unknown","fix":"GET
-/api/v2/agent/find?site=quilhara lists the addresses this site holds", …}`.
-
-**Why it matters.** "Members get a page nobody else sees (content ACL)" is one of the
-showcase's promises (SH1250), and what a visitor meets instead is an error written for
-an agent, naming the agent API. A members-only page should look like the site: its 404
-page, or a sign-in prompt when the site has member sign-in.
-
-**What to do.** When the site renderer refuses a page, a browser asking for HTML gets
-the site's own not-found page (or its sign-in page for members-only content), with the
-same status; the JSON problem stays for API and agent clients. A test asks for a
-members-only page as a visitor and finds HTML in the site's layout, not JSON.
-
-**Done when** a visitor asking for Quilhara's members-only trail sees a page of the
-Quilhara site.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

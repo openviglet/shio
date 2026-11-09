@@ -337,7 +337,12 @@ class ShSilentCatchInventoryTest {
             // a 302 (SH385's row, at a second address) and `UnknownAssetException` to fall back to
             // the page's 404 (SH437's). Two routes making the same two choices is one judgement,
             // not two — which is also why they read as duplicates here and are counted anyway.
-            Map.entry("render", 9),
+            // 11 since SH1391, two more on the same route and both control flow: a browser turned
+            // away gets the site's own /404 page, so a redirect from that page to its translation is
+            // followed rather than answered (SH385's row once more), and a site with no /404 page, or
+            // one its author left unrenderable, gets the plain not-found page. That last one is a
+            // teaching 4xx an author meets in verify and the preview, so SH103's argument holds.
+            Map.entry("render", 11),
             // SH939 removed the `utils` row entirely, from 2 to none. Both catches were the two
             // arms of `ShUtils.isJSONValid` — try `JSONObject`, fall back to `JSONArray`, answer
             // false — and nothing called the method. So this is the one way the population is
@@ -637,8 +642,12 @@ class ShSilentCatchInventoryTest {
                         control flow rather than degradations: a path with no page is tried as an \
                         asset, and a path that is neither gets the page's 404 because that is the \
                         more useful of the two sentences. Two of them are the public delivery \
-                        route making the same two choices this one does, at a second address.""")
-                .hasSize(9)
+                        route making the same two choices this one does, at a second address.
+
+                        SH1391 added the tenth and eleventh, control flow again: a browser turned \
+                        away is shown the site's own /404 page, following that page to its \
+                        translation, or a plain page when the site has none it can draw.""")
+                .hasSize(11)
                 .allSatisfy(where -> assertThat(where)
                         .matches(".*(ShRenderAPI|ShSitesAPI|ShRenderHelpers|ShTemplateValidator).*"));
     }

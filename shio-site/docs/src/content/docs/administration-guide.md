@@ -137,6 +137,10 @@ second account system.
 - On the published site (`/sites/...`) a visitor outside the groups gets the same
   **404** a missing page gets, so the page is not confirmed to exist. A member reads it,
   and the response is never stored in a shared cache.
+- That 404 is a page of the site when a browser asks for it: the site's own published
+  `/404` page, in the visitor's language when it has a translation, or a plain "Page not
+  found" page with a link home when the site has none. An API client asking the same
+  address still gets the JSON problem.
 - Listings on public pages (menus, `{{#query}}`, related content, search) leave the
   gated pages out for that visitor, and the page counts stay exact.
 - The delivery API applies the same rule to the **owner of the token** making the
