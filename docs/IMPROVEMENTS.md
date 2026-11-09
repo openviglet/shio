@@ -1283,4 +1283,5 @@ applied from the marketplace (SH1257 already makes that one click), its rendered
 public, and the console open to a guest role that can browse, edit drafts and see the
 review queue but not publish, reset from the blueprint on a schedule. The README and the
 site link it beside `docker run`. If a guest console is too costly to keep safe, the
-rendered showcase alone, with a recorded console tour, is the first step.
+rendered showcase alone, with a recorded console tour, is the first step. Set aside
+2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
