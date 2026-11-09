@@ -15,7 +15,7 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1399** (deps: SH1394 ✅) **The Universal Editor's Fields button leaves for the post form, which saves on its own and forgets the selection** — A page's unseen fields are still edited in a second place with a second save, not beside the page. → §XI.125
+- 📋 **SH1400** (deps: —) **The Universal Editor publishes at once, while the post form's Publish shows the plan and asks first** — The same act asks in one editor and not the other, and the primary editor is the one that skips P7. → §XI.126
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

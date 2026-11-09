@@ -2122,6 +2122,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1394** — A page opens in the Universal Editor from the palette, the Pages view and the search page, with its form one step away; notes, insights and home's drafts keep the form on purpose, and the side-panel form is SH1399 (design §XI.121 recorded in `docs/agents/console-ui.md`).
 - **SH1395** — A site-host sign-in ends with the site's sign-out link, with a sign-out of Shio, or when the person is disabled, so a shared computer no longer keeps a member's pages open after they leave (design §XI.122 recorded in `docs/agents/security.md`).
 - **SH1398** — The Universal Editor docs describe saving as it is: the console-session merge held to write and publish permission, with If-Match, and the delivery API with a write token only for an editor on one's own front end.
+- **SH1399** — Fields draws a page's or section's whole form beside the page, opening on the selected field, and its edits are saved with the page's other changes; a description the page never draws costs 3 clicks there (design §XI.125 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

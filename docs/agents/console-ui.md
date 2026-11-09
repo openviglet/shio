@@ -4476,6 +4476,23 @@ list (SH1050's one summary read, held by the route-cost budget) and a page's for
 page one click away. Drawing the form beside the page with the selection kept and one save is
 SH1399's.
 
+## Fields is a mode of the editor, saved with the page (SH1399)
+
+**Fields** in the editor's header is a toggle now, not a link. On, the properties panel is replaced
+by `FieldsForm`: every field the target post's type declares (`fieldsTarget`: the selected field's
+post, else the selected section, else the page), through the form's own widgets, from the stored
+post (`editorService.editable`, the key SH1393's read shares) and its type (`postType:<name>`, the
+create form's key). Its edits go through `editWidgetField(field, value, fieldsTarget)`, so they are
+the editor's pending changes: one Save and one Publish write both modes through `persist`, and
+Revert and the badge count them. A field whose stored value is not a scalar (a relation's list) is
+named as composed on the page and left there. The selected field is scrolled to and focused when the
+mode opens (checked live: the hero's subheading opens on its textarea), and turning the mode off
+shows the selection again, since nothing cleared it.
+
+Measured with a new pair, the Pricing page's description (metadata, drawn by no element):
+`change-description-ue` 3 clicks, 1 key, 1 screen; `change-description` 4/1/1. Part of that click is
+the form's publish confirmation, which the editor's Publish does not ask (SH1400).
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a

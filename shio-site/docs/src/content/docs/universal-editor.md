@@ -59,10 +59,12 @@ page's row opens the Universal Editor on it; so does its title in a site's **Pag
 to yet can be edited where it will be read. Sections, menus and other content that is not a page
 open in their form as before.
 
-Every field is still one step away: **Fields** in the editor's header opens the form for the
-section you selected, or for the page, with the fields no element shows (SEO, dates, references).
-From the palette it is the **Edit fields** row after the page, and in the Pages view the list icon
-beside it.
+Every field is one step away: **Fields** in the editor's header shows, in place of the properties
+panel, every field of the section you selected, or of the page, including the ones no element
+shows (the description, dates, references). It opens on the field you had selected, its changes
+are saved with the rest of your changes, and pressing **Fields** again goes back to your
+selection. The full post form is still the **Edit fields** row after the page in the palette, and
+the list icon beside it in the Pages view.
 
 You can also go to **Universal Editor** in the console, which lists the sites and has an
 entry field for an external URL; picking a site opens its home. The page being edited is part

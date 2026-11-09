@@ -11,7 +11,7 @@ import type { ShSite } from "@/models/site/site"
 import { isCancelled } from "@/lib/read-options"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoStatusDock } from "@/app/system/bento-status-dock"
 import { pushReport, setWorking } from "@/lib/dock-reports"
@@ -184,6 +184,78 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, dr
  * list --remote` is where a stale copy is found. Nothing is listed until something is pushed, and
  * the empty state says how, because a tab that is simply empty reads as broken.
  */
+/**
+ * SH1399 — the post form drawn inside the editor: every field the post's type declares, through the
+ * form's own widgets, beside the page rather than on another screen.
+ *
+ * Its edits are the editor's pending changes (`onEdit`, the same path a panel widget takes, SH1393),
+ * so Save, Publish and Revert cover both modes. Values are the stored post's, not the page's: most of
+ * these fields are drawn nowhere. A field whose stored value is not a scalar (a relation's list, say)
+ * is named and left to the page, where it is composed (SH1038). The field the curator had selected is
+ * scrolled to and focused, which is what keeps the selection across the switch.
+ */
+function FieldsForm({ postId, focusProp, pendingValue, onEdit, t }: {
+  postId: string
+  focusProp?: string | null
+  pendingValue: (prop: string) => string | undefined
+  onEdit: (field: { prop: string; label: string; value?: string }, value: string) => void
+  t: (key: string, options?: Record<string, unknown>) => string
+}) {
+  const editorService = useMemo(() => new ShUniversalEditorService(), [])
+  const postTypeService = useMemo(() => new ShPostTypeService(), [])
+  const post = useQuery({
+    queryKey: addressKey(`id:${postId}|editable`),
+    queryFn: ({ signal }) => editorService.editable(postId, { signal }),
+  })
+  const typeName = post.data?.shPostType?.name
+  const type = useQuery({
+    queryKey: addressKey(`postType:${typeName ?? ""}`),
+    queryFn: ({ signal }) => postTypeService.get(typeName ?? "", { signal }),
+    enabled: Boolean(typeName),
+  })
+  const fields = [...(type.data?.fields ?? [])]
+    .filter((field) => field?.name)
+    .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0)) as DeclaredWidgetField[]
+  useEffect(() => {
+    if (!focusProp || !fields.length) return
+    const row = document.getElementById(`ue-field-${focusProp}`)
+    row?.scrollIntoView({ block: "center" })
+    row?.querySelector<HTMLElement>("input, textarea, [contenteditable='true'], button")?.focus()
+  }, [focusProp, fields.length])
+  if (post.isPending || type.isPending) {
+    return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+  }
+  return (
+    <div className="space-y-3">
+      <div className="font-semibold">{post.data?.title || typeName}</div>
+      {fields.map((field) => {
+        const raw = post.data?.data?.[field.name]
+        const label = field.label || field.name
+        if (raw !== undefined && raw !== null && typeof raw === "object") {
+          return (
+            <div key={field.name} id={`ue-field-${field.name}`} className="rounded-md border p-2 text-xs text-muted-foreground">
+              {label}: {t("universalEditor.fieldOnPage")}
+            </div>
+          )
+        }
+        const stored = raw === undefined || raw === null ? "" : String(raw)
+        const Widget = getWidget(field.widget ?? "Text")
+        return (
+          <div key={field.name} id={`ue-field-${field.name}`} className="rounded-md border p-2">
+            <div className="text-xs font-medium text-muted-foreground">{label}</div>
+            <div className="mt-1">
+              <Widget attr={attrFromDeclared(field, pendingValue(field.name) ?? stored) as never}
+                onChange={(next: { strValue?: string; dateValue?: string }) =>
+                  onEdit({ prop: field.name, label, value: stored }, valueFromWidget(field, next))}
+                postId={postId} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function PatternRail({ patterns, busy, t, onInsert }: {
   patterns: PatternSummary[]
   busy: boolean
@@ -370,6 +442,8 @@ export default function VisualEditorPage() {
   )
   const [editMode, setEditMode] = useState(true)
   const [mobile, setMobile] = useState(false)
+  // SH1399 — the form drawn in the panel's place, for the selection or the page.
+  const [fieldsMode, setFieldsMode] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<SelectedElement | null>(null)
   /**
@@ -812,6 +886,8 @@ export default function VisualEditorPage() {
    * selection: the page with nothing on it is the page most in need of an answer.
    */
   const pageOfFrame = handshake.src === src ? handshake.pagePostId : null
+  /** SH1399 — whose fields the Fields mode draws: the selected field's post, the section, or the page. */
+  const fieldsTarget = selected?.postId ?? selectedSection?.postId ?? pageOfFrame
   /*
    * SH1159 — two subjects and therefore two queries, which is SH1150's finding on the site editor
    * met again: what this page accepts belongs to the page, and the patterns pushed to this instance
@@ -1137,8 +1213,9 @@ export default function VisualEditorPage() {
    * and is NOT posted into the frame: the page draws these through its template (a file id becomes
    * an image URL there), which the bridge cannot do, so the frame is reloaded after the save instead.
    */
-  const editWidgetField = (field: { prop: string; label: string; value?: string }, value: string) => {
-    const postId = selected?.postId
+  const editWidgetField = (field: { prop: string; label: string; value?: string }, value: string,
+    // SH1399 — the Fields mode edits whichever post it draws, which need not be the selection's.
+    postId: string | null | undefined = selected?.postId) => {
     if (!postId) return
     const key = `${postId}:${field.prop}`
     setChanges((prev) => {
@@ -1332,15 +1409,15 @@ export default function VisualEditorPage() {
           </Button>
           {/*
             SH1394 — the form as a mode of the editor: every field of the selected post (a section),
-            or of the page, including the ones no element draws (SEO, dates, references). Leaving
-            with pending changes asks first, as every exit from here does.
+            or of the page, including the ones no element draws (SEO, dates, references).
+            SH1399 — drawn here, in the panel's place, and saved with everything else: a toggle, not
+            a link to another screen, so the page and the selection stay where they are.
           */}
-          {(selected?.postId ?? selectedSection?.postId ?? pageOfFrame) && (
-            <Button asChild variant="outline" size="sm" title={t("universalEditor.fieldsTitle")}>
-              <Link to={`${ROUTES.CONTENT_ROOT}/post/${selected?.postId ?? selectedSection?.postId ?? pageOfFrame}`}>
-                <ListTree className="h-4 w-4 mr-1" />
-                {t("universalEditor.fields")}
-              </Link>
+          {fieldsTarget && (
+            <Button variant={fieldsMode ? "secondary" : "outline"} size="sm" title={t("universalEditor.fieldsTitle")}
+              aria-pressed={fieldsMode ? "true" : "false"} onClick={() => setFieldsMode((on) => !on)}>
+              <ListTree className="h-4 w-4 mr-1" />
+              {t("universalEditor.fields")}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => persist(true)} disabled={saving}>
@@ -1476,7 +1553,12 @@ export default function VisualEditorPage() {
               the position, and the one thing a toolbar button cannot say — whether this page's
               sections can be written at all, and what Duplicate actually does.
             */}
-            {selectedSection ? (
+            {fieldsMode && fieldsTarget ? (
+              <FieldsForm postId={fieldsTarget} t={(key, options) => String(t(key, options))}
+                focusProp={selected?.postId === fieldsTarget ? selected?.prop : null}
+                pendingValue={(prop) => changes.get(`${fieldsTarget}:${prop}`)?.value}
+                onEdit={(field, value) => editWidgetField(field, value, fieldsTarget)} />
+            ) : selectedSection ? (
               <div className="space-y-3">
                 <div>
                   <div className="font-semibold">{selectedSection.section || t("universalEditor.section")}</div>

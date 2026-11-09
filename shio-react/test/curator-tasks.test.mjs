@@ -63,7 +63,7 @@ test("SH1315: the harness drives exactly the tasks the budget holds, each from /
   const driven = [...HARNESS.matchAll(/^\s{4}name: "([a-z-]+)",$/gmu)].map(([, name]) => name).sort()
   assert.deepEqual(driven, Object.keys(BUDGET.tasks).sort(),
     "SH1315: a task the harness drives and the budget does not hold (or the reverse) is a measurement nobody judges")
-  assert.equal(driven.length, 9, "SH1315: the six curator jobs §XI.81 names, and SH1319's three in the Universal Editor")
+  assert.equal(driven.length, 11, "SH1315: the six curator jobs §XI.81 names, SH1319's three in the Universal Editor, and SH1399's pair")
   for (const [name, entry] of Object.entries(BUDGET.tasks)) {
     assert.ok(entry.why?.length > 40, `SH1315: ${name} carries no reason, so a regression in it reads as noise`)
     if (!entry.blocked) for (const field of GATED) assert.equal(typeof entry[field], "number", `SH1315: ${name}.${field}`)
@@ -103,7 +103,7 @@ test("SH1347: recording a filtered run keeps the tasks it did not run", () => {
 test("SH1319: tasks 1, 3 and 6 are measured in both editors, and the Universal Editor's run says when it cannot hand-shake", () => {
   const driven = [...HARNESS.matchAll(/^\s{4}name: "([a-z-]+)",$/gmu)].map(([, name]) => name)
   const inEditor = driven.filter((name) => name.endsWith("-ue"))
-  assert.deepEqual(inEditor.sort(), ["change-headline-ue", "preview-draft-ue", "replace-image-ue"],
+  assert.deepEqual(inEditor.sort(), ["change-description-ue", "change-headline-ue", "preview-draft-ue", "replace-image-ue"],
     "SH1319: the decision is judged on these three jobs in the Universal Editor")
   for (const name of inEditor) {
     assert.ok(driven.includes(name.replace(/-ue$/u, "")), `SH1319: ${name} has no post-form twin to be compared with`)

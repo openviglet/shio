@@ -85,8 +85,8 @@ test("SH1394: a page opens in the Universal Editor by default, and its form is a
   assert.match(pages, /<Link to=\{siteId \? editorHref\(ROUTES\.UNIVERSAL_EDITOR, siteId, node\.path\) : /u,
     "SH1394: a page's title in the Pages view opens the editor")
   const editor = read("app", "editor", "visual-editor.page.tsx")
-  assert.match(editor, /post\/\$\{selected\?\.postId \?\? selectedSection\?\.postId \?\? pageOfFrame\}/u,
-    "SH1394: Fields opens the form of the selection, else the section, else the page")
+  assert.match(editor, /const fieldsTarget = selected\?\.postId \?\? selectedSection\?\.postId \?\? pageOfFrame/u,
+    "SH1394: Fields is the form of the selection, else the section, else the page")
 })
 
 test("SH1394: the search page opens a page in the editor; notes, insights and home's drafts keep the form", () => {
@@ -98,4 +98,14 @@ test("SH1394: the search page opens a page in the editor; notes, insights and ho
   // tab), and home reads no site list (SH1050), so its page drafts keep the form, one click from the page.
   assert.match(home, /content\/post\/\$\{note\.objectId\}/u, "SH1394: a note still opens where it is resolved")
   assert.match(home, /content\/post\/\$\{page\.id\}\?tab=insights/u, "SH1394: a failed check still opens its insights")
+})
+
+test("SH1399: Fields draws the form in the panel, saved with the page's own changes", () => {
+  const editor = read("app", "editor", "visual-editor.page.tsx")
+  assert.match(editor, /aria-pressed=\{fieldsMode \? "true" : "false"\} onClick=\{\(\) => setFieldsMode\(\(on\) => !on\)\}/u,
+    "SH1399: Fields is a toggle in the editor, not a link to another screen")
+  assert.match(editor, /onEdit=\{\(field, value\) => editWidgetField\(field, value, fieldsTarget\)\}/u,
+    "SH1399: its edits are the editor's pending changes, so one Save and one Publish write both modes")
+  assert.match(editor, /focusProp=\{selected\?\.postId === fieldsTarget \? selected\?\.prop : null\}/u,
+    "SH1399: the field the curator had selected is the one the form opens on")
 })

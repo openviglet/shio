@@ -436,6 +436,38 @@ const TASKS = [
     },
     cleanup: () => trash(`post:${SITE}/draft-ue-${RUN}`),
   },
+  // SH1399 — a field no element draws (the page's description is metadata), in both editors: the
+  // case the editor could only answer by sending the curator to the form.
+  {
+    name: "change-description",
+    what: "change a page's description, which the page does not draw, and publish it",
+    async run(page, ctx) {
+      ctx.text = `What Acme costs, plainly ${RUN}`
+      await openFromSearch(page, "Pricing", "Page")
+      await page.getByRole("textbox", { name: /^description/i }).fill(ctx.text)
+      await publish(page)
+    },
+    async check(ctx) {
+      return JSON.stringify((await read(`post:${SITE}/pricing`)).data ?? {}).includes(ctx.text)
+    },
+  },
+  {
+    name: "change-description-ue",
+    what: "change a page's description, which the page does not draw, and publish it, in the Universal Editor",
+    ue: true,
+    async run(page, ctx) {
+      ctx.text = `What Acme costs, on the page ${RUN}`
+      await openPageInEditor(page, "Pricing", "/pricing")
+      await page.getByRole("button", { name: /^(campos|fields)$/i }).click()
+      await page.locator("#ue-field-description").locator("textarea, input").first().fill(ctx.text)
+      await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
+      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
+        (url) => /\/post-unified\//.test(url))
+    },
+    async check(ctx) {
+      return JSON.stringify((await read(`post:${SITE}/pricing`)).data ?? {}).includes(ctx.text)
+    },
+  },
 ]
 
 async function runTask(browser, task) {

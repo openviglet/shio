@@ -63,6 +63,20 @@
       "screens": 1,
       "ms": 648,
       "why": "SH1394: Ctrl+K and the draft's own row, which opens the Universal Editor on it as the visitor will see it: one click and one screen fewer than the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from (SH1392)."
+    },
+    "change-description": {
+      "clicks": 4,
+      "keys": 1,
+      "screens": 1,
+      "ms": 1922,
+      "why": "SH1399: Ctrl+K, the page's Edit fields row, the description replaced, then Actions, Publish and the confirmation (P7). The field is metadata, drawn by no element, so the form was the only place it could be edited."
+    },
+    "change-description-ue": {
+      "clicks": 3,
+      "keys": 1,
+      "screens": 1,
+      "ms": 1035,
+      "why": "SH1399: Ctrl+K, the page's own row, Fields, the description replaced, Publish: the form drawn beside the page and saved with its other changes, one click fewer than the form, whose Publish asks for a confirmation."
     }
   }
 }

@@ -241,27 +241,23 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.125 The form drawn beside the page, one save (SH1399)
+### XI.126 The editor's Publish asks as the form's does (SH1400)
 
-SH1394 made the Universal Editor where a page opens (the palette, the Pages view, the
-search page) and gave its header a **Fields** button. That button leaves: it opens the
-post form of the selection (the selected field's post, else the section, else the page)
-as another screen. So the form is a separate place with its own save, a field selected
-on the page is not the field the form opens on, and coming back with Edit on the page
-lands on the page with nothing selected. SH1319's decision asked for the form as the
-editor's side panel, with one save model.
+The post form's Publish asks the server for a dry run and opens "Publish this page?"
+with what it would do before anything goes live (SH996, P7). The Universal Editor's
+Publish, now the primary editor for a page (SH1319), calls `persist(true)` at once:
+`PATCH /api/v2/post-unified/{id}` with `publish: true` for each post with pending
+changes, or a bare publish of the selection when there are none. So the same act asks in
+one editor and not in the other, and the curator-task figures partly measure that
+difference: `change-description-ue` is one click under its form twin because the
+confirmation is absent, not because the path is shorter. Found 2026-11-09 recording
+SH1399.
 
-Build: Fields toggles a mode inside the editor that draws the post form
-(`PostFormFields`, the form's own widgets) in the properties panel's place, for the
-selected post or the page, scrolled to and focusing the selected field's control when
-there is one. Its edits join the editor's `changes` the way SH1393's widget edits do
-(type `widget`, `was` kept), so Save and Publish write both modes through `persist` and
-the SH335 merge verb, and Revert works the same. Leaving the mode reselects the element
-the field is drawn on, through the bridge's selection message. The post editor stays the
-route for content that is not a page, and for notes and insights.
-
-Judged by a curator task that changes a page field no element draws (the SEO
-description) and publishes it, in both: it costs no more in the editor than in the form.
+Build: Publish in the editor opens the same confirmation the form opens
+(`PublishPreviewDialog`, fed by the same dry run), listing every post the pending set
+would publish, the page and any section, and publishes on confirm. Save stays immediate,
+since a draft is not live. Then re-record the `-ue` tasks: each gains the confirmation's
+click, and the comparison with the form becomes like for like.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
