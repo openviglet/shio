@@ -105,7 +105,7 @@ test("SH1213: the header's leading edge carries the mark, the wordmark and the p
   const start = /headerStart=\{([\s\S]*?)\n\s{8}\}\n\s{8}headerEnd=/.exec(shellSource)
   assert.ok(start, "SH1213: BentoShell is handed no headerStart, so the header names no product")
   assert.match(start[1], /<ShLogo\b/, "SH1213: the header's leading edge carries no Shio mark")
-  assert.match(start[1], />Shio</, "SH1213: the header's leading edge carries no wordmark")
+  assert.match(start[1], />Viglet Shio</, "SH1213: the header's leading edge carries no wordmark")
   assert.match(start[1], /<BentoPaletteTrigger\b/,
     "SH1213: the header has no palette trigger — below md, where the rail hides, it is the pointer's"
       + " only way to a deep area")

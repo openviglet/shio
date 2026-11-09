@@ -304,7 +304,7 @@ function BentoShellRoot() {
             */}
             <Link to={ROUTES.BENTO} className="flex items-center gap-2">
               <ShLogo size={28} />
-              <span className="text-base font-semibold tracking-tight">Shio</span>
+              <span className="text-base font-semibold tracking-tight">Viglet Shio</span>
             </Link>
             <BentoPaletteTrigger onClick={() => setPaletteOpen(true)} />
           </>
