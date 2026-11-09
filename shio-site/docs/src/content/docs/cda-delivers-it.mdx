@@ -6,7 +6,7 @@ tableOfContents: false
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Shio is headless: your front end owns the markup, and Shio serves the content. The
+Viglet Shio is headless: your front end owns the markup, and Viglet Shio serves the content. The
 **Content Delivery API** is a versioned, read-only contract at `/api/v2/cda/**`, 
 sites, folder listings, breadcrumbs, a post by id **or by its friendly URL** (the one
 a `[...slug]` route needs), and a filtered query, returning frozen DTOs that never
@@ -31,10 +31,10 @@ exactly-once, no dead-letter queue, because a consumer that assumes otherwise br
 production rather than in review.
 
 <CardGrid>
-  <LinkCard title="Content Delivery API (CDA)" href="/docs/headless/content-delivery-api/" description="The read-only, headless Content Delivery API for serving published Shio content to any JavaScript front-end." />
-  <LinkCard title="JavaScript Client" href="/docs/headless/javascript-client/" description="@viglet/shio-client, the framework-agnostic TypeScript client for the Shio Content Delivery API." />
-  <LinkCard title="React SDK" href="/docs/headless/react-sdk/" description="@viglet/shio-react-sdk: React hooks and render components for the Shio Content Delivery API." />
-  <LinkCard title="Next.js Starter" href="/docs/headless/nextjs-starter/" description="create-shio-app: scaffold a Next.js App Router site wired to the Shio Content Delivery API." />
+  <LinkCard title="Content Delivery API (CDA)" href="/docs/headless/content-delivery-api/" description="The read-only, headless Content Delivery API for serving published Viglet Shio content to any JavaScript front-end." />
+  <LinkCard title="JavaScript Client" href="/docs/headless/javascript-client/" description="@viglet/shio-client, the framework-agnostic TypeScript client for the Viglet Shio Content Delivery API." />
+  <LinkCard title="React SDK" href="/docs/headless/react-sdk/" description="@viglet/shio-react-sdk: React hooks and render components for the Viglet Shio Content Delivery API." />
+  <LinkCard title="Next.js Starter" href="/docs/headless/nextjs-starter/" description="create-shio-app: scaffold a Next.js App Router site wired to the Viglet Shio Content Delivery API." />
   <LinkCard title="GraphQL" href="/docs/graphql/" description="Query content in Viglet Shio using GraphQL with the built-in GraphiQL console." />
   <LinkCard title="Webhooks" href="/docs/webhooks/" description="Outbound webhooks in Viglet Shio: subscribing per site and per event, the signed JSON payload, verifying the HMAC-SHA256 signature, and exactly what delivery does and does not guarantee." />
 </CardGrid>

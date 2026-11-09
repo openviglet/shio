@@ -1,12 +1,12 @@
 ---
 title: The agent builds it
-description: "Shio is built for a coding agent first: one call to discover the instance, content as files on disk, addressed and idempotent writes, and errors that teach."
+description: "Viglet Shio is built for a coding agent first: one call to discover the instance, content as files on disk, addressed and idempotent writes, and errors that teach."
 tableOfContents: false
 ---
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Most CMSs are built for a person clicking. Shio is built for a **coding agent**: 
+Most CMSs are built for a person clicking. Viglet Shio is built for a **coding agent**: 
 Claude Code through its plugin, or any other MCP client through the generic endpoint, and the curator stays in the loop
 as the curator, not the typist. The instance describes itself in **one call**
 (a manifest of every capability plus a context pack of the site as it stands), so an
@@ -26,11 +26,11 @@ anyone to look: content lint, route proof, render digest.
 <CardGrid>
   <LinkCard title="MCP Server" href="/docs/mcp/" description="Drive Viglet Shio from Claude Code (with its plugin) or any other MCP client: POST /mcp, twelve tools, six resources, four prompts, and the Claude Code plugin." />
   <LinkCard title="The Agent Surface" href="/docs/agent-surface/" description="/api/v2/agent/**: one call to discover the instance, addressed reads, an atomic op vocabulary, desired-state apply, and a verification loop that needs nobody to look." />
-  <LinkCard title="Content as Files" href="/docs/content-as-files/" description="Project a Shio site to disk as Markdown and edit it with ordinary tools: the tree layout, sidecars, assets, and the three-way merge that protects a curator's edit." />
+  <LinkCard title="Content as Files" href="/docs/content-as-files/" description="Project a Viglet Shio site to disk as Markdown and edit it with ordinary tools: the tree layout, sidecars, assets, and the three-way merge that protects a curator's edit." />
   <LinkCard title="The shio CLI" href="/docs/cli/" description="@viglet/shio, the shio command: scaffold a site, sync content and post types both ways, verify, replicate an existing site, and gate a pipeline on drift." />
   <LinkCard title="Blueprints" href="/docs/blueprints/" description="Appliable starting points: a blueprint installs a content model, a folder tree, sample pages and a front end in one call, with a plan you can read first." />
   <LinkCard title="Pages, Layouts & Regions" href="/docs/website-development/" description="How Viglet Shio composes a page: Handlebars templates over Page Layouts, Regions and Themes, the helper set, sections, preview and public delivery." />
   <LinkCard title="Design Tokens (DTCG)" href="/docs/design-tokens/" description="Viglet Shio reads W3C Design Tokens (DTCG) on a Theme and compiles them to CSS custom properties, so a restyle is a reviewable field edit instead of a stylesheet rewrite." />
-  <LinkCard title="Replication" href="/docs/replication/" description="Point Shio at a site that already exists: capture it, propose what could become editable content, convert it, and serve it, in fidelity or authorable mode." />
+  <LinkCard title="Replication" href="/docs/replication/" description="Point Viglet Shio at a site that already exists: capture it, propose what could become editable content, convert it, and serve it, in fidelity or authorable mode." />
   <LinkCard title="Token Economy" href="/docs/token-economy/" description="What a call to Viglet Shio costs in tokens, the budgets enforced in CI, how to spend less, and the benchmark the project holds itself to." />
 </CardGrid>

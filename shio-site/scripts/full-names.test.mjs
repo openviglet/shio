@@ -44,7 +44,10 @@ function docsProse(text) {
       fence = !fence;
       return "";
     }
-    return fence ? "" : line.replace(/`[^`]*`|\]\([^)]*\)|<[^>]+>/gu, "").replace(DOCS_LABELS, "");
+    // SH1377: a tag's attributes are kept (a LinkCard's description is text a visitor reads); only
+    // the addresses in it go, with imports. Stripping whole tags is how the .mdx cards were missed.
+    if (fence || /^\s*import\s/u.test(line)) return "";
+    return line.replace(/`[^`]*`|\]\([^)]*\)|(?:href|src)="[^"]*"/gu, "").replace(DOCS_LABELS, "");
   });
 }
 
@@ -76,10 +79,11 @@ test("SH1369: the site's visitor text names the product Viglet Shio every time",
       + "write Viglet Shio, and change the layout rather than abbreviate when it does not fit");
 });
 
-test("SH1369: the docs pages name Viglet Shio, Viglet Turing and Viglet Dumont in full", () => {
+test("SH1369/SH1377: the docs pages, .mdx and card descriptions included, name each product in full", () => {
   const BARE_ANY = /(?<!Viglet )(?<![\w/.-])(Shio|Turing|Dumont)\b(?![\w-]*\.(?:java|ts|mjs|md))/u;
   const found = walk(join(SITE, DOCS))
-    .filter((path) => path.endsWith(".md") && !path.endsWith("COVERAGE.md"))
+    // SH1377: .mdx too; the section landing pages are .mdx and the first pass read only .md.
+    .filter((path) => /\.mdx?$/u.test(path) && !path.endsWith("COVERAGE.md"))
     .flatMap((path) => docsProse(readFileSync(path, "utf8")).flatMap((line, index) =>
       BARE_ANY.test(line) ? [`${relative(SITE, path).replaceAll("\\", "/")}:${index + 1}: ${line.trim().slice(0, 120)}`] : []));
   assert.deepEqual(found, [],
