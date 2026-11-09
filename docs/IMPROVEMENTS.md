@@ -241,27 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.120 The Universal Editor's panel writes every field kind (SH1393)
-
-Selecting a field the page does not type into (an image, a date, a check box, a content
-reference) fills the properties panel with the post form's own widget for it (SH1037),
-under `pointer-events-none` with an `onChange` that does nothing. A curator sees the
-hero's image and cannot change it, so `replace-image-ue` is held blocked on this id in
-`curator-task-budget.json`, while the post form replaces the same image in seven clicks.
-
-Build: the panel's widget writes. Its `onChange` becomes a pending change exactly as a
-typed field is one (`changes`, keyed by post and prop, with `was` for SH1041's revert),
-sent to the frame as `sh:field-set` so the page redraws, and saved or published by the
-same `persist` through the SH335 merge verb. No second save path. The widgets already
-take `postId`, which is what the media picker needs to open beside the post (SH1325).
-
-This is the half of "the form as the editor's side panel" that a selection reaches. The
-other half, the fields no element draws (SEO, dates, references), is the form mode of
-the merge line filed beside this one.
-
-Done when `replace-image-ue` completes, is recorded, and costs no more than
-`replace-image`.
-
 ### XI.121 Every page opens in the Universal Editor, the form a mode of it (SH1394)
 
 SH1319 decided the Universal Editor is the primary way to edit a page, with the form as
@@ -330,6 +309,26 @@ the upgrade, before any download. An entry with no `minShio` behaves as today.
 `shio-site/scripts/marketplace.test.mjs` asserts that every key in
 `ShBlueprintManifest.KEYS` has a row in the table, so the next key cannot ship without
 one.
+
+### XI.124 The Universal Editor's saving docs match the session merge (SH1398)
+
+`shio-site/docs/src/content/docs/universal-editor.md` § What saving does still describes
+the editor from before SH335: it lists `GET /api/v2/cda/post/{id}/editable`, `PATCH
+/api/v2/cda/post/{id}` and `POST .../publish` as what the editor calls, and closes with
+"Writes need a token of write scope, and the console uses a credential-less request for
+them: the token authenticates, not your session cookie". SH335 moved the editor onto the
+console session (`PATCH /api/v2/post-unified/{id}` with `{attrs, publish}`, through
+`ShPostDraftMergeService`, with the content ACL as its guard) and removed the token
+picker, so a reader following the page looks for a token setting that no longer exists.
+Found on 2026-11-09 while SH1393 added the panel's field section to the same page.
+
+Fix: rewrite the section from `docs/agents/console-ui.md` § SH335 and the code: the
+console's merge verb, the session, the ACL and publish permission it is held to, what
+`If-Match` still means on that path if it is honoured there (check `ShPostUnifiedAPI`
+before writing it), and that the CDA endpoints remain for an external front end's own
+editor (`@viglet/shio-editor-cors`). Then run the docs suites and `shio-docs-sync`'s
+judgement pass over the rest of the page, which has not been read against the code since
+SH335 either.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

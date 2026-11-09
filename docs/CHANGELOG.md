@@ -2117,6 +2117,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1388** — The GraphQL explorer talks to /graphql through createTransport, POST-only and token-only as before, so it runs queries with GraphiQL's network stats and imports nothing the toolkit deprecates (design §XI.115 recorded in `shio-react/test/graphiql-transport.test.mjs`).
 - **SH1319** — The Universal Editor is the primary page editor, decided against tasks 1, 3 and 6 measured in both editors (form wins all three today: 4/1/1 vs 6/1/4, two blocked); the merge is SH1392-SH1394 (design §XI.85 recorded in `docs/agents/console-ui.md`).
 - **SH1392** — A page's palette result offers Edit on the page directly, so a draft opens in the Universal Editor in one click and one screen, fewer than the form's preview (design §XI.119 recorded in `docs/agents/console-ui.md`).
+- **SH1393** — The Universal Editor's panel changes an image, a date or a reference through the form's own widget, drawn from the stored value; replace-image-ue completes in 6 clicks, one fewer than the form (design §XI.120 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

@@ -16,9 +16,9 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1393** (deps: —) **The Universal Editor's panel shows an image, date or reference field and cannot change it** — A curator who selects the hero's image there has to leave for the post form to replace it, so the editor cannot finish the job. → §XI.120
-- 📋 **SH1394** (deps: SH1392 ✅, SH1393) **Opening a page lands in the post form, while the Universal Editor, the primary editor, is a separate place** — Two entry points with two save models keep a curator learning both and split every editing improvement between surfaces. → §XI.121
+- 📋 **SH1394** (deps: SH1392 ✅, SH1393 ✅) **Opening a page lands in the post form, while the Universal Editor, the primary editor, is a separate place** — Two entry points with two save models keep a curator learning both and split every editing improvement between surfaces. → §XI.121
 - 📋 **SH1395** (deps: —) **A visitor signed in on a site host cannot sign out there, and signing out of Shio leaves that sign-in alive** — A shared computer keeps a member's pages open for up to eight hours after they signed out. → §XI.122
+- 📋 **SH1398** (deps: —) **The Universal Editor docs say it saves through a write-scope delivery token, which SH335 removed** — A reader following the page looks for a token setting the console no longer has. → §XI.124
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

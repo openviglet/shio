@@ -164,6 +164,16 @@ costs a visitor nothing.
 
 ---
 
+## Fields you do not type into
+
+Click an image, a date, a check box or a reference on the page and the properties panel shows
+that field with the same control the post form uses: the image picker, a date field, a post
+picker. Change it there and it joins your pending changes like typed text, with **Revert**
+beside it, and **Save** or **Publish** writes it. The page redraws after the save, since it is
+the page's template that turns a file into an image.
+
+---
+
 ## What saving does
 
 An edit merges into the post's **`DRAFT`** row. If the post existed only as a published

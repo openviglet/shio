@@ -116,7 +116,8 @@ export function attrFromDeclared(field: DeclaredWidgetField, value: string): Syn
     id: field.name,
     strValue: value ?? "",
     arrayValue: [],
-    dateValue: "",
+    // SH1393 — a Date widget reads `dateValue`, so a date seeded only as a string drew empty.
+    dateValue: field.widget === "Date" ? value ?? "" : "",
     intValue: 0,
     shPostTypeAttr: {
       id: field.name,
@@ -131,6 +132,15 @@ export function attrFromDeclared(field: DeclaredWidgetField, value: string): Syn
       widgetSettings: field.widgetSettings,
     },
   };
+}
+
+/**
+ * SH1393 — what a widget's change means as the field's value: the date for a Date widget, which
+ * writes `dateValue`, and the string every other widget writes (an image's file id, a select's
+ * choice, a reference's post id).
+ */
+export function valueFromWidget(field: DeclaredWidgetField, attr: { strValue?: string; dateValue?: string }): string {
+  return field.widget === "Date" ? attr.dateValue ?? "" : attr.strValue ?? ""
 }
 
 /** The half of a declared field this synthesis reads. */

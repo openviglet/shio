@@ -24,7 +24,7 @@ import { fillFromDefaults, freeInstance, placementDocument, unfilled } from "./p
 import { copyReference } from "./section-reference"
 import { buttonIndex, caretY, gapIndex, placeAt } from "./section-placement"
 import {
-  attrFromDeclared, labelSource, labelSourceKey, labelsFrom, type DeclaredWidgetField,
+  attrFromDeclared, labelSource, labelSourceKey, labelsFrom, valueFromWidget, type DeclaredWidgetField,
 } from "./field-labels"
 import { getWidget } from "@/components/widgets"
 import type {
@@ -766,6 +766,28 @@ export default function VisualEditorPage() {
     return byName
   }, [declared.data])
 
+  /*
+   * SH1393 — the selected post's stored values, for the fields the panel draws through a widget.
+   *
+   * The bridge reports what the page drew, and for an image that is the element, not the file id the
+   * field holds, so an image that is set drew as an empty upload box. The stored row is the field's
+   * value; it is read only when the selection has a widget field, under the post's own address key.
+   */
+  const widgetPostId = selected?.postId
+    && (selected.fields ?? []).some((field) => declaredFields[field.prop]?.widget
+      && declaredFields[field.prop]?.widget !== "Text")
+    ? selected.postId : null
+  const stored = useQuery({
+    queryKey: addressKey(`id:${widgetPostId ?? ""}|editable`),
+    queryFn: ({ signal }) => editorService.editable(widgetPostId ?? "", { signal }),
+    enabled: Boolean(widgetPostId),
+  })
+  /** The field's stored value as the widget reads it, or undefined when it is not known. */
+  const storedValueOf = (prop: string): string | undefined => {
+    const value = stored.data?.data?.[prop]
+    return value === undefined || value === null ? undefined : String(value)
+  }
+
   /**
    * SH1038 — the Page's ordered array, read when a section is selected, checked before it is used.
    *
@@ -1109,6 +1131,26 @@ export default function VisualEditorPage() {
   }
 
   /**
+   * SH1393 — an edit made through a field's widget in the panel (an image, a date, a reference).
+   *
+   * It joins the pending set like any edit, keeping what the field held so Revert can put it back,
+   * and is NOT posted into the frame: the page draws these through its template (a file id becomes
+   * an image URL there), which the bridge cannot do, so the frame is reloaded after the save instead.
+   */
+  const editWidgetField = (field: { prop: string; label: string; value?: string }, value: string) => {
+    const postId = selected?.postId
+    if (!postId) return
+    const key = `${postId}:${field.prop}`
+    setChanges((prev) => {
+      const was = prev.get(key)?.was ?? field.value ?? ""
+      const next = new Map(prev)
+      if (value === was) next.delete(key)
+      else next.set(key, { postId, prop: field.prop, type: "widget", value, label: field.label, was })
+      return next
+    })
+  }
+
+  /**
    * SH1109 — the save's proof, in the dock where a console surface reports (SH972).
    *
    * One line: the fields written, and whether the structure and the appearance moved. A text-only
@@ -1158,6 +1200,8 @@ export default function VisualEditorPage() {
         await editorService.publish(selected.postId)
       }
       setChanges(new Map())
+      // SH1393 — a widget's edit is drawn by the template, not by the bridge: show the page again.
+      if (saved.some((change) => change.type === "widget")) refresh()
       toast.success(publish
         ? t("universalEditor.published")
         : fields.length
@@ -1497,20 +1541,21 @@ export default function VisualEditorPage() {
                         />
                       ) : declaredWidgetFor(f.prop) ? (
                         /*
-                          SH1037 — the field the MODEL describes, through the console's own widget map.
-                          The panel used to draw read-only text for everything that is not an `attr`,
-                          so a Date was a string, a Check Box was "1" and a Content Select was a UUID
-                          — and the field whose caret cannot express its shape (`affordance: "panel"`)
-                          is precisely the one that ends up here. Read-only still, because writing back
-                          from the panel for every kind is the remainder of this task: what changes is
-                          that the curator sees a date as a date.
+                          SH1037 — the field the MODEL describes, through the console's own widget map,
+                          so a Date is a date, a Check Box a box and a Content Select a post.
+                          SH1393 — and it writes: the widget's change is a pending change like a typed
+                          one, saved by the same Save and Publish, so an image is replaced here
+                          rather than in the post form. It draws the pending value, not the page's.
                         */
-                        <div className="mt-1 pointer-events-none opacity-90">
+                        <div className="mt-1">
                           {(() => {
                             const declared = declaredWidgetFor(f.prop)!
                             const Widget = getWidget(declared.widget ?? "Text")
-                            return <Widget attr={attrFromDeclared(declared, f.value) as never}
-                              onChange={() => undefined} postId={selected.postId ?? undefined} />
+                            const current = pendingFor(f.prop)?.value ?? storedValueOf(f.prop) ?? f.value
+                            return <Widget attr={attrFromDeclared(declared, current) as never}
+                              onChange={(next: { strValue?: string; dateValue?: string }) =>
+                                editWidgetField({ ...f, value: storedValueOf(f.prop) ?? f.value }, valueFromWidget(declared, next))}
+                              postId={selected.postId ?? undefined} />
                           })()}
                         </div>
                       ) : (

@@ -394,20 +394,23 @@ const TASKS = [
     async run(page, ctx) {
       const pricing = await openPageInEditor(page, "Pricing", "/pricing")
       await pricing.locator("[data-shio-prop='image']").first().click()
-      // The panel draws the post form's own image widget for the selection (SH1037), read-only:
-      // its Search is under `pointer-events: none`, so the click below is the step that cannot be taken.
+      // The panel draws the post form's own image widget for the selection (SH1037), and since
+      // SH1393 it writes: Search opens the same picker the form opens.
       const panel = page.getByRole("complementary")
-      await panel.getByRole("button", { name: /^(pesquisar|search)$/i }).click({ timeout: 5_000 })
-        .catch(() => { throw new Error("SH1393: the properties panel shows the image field and cannot change it") })
+      await panel.getByRole("button", { name: /^(pesquisar|search)$/i }).click()
       const dialog = page.getByRole("dialog")
       await dialog.getByRole("button", { name: new RegExp(`^${ctx.file.replace(".", "\\.")}`) }).first().click()
       await dialog.getByRole("button", { name: /^(selecionar|select)$/i }).click()
+      // The choice is a pending change like a typed one, and Publish writes it.
+      await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
       await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
         (url) => /\/post-unified\//.test(url))
     },
     cleanup: () => restoreHero(),
     async check(ctx) {
-      return (await read(`post:${SITE}/sections/pricing/hero`)).data?.image === ctx.fileId
+      const post = await read(`post:${SITE}/sections/pricing/hero`)
+      if (post.data?.image !== ctx.fileId) console.log(`  image=${post.data?.image} uploaded=${ctx.fileId} state=${post.state}`)
+      return post.data?.image === ctx.fileId
     },
   },
   {

@@ -4429,6 +4429,28 @@ cheaper than the form's preview (2/1/2), and `change-headline-ue` went from 6 cl
 (SH1319) to 3 clicks, 2 keys, 1 screen, against the form's 4/1/1; the extra key is selecting the old
 heading, which the form's field replaces in place.
 
+## The editor's panel writes every field kind (SH1393)
+
+A field the page does not type into (an image, a date, a check box, a reference) was drawn in the
+properties panel through the post form's own widget (SH1037) under `pointer-events-none`, with an
+`onChange` that did nothing. The widget now writes: `editWidgetField` puts a pending change of type
+`widget` in the same `changes` map a typed edit uses (keyed by post and prop, carrying `was` for
+Revert, and dropped when the value returns to it), and the same `persist` saves or publishes it
+through the SH335 merge verb. It is **not** posted to the frame: the template draws these (a file id
+becomes an image URL there), which the bridge cannot, so a save that wrote one reloads the frame.
+
+**The widget reads the stored value, not the page's.** The bridge reports what the page drew, and for
+an `<img>` that is the element, so a set image showed as an empty upload box. When the selection has
+a widget field the panel reads the post (`editorService.editable`, key `id:<post>|editable`) and the
+widget draws pending, else stored, else what the bridge sent. `attrFromDeclared` also seeds
+`dateValue` for a Date field, and `valueFromWidget` reads a Date widget's `dateValue` back.
+
+Measured on a clean instance: `replace-image-ue` is 6 clicks, 1 key, 1 screen against the form's 7.
+With SH1392 that makes all three of SH1319's tasks at or under the form's clicks and screens;
+`change-headline-ue` alone takes one more key (selecting the old heading). The harness waits for
+the pending badge before Publish, as a curator does: pressed in the same instant the picker
+closes, Publish ran before the change had reached the pending set.
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a
