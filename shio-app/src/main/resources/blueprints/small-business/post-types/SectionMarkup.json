@@ -1,0 +1,22 @@
+{
+  "name": "SectionMarkup",
+  "title": "Markup Section",
+  "namePlural": "Markup Sections",
+  "description": "Markup kept verbatim from a source page, rendered in place among the sections. A conversion writes one per run of markup nobody made authorable.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "html",
+      "label": "Markup",
+      "description": "The source's own bytes for this run of the page, rendered as they are.",
+      "widget": "Ace Editor - HTML",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

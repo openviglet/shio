@@ -202,6 +202,24 @@ package ships it recommends `--blueprint marketing-site` instead, and the confor
 flips with it: while the table says unpublished, npm **must** refuse that template, and once it does
 not the same line requires a clean install.
 
+## The small-business package (SH1356)
+
+`small-business` is the phone's first run: home (hero, gallery, a visit CTA), about (rich text) and
+contact (rich text and a `SectionForm`), asked for with five parameters, `brand` required and
+`tagline`, `location`, `contact`, `headline` defaulted. It carries its own `PageLayout` and `Theme`,
+so it renders on apply and `ShBlueprintAccessibilityTest` judges it by existing, and no `files/`:
+Shio serves it. It ships a `Contact` post-type (name, email, message) and a `/messages` folder.
+
+**The form ships closed.** The section's `formToken` is empty, and the layout draws a form only with
+a token, so applying the package changes nothing about who can write to the site (SH632). A curator
+opens it with `POST /api/v2/site-form` (folder `/messages`, type `Contact`, enabled, origins) and the
+site's FORM token on the section. `ShBlueprintAccessibilityTest.aContactFormOnABlueprintPageSubmitsWithScriptOff` drives exactly that, then posts the
+rendered form urlencoded through the chain and reads back the 303 and the draft.
+
+It is a fourth `emit.mjs` target, so it carries the whole vocabulary for `landing`'s reason. Its apply is
+measured against `blueprint.apply.small-business`; `ShBlueprintAccessibilityTest` now judges every
+package that has such a row, not only the showcase.
+
 ## The three packages that carry an index page (SH216)
 
 SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`

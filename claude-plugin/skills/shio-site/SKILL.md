@@ -19,7 +19,7 @@ none of it needs the console.
    re-derive, write it back with `shio remember <key> "<note>"` — that is the only thing
    here that makes the *next* session cheaper rather than this one.
 2. Read `shio://blueprints`. **Before modelling anything by hand**, check whether a package
-   already covers it: `blog`, `docs`, `marketing-site`, `landing`, `product-catalogue`. A
+   already covers it: `blog`, `docs`, `marketing-site`, `landing`, `product-catalogue`, `small-business`. A
    blueprint brings the post-types, the folder tree and sample pages in one call, and
    applying one twice changes nothing the second time.
 

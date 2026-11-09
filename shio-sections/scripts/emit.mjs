@@ -42,6 +42,8 @@ const repo = resolve(here, "..", "..");
 export const TARGETS = [
   join(repo, "shio-app/src/main/resources/blueprints/marketing-site/post-types"),
   join(repo, "shio-app/src/main/resources/blueprints/landing/post-types"),
+  // SH1356 — the small business package, the phone's first run; the whole set for the reason above.
+  join(repo, "shio-app/src/main/resources/blueprints/small-business/post-types"),
   // SH607 — not a package: the instance's own catalogue, which `ShVocabularyPostTypes` reads so
   // `render.provision {types:[...]}` can install a type by name. It is here for the same reason the
   // two above are — the running instance reads the classpath and cannot run a JS build — and it is

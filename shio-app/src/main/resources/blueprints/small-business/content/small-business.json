@@ -1,0 +1,214 @@
+{
+  "folders": [
+    {
+      "path": "/sections"
+    },
+    {
+      "path": "/sections/home"
+    },
+    {
+      "path": "/sections/about"
+    },
+    {
+      "path": "/sections/contact"
+    },
+    {
+      "path": "/theme"
+    },
+    {
+      "path": "/menu"
+    },
+    {
+      "path": "/messages"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/theme/site",
+      "type": "Theme",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Small business theme",
+        "CSS": ":root { --ink:#12141a; --muted:#5b6470; --rule:#e6e8eb; --accent:#0b5fff; --sand:#f7f8fa; }\n* { box-sizing:border-box; }\nbody { margin:0; color:var(--ink); background:#fff;\n  font:16px/1.6 ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif; }\n.shio-container { max-width:64rem; margin:0 auto; padding:0 1.5rem; }\n.shio-stack > * + * { margin-top:1rem; }\n.shio-nav { border-bottom:1px solid var(--rule); padding:1rem 0; }\n.shio-nav ul { display:flex; gap:1.5rem; list-style:none; margin:0; padding:0; }\n.shio-nav a { color:var(--ink); text-decoration:none; }\n.shio-section { padding:4rem 0; }\n.shio-section:nth-child(even) { background:var(--sand); }\n.shio-heading { font-size:2rem; line-height:1.15; margin:0; }\n.shio-subheading { font-size:1.25rem; color:var(--muted); margin:0; }\n.shio-intro { font-size:1.125rem; color:var(--muted); }\n.shio-grid { display:grid; gap:1.5rem; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));\n  list-style:none; margin:0; padding:0; }\n.shio-card { background:#fff; border:1px solid var(--rule); border-radius:.5rem; padding:1.25rem; }\n.shio-card h3 { margin:0 0 .5rem; font-size:1.05rem; }\n.shio-button { display:inline-block; background:var(--accent); color:#fff; text-decoration:none;\n  padding:.7rem 1.25rem; border-radius:.375rem; font-weight:600; }\n.shio-media img { max-width:100%; height:auto; }\nfooter { border-top:1px solid var(--rule); padding:2rem 0; color:var(--muted); }\n.shio-gallery-list { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));\n  list-style:none; margin:0; padding:0; }\n.shio-gallery-list figure { margin:0; }\n.shio-gallery-list img { width:100%; height:auto; border-radius:.375rem; }\n.shio-gallery-list figcaption { color:var(--muted); font-size:.9rem; margin-top:.4rem; }\n.shio-form { max-width:36rem; }\n.shio-field label { display:block; font-weight:600; margin-bottom:.25rem; }\n.shio-field input, .shio-field textarea { width:100%; padding:.6rem .75rem; font:inherit;\n  border:1px solid var(--rule); border-radius:.375rem; }\n.shio-field textarea { min-height:8rem; }\nbutton.shio-button { border:0; cursor:pointer; font:inherit; }\n.shio-notice { padding:.75rem 1rem; border-radius:.375rem; background:var(--sand); }\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Small business layout",
+        "THEME": "Small business theme",
+        "HTML": "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}}</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n<style>{{theme.css}}</style>\n</head>\n<body class=\"shio-page\" sh-accepts=\"SectionCta SectionForm SectionGallery SectionHero SectionRichText\">\n<nav class=\"shio-nav\" aria-label=\"Site\"><div class=\"shio-container\"><ul>\n{{#menu title=\"Primary\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></div></nav>\n<main>\n{{#getRelation sections}}\n<section class=\"shio-section\" sh-post=\"{{id}}\" data-shio-section=\"{{type}}\">\n<div class=\"shio-container shio-stack\">\n{{#if heading}}{{#if @first}}<h1 class=\"shio-heading\" sh-field=\"heading\">{{heading}}</h1>{{else}}<h2 class=\"shio-heading\" sh-field=\"heading\">{{heading}}</h2>{{/if}}{{/if}}\n{{#if subheading}}<p class=\"shio-subheading\" sh-field=\"subheading\">{{subheading}}</p>{{/if}}\n{{#if intro}}<p class=\"shio-intro\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n{{#if body}}<div class=\"shio-body\" sh-field=\"body\">{{{body}}}</div>{{/if}}\n{{#if image}}<p class=\"shio-media\"><img sh-field=\"image\" src=\"{{file_url image}}\" alt=\"{{heading}}\"></p>{{/if}}\n{{#if ctaLabel}}<p><a class=\"shio-button\" sh-field=\"ctaLabel\" sh-field-attr=\"ctaHref:href\" href=\"{{ctaHref}}\">{{ctaLabel}}</a></p>{{/if}}\n{{#if images}}<ul class=\"shio-gallery-list\">{{#each images}}<li data-shio-row=\"images\">{{#if image}}<figure>{{#image image}}<img sh-field=\"images.{{@index}}.image\" src=\"{{url}}\"{{#if srcset}} srcset=\"{{srcset}}\"{{/if}}{{#if width}} width=\"{{width}}\" height=\"{{height}}\"{{/if}}{{{altAttr}}} loading=\"lazy\">{{else}}<img sh-field=\"images.{{@index}}.image\" src=\"{{file_url image}}\"{{#if caption}} alt=\"{{caption}}\"{{/if}} loading=\"lazy\">{{/image}}{{#if caption}}<figcaption sh-field=\"images.{{@index}}.caption\">{{caption}}</figcaption>{{/if}}</figure>{{/if}}</li>{{/each}}</ul>{{/if}}\n{{#if formType}}{{#if formToken}}<form class=\"shio-form shio-stack\" method=\"post\" action=\"{{site.formAction}}\"><input type=\"hidden\" sh-field-attr=\"formType:value\" name=\"{{site.formTypeField}}\" value=\"{{formType}}\"><input type=\"hidden\" sh-field-attr=\"formToken:value\" name=\"{{site.formTokenField}}\" value=\"{{formToken}}\">{{#form type=formType}}<p class=\"shio-field\"><label for=\"shio-form-{{name}}\">{{label}}</label>{{#if multiline}}<textarea id=\"shio-form-{{name}}\" name=\"{{name}}\"{{#if required}} required{{/if}}></textarea>{{else}}<input id=\"shio-form-{{name}}\" type=\"{{input}}\" name=\"{{name}}\"{{#if required}} required{{/if}}>{{/if}}</p>{{/form}}<input type=\"text\" name=\"{{site.formHoneypot}}\" value=\"\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" aria-label=\"Leave empty\" style=\"position:absolute;left:-9999px\"><p><button class=\"shio-button\" type=\"submit\" sh-field=\"submitLabel\">{{#if submitLabel}}{{submitLabel}}{{else}}Send{{/if}}</button></p></form>{{/if}}{{/if}}\n</div>\n</section>\n{{/getRelation}}\n</main>\n<footer><div class=\"shio-container\"><p sh-field=\"title\">{{post.title}}</p><div hidden sh-field=\"description\">{{post.summary}}</div></div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/hero",
+      "type": "SectionHero",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "{{headline}}",
+        "subheading": "{{tagline}}",
+        "ctaLabel": "Get in touch",
+        "ctaHref": "/contact",
+        "align": "center"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/gallery",
+      "type": "SectionGallery",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "Our work",
+        "intro": "A few photographs of {{brand}}.",
+        "columns": "3",
+        "images": []
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/home/visit",
+      "type": "SectionCta",
+      "folder": "/sections/home",
+      "data": {
+        "heading": "Visit {{brand}}",
+        "body": "{{location}}",
+        "ctaLabel": "How to reach us",
+        "ctaHref": "/contact",
+        "variant": "primary"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/about/story",
+      "type": "SectionRichText",
+      "folder": "/sections/about",
+      "data": {
+        "heading": "About {{brand}}",
+        "body": "<p>{{tagline}}</p><p>{{location}}</p>"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/contact/details",
+      "type": "SectionRichText",
+      "folder": "/sections/contact",
+      "data": {
+        "heading": "Contact {{brand}}",
+        "body": "<p>{{contact}}</p><p>{{location}}</p>"
+      },
+      "publish": true
+    },
+    {
+      "url": "/sections/contact/form",
+      "type": "SectionForm",
+      "folder": "/sections/contact",
+      "data": {
+        "heading": "Send us a message",
+        "intro": "We answer every message.",
+        "formType": "Contact",
+        "submitLabel": "Send",
+        "formToken": ""
+      },
+      "publish": true
+    },
+    {
+      "url": "/",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "{{brand}}",
+        "description": "{{brand}}: {{tagline}}",
+        "sections": [
+          "/sections/home/hero",
+          "/sections/home/gallery",
+          "/sections/home/visit"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/about",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "About {{brand}}",
+        "description": "{{tagline}}",
+        "sections": [
+          "/sections/about/story"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/contact",
+      "type": "Page",
+      "folder": "/",
+      "data": {
+        "title": "Contact {{brand}}",
+        "description": "How to reach {{brand}}.",
+        "sections": [
+          "/sections/contact/details",
+          "/sections/contact/form"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/menu/home",
+      "type": "MenuItem",
+      "folder": "/menu",
+      "data": {
+        "label": "Home",
+        "target": [
+          "/"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/menu/about",
+      "type": "MenuItem",
+      "folder": "/menu",
+      "data": {
+        "label": "About",
+        "target": [
+          "/about"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/menu/contact",
+      "type": "MenuItem",
+      "folder": "/menu",
+      "data": {
+        "label": "Contact",
+        "target": [
+          "/contact"
+        ]
+      },
+      "publish": true
+    },
+    {
+      "url": "/menu/primary",
+      "type": "Menu",
+      "folder": "/menu",
+      "data": {
+        "title": "Primary",
+        "items": [
+          "/menu/home",
+          "/menu/about",
+          "/menu/contact"
+        ]
+      },
+      "publish": true
+    }
+  ],
+  "postTypeLayout": {
+    "Page": "Small business layout"
+  }
+}

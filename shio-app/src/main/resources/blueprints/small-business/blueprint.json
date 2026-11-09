@@ -1,0 +1,66 @@
+{
+  "formatVersion": 1,
+  "name": "small-business",
+  "title": "Small business",
+  "version": "1.0.0",
+  "description": "Home with a photo gallery, about, and a contact form that posts with no script, closed until enabled.",
+  "params": {
+    "type": "object",
+    "required": [
+      "brand"
+    ],
+    "properties": {
+      "brand": {
+        "type": "string",
+        "description": "The business's name."
+      },
+      "tagline": {
+        "type": "string",
+        "description": "What the business does, in one sentence.",
+        "default": "What we do, in one sentence."
+      },
+      "location": {
+        "type": "string",
+        "description": "Where the business is: an address or an area.",
+        "default": "Where to find us."
+      },
+      "contact": {
+        "type": "string",
+        "description": "How to reach it: a phone number, an email or opening hours.",
+        "default": "How to reach us."
+      },
+      "headline": {
+        "type": "string",
+        "description": "The opening line on the home page.",
+        "default": "Welcome"
+      }
+    }
+  },
+  "postTypes": [
+    "post-types/Page.json",
+    "post-types/Menu.json",
+    "post-types/MenuItem.json",
+    "post-types/Contact.json",
+    "post-types/SectionCta.json",
+    "post-types/SectionFaq.json",
+    "post-types/SectionFeatureGrid.json",
+    "post-types/SectionForm.json",
+    "post-types/SectionGallery.json",
+    "post-types/SectionHero.json",
+    "post-types/SectionLogoWall.json",
+    "post-types/SectionMarkup.json",
+    "post-types/SectionRichText.json",
+    "post-types/SectionTestimonial.json"
+  ],
+  "content": [
+    "content/small-business.json"
+  ],
+  "verify": {
+    "posts": [
+      "/",
+      "/about",
+      "/contact"
+    ],
+    "checks": "content"
+  }
+}

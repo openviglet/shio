@@ -261,30 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.109 A blueprint with a gallery and a contact form (SH1356)
-
-The mobile product's first run is a small business: a few photos, a line about the
-place, a way to be contacted. Three parts have shipped: SectionGallery (renderer.md, "A
-gallery section"), the script-free form endpoint, SH1382 (security.md, "A form with no
-script"), and SectionForm, SH1386 (renderer.md, "A form section"). What is left is the
-package that composes them.
-
-The package, small-business, composes hero, gallery, rich text, form and CTA into home,
-about and contact, with five parameters a phone can ask: name, what it does, where, how
-to reach it, and the opening line. It ships a Contact post-type for the form (name,
-email, message), and its contact page carries a SectionForm whose `formType` is Contact
-and whose `formToken` is empty: the section draws its heading and intro and no form
-until the curator enables submissions (POST /api/v2/site-form) and fills the token, so
-applying the package never opens the door, as SH632 decided.
-
-verify.posts promises the three pages, and the apply benchmark in
-token-budgets.properties takes a row for it, measured. Model it on `landing` (its
-PageLayout, Theme and binding, so the site renders on apply) rather than on
-`marketing-site`, which carries a Next.js front end the phone does not need.
-
-Done when a contact form on a blueprint page submits with script off: apply the package,
-enable the site's form configuration, fill the token, and POST the rendered form.
-
 ### XI.111 An upload into an unknown folder (SH1380)
 
 Filed by shio-mobile SHM8, measured on a 2026.3 instance on 2026-11-09 and re-measured

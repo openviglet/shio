@@ -1,0 +1,71 @@
+{
+  "name": "SectionLogoWall",
+  "title": "Logo Wall Section",
+  "namePlural": "Logo Wall Sections",
+  "description": "Social proof as a row of logos.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "heading",
+      "label": "Heading",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "logos",
+      "label": "Logos",
+      "description": null,
+      "widget": "Relator",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": "{\"relator\":{\"title\":\"Logo\"}}",
+      "fields": [
+        {
+          "name": "name",
+          "label": "Name",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 1,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "image",
+          "label": "Image",
+          "description": null,
+          "widget": "File",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 2,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "href",
+          "label": "Link",
+          "description": null,
+          "widget": "Text",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 3,
+          "widgetSettings": null,
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

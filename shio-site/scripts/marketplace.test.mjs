@@ -26,9 +26,9 @@ import { zip } from "./zip.mjs";
 
 const OUT = resolve(process.cwd(), "public", "marketplace");
 
-/** The six names the jar carries, which are also the ids that must NOT appear in the catalogue. */
+/** The seven names the jar carries, which are also the ids that must NOT appear in the catalogue. */
 const BUILT_IN = ["blog", "docs", "landing", "marketing-site", "nextjs-starter",
-  "product-catalog"];
+  "product-catalog", "small-business"];
 
 function python() {
   for (const candidate of ["python3", "python"]) {

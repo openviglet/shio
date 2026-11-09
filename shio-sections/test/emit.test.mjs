@@ -49,7 +49,8 @@ test("the section vocabulary reaches every package that claims to compose sectio
     // applied no blueprint. That is the case `shio convert` is, and the case that did not work.
     // `at(-2)` is a package name for the first two and the resource root for the third, which is
     // the difference itself: `post-types/vocabulary` is not a package.
-    ["marketing-site", "landing", "post-types"],
+    // SH1356 added `small-business`, the phone's first run, which composes sections like `landing`.
+    ["marketing-site", "landing", "small-business", "post-types"],
   );
 });
 

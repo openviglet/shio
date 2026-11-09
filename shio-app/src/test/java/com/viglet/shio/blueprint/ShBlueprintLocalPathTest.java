@@ -63,7 +63,7 @@ class ShBlueprintLocalPathTest {
     void noPathIsTheOldBehaviour() {
         assertThat(registryAt(null).names())
                 .containsExactly("blog", "docs", "landing", "marketing-site", "nextjs-starter",
-                        "product-catalog");
+                        "product-catalog", "small-business");
     }
 
     @Test

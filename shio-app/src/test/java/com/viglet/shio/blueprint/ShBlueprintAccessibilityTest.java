@@ -9,6 +9,8 @@
 package com.viglet.shio.blueprint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,6 +18,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +27,11 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
@@ -36,6 +43,17 @@ import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.api.form.ShFormSubmissionAPI;
+import com.viglet.shio.api.form.ShSiteFormAPI;
+import com.viglet.shio.api.form.dto.ShSiteFormRequest;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.persistence.model.token.ShApiTokenScope;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.token.ShApiTokenRepository;
+import com.viglet.shio.render.ShPageRenderService;
+import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -111,6 +129,9 @@ class ShBlueprintAccessibilityTest {
     /** What applying the showcase answered, in estimated tokens; -1 until the loop applies it. */
     private int showcaseApplyTokens = -1;
 
+    /** SH1356 — what applying each judged package answered, in estimated tokens. */
+    private final Map<String, Integer> applyTokens = new java.util.TreeMap<>();
+
     /** The post-type that makes a blueprint's pages Shio's to render, and so this test's to judge. */
     private static final String LAYOUT_TYPE = "PageLayout";
 
@@ -129,6 +150,20 @@ class ShBlueprintAccessibilityTest {
 
     @PersistenceContext
     private EntityManager entityManager;
+    // SH1356 — what the contact form's end-to-end test needs beside the a11y sweep. In this class
+    // rather than its own: the suite has no context slot left (SH423) and one database is claimed
+    // by one class (the isolation lint), while the shared default context's post-types are other
+    // tests' to mutate, which is the failure that put it here.
+    @Autowired
+    private WebApplicationContext webApplicationContext;
+    @Autowired
+    private ShPageRenderService renderService;
+    @Autowired
+    private ShSiteFormAPI siteFormAPI;
+    @Autowired
+    private ShApiTokenRepository apiTokenRepository;
+    @Autowired
+    private ShPostUnifiedRepository postRepository;
 
     @Test
     @DisplayName("SH1121: every blueprint that ships a layout renders pages the a11y check passes")
@@ -158,9 +193,11 @@ class ShBlueprintAccessibilityTest {
         for (String name : withLayout) {
             String site = freshSite(name);
             var applied = blueprintService.apply(name, site, paramsFor(all.get(name)), "admin");
+            int tokens = com.viglet.shio.api.agent.ShTokenBudget.estimate(
+                    new ObjectMapper().writeValueAsString(applied));
+            applyTokens.put(name, tokens);
             if (SHOWCASE.equals(name)) {
-                showcaseApplyTokens = com.viglet.shio.api.agent.ShTokenBudget.estimate(
-                        new ObjectMapper().writeValueAsString(applied));
+                showcaseApplyTokens = tokens;
             }
             if (SHOWCASE.equals(name)) {
                 assertFontsAreUsed(site);
@@ -197,6 +234,107 @@ class ShBlueprintAccessibilityTest {
                         + "grew is a cost every agent that applies it pays, so raise the number with "
                         + "the reason beside it in token-budgets.properties")
                 .isBetween(1, ceiling);
+
+        // SH1356 — the same measurement for every package that declares a ceiling, so the phone's
+        // first run (small-business) is a number too; a package with no row is printed, not judged.
+        assertThat(budgets().getProperty("blueprint.apply.small-business"))
+                .as("SH1356: the small-business package's apply is measured, like the showcase's")
+                .isNotNull();
+        applyTokens.forEach((name, tokens) -> {
+            String row = budgets().getProperty("blueprint.apply." + name);
+            System.out.printf("SH1356: applying %s answered ~%d tokens (ceiling %s)%n", name, tokens, row);
+            if (row != null) {
+                assertThat(tokens)
+                        .as("SH1356: %s's apply report is over its recorded ceiling; raise it with the "
+                                + "reason beside it in token-budgets.properties", name)
+                        .isBetween(1, Integer.parseInt(row));
+            }
+        });
+    }
+
+    private static final String SB_ORIGIN = "https://bakery.example";
+    private static final String SB_TOKEN = "sh1356-form-key";
+
+    /**
+     * SH1356 — a contact form on a blueprint page submits with script off.
+     *
+     * <p>The task's own criterion, end to end: apply {@code small-business}, see the contact page draw
+     * no form while its token is empty (applying a package never opens the door, SH632), enable the
+     * site's form configuration and fill the token as a curator would, then post exactly the fields
+     * the rendered form carries, urlencoded, through the whole security chain.</p>
+     */
+    @Test
+    @DisplayName("SH1356: a contact form on a blueprint page submits with script off")
+    void aContactFormOnABlueprintPageSubmitsWithScriptOff() throws Exception {
+        var mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        String site = freshSite("small-business-form");
+        String siteId = siteRepository.findByName(site).getId();
+        blueprintService.apply("small-business", site,
+                new ObjectMapper().readTree("{\"brand\":\"Bakery\"}"), "admin");
+
+        assertThat(renderService.render(site, "/contact", ShPostState.DRAFT).html())
+                .as("SH1356: applying the package never opens the door; with no token there is no form")
+                .doesNotContain("<form");
+
+        siteFormAPI.create(new ShSiteFormRequest(siteId, "/messages", "Contact", true, SB_ORIGIN), null);
+        ShApiToken token = new ShApiToken();
+        token.setTitle("contact form");
+        token.setToken(SB_TOKEN);
+        token.setEnabled(true);
+        token.setScope(ShApiTokenScope.FORM);
+        token.setSiteIds(Set.of(siteId));
+        token.setOwner("admin");
+        token.setCreatedDate(Instant.now());
+        apiTokenRepository.save(token);
+        fillFormToken(siteId);
+
+        String html = renderService.render(site, "/contact", ShPostState.DRAFT).html();
+        assertThat(html)
+                .as("SH1356: the form posts natively to this site's endpoint with its hidden fields")
+                .contains("method=\"post\" action=\"/api/v2/cda/form/" + site + "\"")
+                .contains("name=\"" + ShFormSubmissionAPI.TYPE_FIELD + "\" value=\"Contact\"")
+                .contains("name=\"" + ShApiTokenFilter.FORM_TOKEN_FIELD + "\" value=\"" + SB_TOKEN + "\"")
+                .contains("name=\"name\"").contains("name=\"email\"")
+                .contains("<textarea id=\"shio-form-message\" name=\"message\" required></textarea>");
+
+        MvcResult sent = mvc.perform(post("/api/v2/cda/form/" + site)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .header("Origin", SB_ORIGIN).header("Referer", SB_ORIGIN + "/contact")
+                        .param(ShFormSubmissionAPI.TYPE_FIELD, "Contact")
+                        .param(ShApiTokenFilter.FORM_TOKEN_FIELD, SB_TOKEN)
+                        .param(ShFormSubmissionAPI.HONEYPOT_FIELD, "")
+                        .param("name", "Ana").param("email", "ana@example.com")
+                        .param("message", "Do you bake on Sundays?"))
+                .andReturn();
+        assertThat(sent.getResponse().getStatus())
+                .as("SH1356: a browser with script off follows the 303 back to the page: "
+                        + sent.getResponse().getContentAsString())
+                .isEqualTo(303);
+        assertThat(sent.getResponse().getHeader("Location")).isEqualTo(SB_ORIGIN + "/contact?shio_form=sent");
+
+        assertThat(postRepository.findAll().stream()
+                .filter(each -> each.getShSite() != null && siteId.equals(each.getShSite().getId()))
+                .filter(each -> each.getData() != null && each.getData().contains("Do you bake on Sundays?"))
+                .toList())
+                .as("SH1356: the message is a Contact draft in the folder the site named")
+                .singleElement()
+                .satisfies(each -> assertThat(each.getState()).isEqualTo(ShPostState.DRAFT));
+    }
+
+    /** The curator's edit: the site's FORM token on the contact form section. */
+    private void fillFormToken(String siteId) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            List<ShPostUnified> sections = entityManager
+                    .createQuery("select p from ShPostUnified p where p.shSite.id = :site", ShPostUnified.class)
+                    .setParameter("site", siteId).getResultList().stream()
+                    .filter(each -> each.getData() != null && each.getData().contains("\"formType\""))
+                    .toList();
+            assertThat(sections).as("the package ships one form section").isNotEmpty();
+            for (ShPostUnified section : sections) {
+                section.setData(section.getData().replaceAll("\"formToken\"\\s*:\\s*\"\"",
+                        "\"formToken\":\"" + SB_TOKEN + "\""));
+            }
+        });
     }
 
     /**

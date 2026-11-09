@@ -1,0 +1,71 @@
+{
+  "name": "SectionFaq",
+  "title": "FAQ Section",
+  "namePlural": "FAQ Sections",
+  "description": "Questions people actually ask, answered in place.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "heading",
+      "label": "Heading",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "intro",
+      "label": "Intro",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "questions",
+      "label": "Questions",
+      "description": null,
+      "widget": "Relator",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": "{\"relator\":{\"title\":\"Question\"}}",
+      "fields": [
+        {
+          "name": "question",
+          "label": "Question",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 1,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "answer",
+          "label": "Answer",
+          "description": null,
+          "widget": "HTML Editor",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 2,
+          "widgetSettings": null,
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

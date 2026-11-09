@@ -53,7 +53,7 @@ class ShBlueprintRegistryTest {
                         + "refused, and the author's mistake would otherwise have surfaced as a "
                         + "stranger's half-applied site")
                 .containsExactly("blog", "docs", "landing", "marketing-site", "nextjs-starter",
-                        "product-catalog");
+                        "product-catalog", "small-business");
     }
 
     /**

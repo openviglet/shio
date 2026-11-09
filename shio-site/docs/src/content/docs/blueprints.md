@@ -42,6 +42,7 @@ choosing between six packages does not cost six schemas.
 | `marketing-site` | A section-composed site, **plus** the Next.js front end |
 | `landing` | A single section-composed page, **plus** the front end |
 | `nextjs-starter` | The Next.js starter project itself, as a package |
+| `small-business` | Home with a photo gallery, about and contact pages; the contact form submits with no script once you enable it |
 
 Three of them carry front-end **files**: `nextjs-starter` gets the starter tree, and
 `marketing-site` and `landing` get the same tree plus a small section-aware overlay. The
