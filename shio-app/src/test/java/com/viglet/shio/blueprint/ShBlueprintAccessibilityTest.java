@@ -41,6 +41,7 @@ import com.viglet.shio.api.staticfile.ShStaticFileItem;
 import com.viglet.shio.api.staticfile.ShStaticFileListing;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
+import com.viglet.shio.blueprint.dto.ShBlueprintApplied;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.api.form.ShFormSubmissionAPI;
@@ -250,6 +251,34 @@ class ShBlueprintAccessibilityTest {
                         .isBetween(1, Integer.parseInt(row));
             }
         });
+    }
+
+    /**
+     * SH1385 — the showcase plans, which is what the Marketplace dialog does before it applies.
+     *
+     * <p>Every check here applied Quilhara and none planned it, and a plan is a dry run: the op that
+     * binds the layouts writes nothing, so the op after it naming {@code InfoPage} as the page type was
+     * judged against the database alone and answered 400 page-type-not-bound at ops[2]. The first thing
+     * the README offers a new user failed with nothing on screen.</p>
+     */
+    @Test
+    @DisplayName("SH1385: the showcase plans on a fresh site and on one the plan creates")
+    void theShowcasePlansOnAFreshSite() {
+        Map<String, ShBlueprint> all = registry.all();
+        assertThat(all).as("SH1385: the showcase is read from marketplace/ here").containsKey(SHOWCASE);
+        JsonNode params = paramsFor(all.get(SHOWCASE));
+
+        ShBlueprintApplied onAnEmptySite = blueprintService.plan(SHOWCASE, freshSite("plan"), params, "admin");
+        assertThat(onAnEmptySite.content().results())
+                .as("SH1385: a plan of the showcase on a site with no bindings answers, it does not refuse")
+                .isNotEmpty();
+
+        String created = "sh1385-" + UUID.randomUUID().toString().substring(0, 8);
+        ShBlueprintApplied onANewSite = blueprintService.plan(SHOWCASE, created, params, "admin",
+                new ShBlueprintWriteService.Options(true, true));
+        assertThat(onANewSite.site())
+                .as("SH1385: the Marketplace's own path, a plan that creates the site it names")
+                .isEqualTo(created);
     }
 
     private static final String SB_ORIGIN = "https://bakery.example";

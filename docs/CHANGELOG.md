@@ -422,6 +422,7 @@
 - **SH1376** — The Quilhara sample pages name Viglet Shio in full in both languages, the tour screenshot is retaken from a clean instance with the package applied from this tree, and the full-names lint reads the package's content.
 - **SH1382** — A plain HTML form submits with script off: urlencoded body, the FORM token in a hidden shio_key field, and a 303 back to the page with shio_form=sent or error, never an open redirect (design §XI.109 recorded in `docs/agents/security.md`).
 - **SH1386** — SectionForm joins the vocabulary: it names the post type a submission is stored as and the site's FORM token, and draws a native POST form with no script in the generated layout and in React's Form (design §XI.109 recorded in `docs/agents/renderer.md`).
+- **SH1385** — The Quilhara showcase plans from the Marketplace on a clean instance: a dry run now counts the layouts earlier ops bind before checking the page type, and a refused plan shows its reason in the dialog (design §XI.113 recorded in `docs/agents/blueprints.md`).
 
 ## Block M — Token economy, measured (SH74)
 

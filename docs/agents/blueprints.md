@@ -202,6 +202,19 @@ package ships it recommends `--blueprint marketing-site` instead, and the confor
 flips with it: while the table says unpublished, npm **must** refuse that template, and once it does
 not the same line requires a clean install.
 
+## A plan binds what it will write (SH1385)
+
+A blueprint's `pageType` reaches the batch as a **second** `site.upsert`, after the op that binds the
+layouts, so the type it names is bound when it is checked. That ordering held on a real apply and
+not on a **plan**: a plan is a dry run, the binding op writes nothing, and the page-type check read
+the database alone. Quilhara, the one package that names a page type, answered 400
+`page-type-not-bound` at `ops[2]` from the Marketplace's Plan on every clean instance, while every
+test applied it and none planned it. The batch `Session` now records the bindings each dry-run site
+op would write (`plannedBindings`, beside `plannedFolders` and `plannedPosts`) and both site branches
+count them. `ShBlueprintAccessibilityTest.theShowcasePlansOnAFreshSite` plans the showcase onto an
+empty site and onto one the plan creates. The Marketplace dialog also draws a refused plan's title and
+fix as an alert in the dialog, not only as a toast the modal can hide.
+
 ## The small-business package (SH1356)
 
 `small-business` is the phone's first run: home (hero, gallery, a visit CTA), about (rich text) and

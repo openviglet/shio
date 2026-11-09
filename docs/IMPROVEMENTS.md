@@ -309,37 +309,6 @@ What the upgrade has to settle, measured by the guards that went red:
 Then remove the hold in `shio-react/package.json` and, if Dependabot's group config can
 ignore a major, drop any ignore added in the meantime.
 
-### XI.113 Quilhara installs from the Marketplace on a clean instance (SH1385)
-
-**Where it showed.** On 2026-11-09, filming the Shio promo video (task VS52 in
-`alegauss/visibility`) on a clean `ghcr.io/openviglet/shio:latest` (v2026.3-6b5d0ce,
-built 2026-10-31), started with `docker run -p 2711:2710 -e SHIO_ADMIN_PASSWORD=…`.
-Console, Administração > Marketplace, card "Quilhara showcase"
-(`shio-blueprint-quilhara` 1.0.0, from the catalogue the console names as
-`https://openviglet.github.io/shio/marketplace/marketplace.json`), site `quilhara`,
-"Criar o site se ele não existir" on. "Planejar" answers:
-
-`POST /api/v2/marketplace/shio-blueprint-quilhara/setup` → 400, type
-`page-type-not-bound`, "The page type 'InfoPage' is not bound to a layout on this site",
-`at: ops[2]`, fix: "bind 'InfoPage' with `postTypeLayout` in the same site.upsert".
-
-Ticking "Adicionar os campos que faltam aos tipos de post existentes" changes nothing.
-The console shows no toast, so "Instalar e aplicar" just stays disabled and the visitor
-sees nothing happen.
-
-**Why it matters.** The README's quick start and the showcase's own pitch say the
-Marketplace installs Quilhara on a fresh instance with nothing configured, the moment
-the promo video films. Today the first thing a new user tries fails silently.
-
-**What to check.** Whether the published package (catalogue) and the image disagree: the
-package's `site.upsert` names `InfoPage` as the page type without a `postTypeLayout` the
-image's validation accepts, or the image predates a fix. A test planning every catalogue
-package on a fresh release image would catch the next one. The dialog should also show a
-failed plan's title and fix.
-
-**Done when** a clean instance of the release image plans and applies Quilhara from the
-Marketplace, and a failed plan shows its reason in the dialog.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

@@ -48,12 +48,16 @@ export function MarketplaceSetup({
   const [plan, setPlan] = useState<ShMarketplaceSetupResult | null>(null)
   const [done, setDone] = useState<ShMarketplaceSetupResult | null>(null)
   const [busy, setBusy] = useState(false)
+  // SH1385 — a refused plan is said here, in the dialog, and not only in a toast the modal can hide:
+  // the Marketplace's first run failed with "Install and apply" quietly disabled and nothing else.
+  const [failure, setFailure] = useState<string | null>(null)
 
   /** Any change invalidates the plan: a confirm must write what was planned, and nothing else. */
   const change = (next: () => void) => {
     next()
     setPlan(null)
     setDone(null)
+    setFailure(null)
   }
 
   const request = (dryRun: boolean) => ({
@@ -66,6 +70,7 @@ export function MarketplaceSetup({
 
   const run = (dryRun: boolean) => {
     setBusy(true)
+    setFailure(null)
     service
       .setup(item.id, request(dryRun))
       .then((result) => {
@@ -78,7 +83,11 @@ export function MarketplaceSetup({
         toast.success(t("marketplace.setupDone", { site: result.apply.site }))
         onDone()
       })
-      .catch((error) => toast.error(problemOf(error, t("marketplace.setupFailed"))))
+      .catch((error) => {
+        const reason = problemOf(error, t("marketplace.setupFailed"))
+        setFailure(reason)
+        toast.error(reason)
+      })
       .finally(() => setBusy(false))
   }
 
@@ -155,6 +164,12 @@ export function MarketplaceSetup({
           <Label htmlFor="marketplace-setup-merge">{t("marketplace.setupMerge")}</Label>
         </div>
       </div>
+
+      {failure && (
+        <p role="alert" className="rounded-md border border-destructive/50 p-3 text-sm text-destructive">
+          {failure}
+        </p>
+      )}
 
       {plan && <PlanSummary result={plan} />}
 

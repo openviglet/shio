@@ -2142,7 +2142,10 @@ public class ShAgentBatchService {
                 op.data() == null ? null : op.data().get(ShSiteLocales.FIELD));
         // SH1283 — a new site has only the bindings this op brings, so its page type names one.
         String pageType = text(op.data(), ShSiteWriteService.PAGE_TYPE_FIELD);
-        ShSiteWriteService.requirePageTypeBound(pageType, bindings.keySet());
+        java.util.Set<String> bindable = new java.util.HashSet<>(bindings.keySet());
+        bindable.addAll(session.plannedBindings(name));
+        ShSiteWriteService.requirePageTypeBound(pageType, bindable);
+        session.planBindings(name, bindings.keySet());
         String detail = createDetail(bindings) + (scratch ? ", declared SCRATCH — disposable, and "
                 + "`shio site rm --scratch` may remove it in one confirmation" : "")
                 + (locales.isPresent() ? ", with a declared locale policy" : "");
@@ -2315,8 +2318,11 @@ public class ShAgentBatchService {
         if (requested.containsKey(ShSiteWriteService.PAGE_TYPE_FIELD)) {
             java.util.Set<String> bound = shSiteWriteService.boundTypes(site);
             bound.addAll(bindings.keySet());
+            // SH1385 — and what an earlier op in this dry run binds, which a plan never writes.
+            bound.addAll(session.plannedBindings(site.getName()));
             ShSiteWriteService.requirePageTypeBound(requested.get(ShSiteWriteService.PAGE_TYPE_FIELD), bound);
         }
+        session.planBindings(site.getName(), bindings.keySet());
         ShSiteWriteService.ShSiteFill fill = session.dryRun
                 ? shSiteWriteService.planFill(site, requested, bindings)
                 : shSiteWriteService.fillEmpty(site, requested, bindings, session.actor);
@@ -4477,6 +4483,22 @@ public class ShAgentBatchService {
         private final Set<String> plannedPosts = new HashSet<>();
         /** SH993 — releases an earlier op in this dry run creates. */
         private final Set<String> plannedReleases = new HashSet<>();
+        /**
+         * SH1385 — the layout bindings earlier site ops in this dry run would write, per site. A plan
+         * writes none of them, so a later op's page type was checked against the database alone and
+         * refused the type the plan itself binds: Quilhara's Marketplace plan, 400 at ops[2].
+         */
+        private final Map<String, Set<String>> plannedBindings = new java.util.HashMap<>();
+
+        private void planBindings(String site, Set<String> types) {
+            if (dryRun && !types.isEmpty()) {
+                plannedBindings.computeIfAbsent(site, ignored -> new HashSet<>()).addAll(types);
+            }
+        }
+
+        private Set<String> plannedBindings(String site) {
+            return plannedBindings.getOrDefault(site, Set.of());
+        }
 
         private Session(boolean dryRun, boolean ids, boolean links, String actor,
                         Declared declared) {
