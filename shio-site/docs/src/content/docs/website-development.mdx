@@ -1,0 +1,523 @@
+---
+title: Pages, Layouts & Regions
+description: "Build pages in Viglet Shio from Handlebars layouts, regions and themes: the template model, the helpers, forms, preview and public delivery."
+sidebar:
+  label: Pages, Layouts & Regions
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+This page is for whoever writes a site's templates, a developer or the agent building it.
+Viglet Shio composes a page out of content it already holds: a **Page** finds its **Page
+Layout**, the layout slots one or more **Regions**, and a **Theme** supplies the CSS. All four are ordinary
+content, so everything you can do to a post (write it over the API, project it to a file,
+export it in a package, lint it) works on your templates too. Templates are **Handlebars**,
+calling a small, fixed set of helpers.
+
+![The render pipeline: page, layout, region, theme, helpers, HTML, digest](/docs/img/diagrams/shio-render-pipeline.svg)
+
+---
+
+## Build a page from a layout
+
+From an empty site to a page you can see, without a front end.
+
+<Steps>
+
+1. Create the render post types, once per instance:
+
+   ```http
+   POST /api/v2/render/post-types
+   ```
+
+   An agent does the same with the `render.provision` batch op.
+
+2. Write a `Theme` post with your CSS in its `CSS` field.
+
+3. Write a `Region` post for each shared fragment, such as `Site Header` and `Site Footer`.
+
+4. Write a `PageLayout` post whose `HTML` slots the regions with `sh-region` and whose `THEME`
+   names the theme (see [Slotting a region](#slotting-a-region)).
+
+5. Bind the layout to a post type in the site's `postTypeLayout` map (see
+   [Binding a layout to a post type](#binding-a-layout-to-a-post-type)).
+
+6. Open the page's preview at `/preview/<site>/<path>`.
+
+7. Run `shio verify` to check what the preview cannot show (see
+   [Proving it renders](#proving-it-renders)).
+
+</Steps>
+
+Every page of that post type now renders through the layout. The preview shows drafts; the
+public route at `/sites/<site>/` serves the page once it is published (see
+[Seeing the page](#seeing-the-page)).
+
+## Accept form submissions
+
+**Before you start:** a post type for the submissions, such as `Contact`, and permission to
+configure the site.
+
+<Steps>
+
+1. Create the folder submissions will land in. A submission never creates one.
+
+2. Configure the site's form, on the console's **Forms** page or with
+   `POST /api/v2/site-form`: the folder, the post types it invites (comma-separated) and the
+   browser origins it accepts.
+
+3. Turn the form on with `enabled`. Creating the configuration leaves it off.
+
+4. Issue a `FORM` API token for the site.
+
+5. Render the form in a template with `{{#form}}`, carrying the token (see [Forms](#forms)).
+
+6. Send a test submission:
+
+   ```bash
+   curl -X POST https://cms.example.com/api/v2/cda/form/acme   -H "Key: $SHIO_FORM_TOKEN" -H "Content-Type: application/json"   -d '{"type":"Contact","data":{"TITLE":"Hello","MESSAGE":"Please call"}}'
+   ```
+
+</Steps>
+
+A success answers `{"received": true, "id": "...", "state": "DRAFT"}`, and the submission is a
+draft post in the folder, listed on the **Forms** page. A refusal answers `received: false` with
+a `title` and a `fix`: the site is not accepting, the type is not invited, or the folder is
+missing.
+
+:::note
+A form on your own domain posting to the CMS is a cross-origin request, which needs CORS
+configured on the instance.
+:::
+
+---
+
+## The render post types
+
+`PageLayout`, `Region`, `Theme`, `Redirect` and `SiteScripts` are **system post types**,
+created on demand by `POST /api/v2/render/post-types`. The call is idempotent and never touches
+a type that already exists, so it is safe on every deploy.
+
+| Call | Answers |
+|---|---|
+| `GET /api/v2/render/post-types/drift` | Which render types are missing a field this release declares |
+| `POST /api/v2/render/post-types/reconcile` | Adds those missing fields: a repair, not a create |
+
+| Type | Fields | Job |
+|---|---|---|
+| `PageLayout` | `TITLE`, `HTML`, `THEME`, `JAVASCRIPT` | The page-level template. `HTML` holds the Handlebars; `THEME` names the theme to inline |
+| `Region` | `TITLE`, `HTML`, `JAVASCRIPT` | A reusable fragment slotted into a layout. `JAVASCRIPT` here is **browser** JavaScript, emitted inline once per region name |
+| `Theme` | `TITLE`, `CSS`, `JAVASCRIPT`, `TOKENS` | Styling. `TOKENS` holds W3C Design Tokens (DTCG): see below |
+| `Redirect` | `TITLE`, `TO`, `PERMANENT` | Its own friendly URL **is** the path it answers; `TO` is where the reader goes |
+| `SiteScripts` | `TITLE`, `SCRIPTS` | One ordered list of third-party scripts per site, as JSON |
+
+Layouts, regions and themes are addressed **by title**, since that is what an `sh-region`
+attribute and a layout binding both name.
+
+## Binding a layout to a post type
+
+A page does not name its layout. The **site** does, in its `postTypeLayout` map:
+
+```json
+{ "Article": "Article Layout", "Page": "Home Layout" }
+```
+
+Every page of a type resolves to the same layout, and a template lint reports at the layout,
+the post you edit.
+
+## Slotting a region
+
+A layout marks a slot with `sh-region`, naming the Region post by title:
+
+```handlebars
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{TITLE}}</title>
+    <style>{{theme.css}}</style>
+  </head>
+  <body>
+    <header sh-region="Site Header"></header>
+    <main>{{{HTML}}}</main>
+    <footer sh-region="Site Footer"></footer>
+  </body>
+</html>
+```
+
+- **`sh-region` survives the render**, joined by `data-shio-region` and
+  `data-shio-region-post`. Keep it: the [Universal Editor](/docs/universal-editor/) reads it to
+  map each node to its post. A slot whose Region post does not exist is marked
+  `data-shio-region-missing` rather than left empty.
+- **`{{theme.css}}` is raw** and inlined by the layout, not linked. CSS decodes no HTML
+  entities, so an escaped `url("/fonts/inter.woff2")` would be an invalid `@font-face` rule.
+- **A region renders against the page's model.** `{{TEXT}}` inside a region is the *page's*
+  `TEXT`; inside a `{{#query}}` block, `{{title}}` is the listed post's.
+
+## The model a template sees
+
+A page's own fields are at the **root**: `{{TITLE}}`, `{{HTML}}`, `{{ABSTRACT}}`, whatever the
+post type declares. Five named frames sit beside them:
+
+| Frame | Holds |
+|---|---|
+| `post` | `id`, `title`, `summary`, `url`, `type`, `folder`, `locale`, and `canonical` (an absolute URL that is never blank) |
+| `site` | `name`, `url` (your deployed front end, blank until you have one), `baseUrl` (always resolvable), `scripts` |
+| `theme` | `css`, `javascript`, and `tokens` as a dotted map, `{{theme.tokens.color.accent}}` |
+| `render` | The renderer's own facts, including `defaultLocale` |
+| `param` | **Query-string values only**, as strings, sorted, read-only |
+
+`param` holds no headers, cookies or request object. `state` and `editor` are left out because
+they are the renderer's own, and `{{{param.q}}}` (the unescaped form) is **refused when you save
+the template**, since that value comes from whoever holds the URL.
+
+## The helpers
+
+Nine helpers, and the list is closed. A call to a helper that does not exist fails when the
+template is compiled **on save**, not at render time. A parameterless `{{#thing}}` is read as an
+ordinary iteration, so in that form only `search`, `form` and `getRelation` are reported.
+
+| Helper | Shape |
+|---|---|
+| `query` | `{{#query folder= type= limit= page= sort= field= value= locale=}}…{{/query}}` |
+| `navigation` | `{{#navigation folder=}}…{{/navigation}}` |
+| `search` | `{{#search q= type= limit= locale=}}…{{/search}}` |
+| `getRelation` | `{{#getRelation FIELD}}…{{/getRelation}}` |
+| `menu` | `{{#menu title=}}…{{/menu}}` |
+| `translations` | `{{#translations}}…{{/translations}}` |
+| `image` | `{{#image FIELD sizes=}}…{{/image}}` |
+| `form` | `{{#form type=}}…{{/form}}` |
+| `file_url` | `{{file_url FIELD}}` |
+
+On a site in more than one language, pass `locale=post.locale` to `query` or `search` to list
+only the page's own language. Without it they list every language, the same as the delivery
+API's `/search` without `locale`.
+
+A listing row carries `title`, `link`, `summary` and the row's own fields:
+
+```handlebars
+<ul>
+  {{#query type="Article" limit=10 sort="publishDate"}}
+    <li><a href="{{link}}">{{title}}</a> <span>{{summary}}</span></li>
+  {{/query}}
+</ul>
+```
+
+### Paging a listing
+
+`{{#query}}` takes `page=` alongside `limit=`, and publishes the pager's facts as Handlebars data
+variables you read inside the block:
+
+| Variable | Holds |
+|---|---|
+| `@page`, `@pages`, `@total` | The current page, the page count and the real total of rows |
+| `@hasPrev`, `@hasNext` | Whether there is a page before or after this one |
+| `@prevPage`, `@nextPage` | Their numbers |
+| `@index`, `@first`, `@last` | The row's position, per row |
+
+The block body repeats per row, so draw the pager **once** with `{{#if @last}}`:
+
+```handlebars
+{{#query type="Article" limit=10 page=param.page sort="newest"}}
+  <li><a href="{{link}}">{{title}}</a></li>
+  {{#if @last}}
+    <nav>
+      {{#if @hasPrev}}<a href="?page={{@prevPage}}">Previous</a>{{/if}}
+      page {{@page}} of {{@pages}} ({{@total}} articles)
+      {{#if @hasNext}}<a href="?page={{@nextPage}}">Next</a>{{/if}}
+    </nav>
+  {{/if}}
+{{/query}}
+```
+
+`page=` takes `param.page` for a request-driven archive, a literal for a fixed page, or a field
+on the page itself. A nested listing keeps its own `@index`, `@last` and pager counts. Outside
+any `{{#query}}` block the variables are absent, so an `{{#if @last}}` written after `{{/query}}`
+renders nothing.
+
+### Responsive images
+
+`{{#image}}` emits whole URLs: `{{url}}` plus a `{{srcset}}` whose candidates are **filtered
+below the image's intrinsic width**, so nothing upscales, with the signature a signed transform
+URL needs. An image nothing measured (an SVG, say) yields the plain URL and an empty `srcset`,
+which in HTML means "use `src`".
+
+```handlebars
+{{#image HERO sizes="(max-width: 800px) 100vw, 800px"}}
+  <img src="{{url}}" srcset="{{srcset}}" sizes="{{sizes}}" alt="{{../TITLE}}" width="{{width}}" height="{{height}}">
+{{/image}}
+```
+
+## Themes and design tokens
+
+A `Theme`'s `TOKENS` field takes **W3C Design Tokens (DTCG)**, the shape Style Dictionary, Figma
+and Tokens Studio export:
+
+```json
+{ "color": { "accent": { "$value": "#0b5d3b" } }, "font": { "body": { "$value": "Inter, sans-serif" } } }
+```
+
+Viglet Shio compiles it to custom properties on `:root` (`color.accent` → `--color-accent`) and
+**prepends** the block to the theme's own CSS, so existing layouts get tokens without being
+edited. The same values are readable as `{{theme.tokens.color.accent}}` where `var()` cannot
+reach. A theme with no tokens emits nothing, and a `TOKENS` field that is not valid JSON renders
+the page on the CSS alone and records the failure.
+
+The format, every rule the compiler applies, and how a replicated site's stylesheet becomes
+tokens are in [Design Tokens (DTCG)](/docs/design-tokens/).
+
+## Third-party scripts
+
+A `SiteScripts` post holds **one ordered list per site** in its `SCRIPTS` field, as a JSON array,
+so consent can load before what it gates on every layout. Each entry carries `src` or `inline`,
+plus optional `position` (`head` · `bodyStart` · `bodyEnd`), `defer`, `async` and a consent
+`category`:
+
+```json
+[
+  { "src": "https://cdn.example.com/consent.js", "position": "head", "category": "necessary" },
+  { "src": "https://cdn.example.com/analytics.js", "position": "bodyEnd", "defer": true, "category": "analytics" }
+]
+```
+
+The renderer groups them into the three positions, each always present even when empty, and a
+layout emits them where it wants:
+
+```handlebars
+{{#each site.scripts.head}}<script src="{{src}}"{{#if defer}} defer{{/if}}></script>{{/each}}
+```
+
+| Rule | Behaviour |
+|---|---|
+| Injection | None: a layout emits the scripts, and the delivery layer reads the same post through the CDA, so preview and production behave alike |
+| An entry with neither `src` nor `inline` | Skipped, and reported as `site-scripts-entry-empty` |
+| An unrecognised `position` | Falls back to `bodyEnd`, never `head` |
+| `category` | Carried for a layout that gates its own emission; Viglet Shio never acts on it |
+| A bound layout that never emits them | `verify` reports `site-scripts-dropped`. Tick **Omits site scripts on purpose** on a `PageLayout` that leaves them out deliberately (an email template, a print stylesheet, an embed) |
+
+## Sections
+
+For pages assembled from blocks, the `@viglet/shio-sections` package ships a shared vocabulary:
+a `Page` type plus section types, with matching unstyled, semantic React components behind
+stable `shio-*` class names.
+
+| Type | Holds |
+|---|---|
+| `SectionHero`, `SectionFeatureGrid`, `SectionCta`, `SectionLogoWall`, `SectionTestimonial`, `SectionFaq`, `SectionRichText` | The usual page blocks |
+| `SectionMarkup` | One `html` field: markup kept exactly as a captured page wrote it. A replication puts one in the list for each run of markup nobody made authorable, so a curator can move or replace it |
+| `SectionGallery` | Photographs, each a file and an optional caption. Each photo's alt text is the one given in the media library; a photo nobody described is flagged by `shio verify` |
+| `SectionForm` | A contact form that works with no script. `formType` names the post type a submission is stored as, and that type's fields are the form; `formToken` holds the site's FORM token, and until it is filled in the section draws no form. In React, `<Sections>` draws it when you pass `form={{ action, fields }}` |
+
+A `Page` names its sections **by friendly URL, in order**, in a `Multi Select` whose settings
+declare what it holds:
+
+```json
+{ "multiselect": { "references": "post" } }
+```
+
+With that declaration `shio verify` resolves each URL and reports the ones that are not there; a
+`Multi Select` without it stays tags. If a type from this vocabulary has lost the key on your
+instance, `verify` reports `vocabulary-drift`. A region iterates the sections through
+`{{#getRelation}}`, so a section-composed page renders through the ordinary path.
+
+## Forms
+
+`{{#form type="Contact"}}` renders the fields of a post type, each with its label, input type,
+widget and whether it is required:
+
+```handlebars
+<form id="contact" action="{{site.formAction}}">
+  {{#form type="Contact"}}
+    <label for="{{name}}">{{label}}</label>
+    <input type="{{input}}" name="{{name}}" {{#if required}}required{{/if}}>
+  {{/form}}
+  <input type="hidden" name="{{site.formHoneypot}}" value="" tabindex="-1"
+         autocomplete="off" style="position:absolute;left:-9999px">
+  <button type="submit">Send</button>
+</form>
+```
+
+| Value | Holds |
+|---|---|
+| `site.formAction` | This site's submission endpoint |
+| `site.formHoneypot` | The honeypot field's name. A submission that fills it in is discarded and answered exactly as a success |
+| `site.formTypeField`, `site.formTokenField` | The hidden field names for the post type and the FORM token, on a native post |
+
+To submit with no script, post the form natively with the post type and your FORM token in two
+hidden fields:
+
+```handlebars
+<form action="{{site.formAction}}" method="post">
+  <input type="hidden" name="{{site.formTypeField}}" value="Contact">
+  <input type="hidden" name="{{site.formTokenField}}" value="YOUR_FORM_TOKEN">
+  ...the fields and the honeypot, as above...
+</form>
+```
+
+The endpoint answers a native post with a `303` back to the page it came from, adding
+`shio_form=sent` or `shio_form=error` to the query. It returns to the full address only when the
+page's origin is on the site's allowed list, and otherwise to the path alone on this instance.
+Only a FORM token is accepted in the hidden field.
+
+Or submit with `fetch`, which sends JSON and passes the token in a `Key` header:
+
+```html
+<script>
+document.getElementById("contact").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const data = Object.fromEntries(new FormData(form).entries());
+  await fetch(form.action, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Key": "YOUR_FORM_TOKEN" },
+    body: JSON.stringify({ type: "Contact", data }),
+  });
+});
+</script>
+```
+
+A submission becomes a **draft post**: visible to a curator, invisible to visitors until
+published, and an ordinary post for the trash, export, permissions and the agent API. The
+console's **Forms** page lists one site's submissions, and `submission=true` filters them on
+every content listing (`/agent/find`, `shio_find`, `shio find` and the console search);
+`submission=false` leaves them out.
+
+| Rule | Behaviour |
+|---|---|
+| Where submissions land | The site's form configuration, never the template |
+| The FORM token | Public by design: it cannot read the delivery API, publish, touch another site, or post anywhere but this endpoint |
+| Types that can never be submitted | `PageLayout`, `Region`, `Theme`, `SiteScripts`, `Redirect` and `File`, whatever the allow-list says |
+| A missing folder | `shio verify` reports `form-destination-missing` for an enabled form whose folder is gone |
+| Rate limit | Per token, the same budget as the rest of the delivery API |
+
+## Menus and translations
+
+A `Menu` and its `MenuItem` children are ordinary content, read by a template:
+
+```handlebars
+{{#menu title="Main"}}<a href="{{href}}">{{label}}</a>{{/menu}}
+{{#translations}}<a href="{{link}}" hreflang="{{locale}}">{{locale}}</a>{{/translations}}
+```
+
+## Redirects
+
+A `Redirect` post's **friendly URL is the path it answers**; `TO` is a friendly URL in the same
+site or an absolute URL.
+
+| Field or case | Behaviour |
+|---|---|
+| `PERMANENT` | Opts into a `301`. The default is `302`, since browsers cache a permanent redirect effectively for ever |
+| Matching | One exact path in, one address out, no patterns |
+| `/docs` when `/docs/` is stored | Redirects permanently to the stored form, keeping the query string |
+
+## Seeing the page
+
+Two routes, one renderer, opposite guards.
+
+### Preview
+
+```http
+GET /preview/{site}/{path}
+```
+
+Authenticated, `no-store`, `X-Robots-Tag: noindex`, and it shows **drafts**, under a banner the
+page's own stylesheet cannot hide. A site an agent just built is visible here with no front end
+and no client setup.
+
+### Public delivery
+
+```http
+GET /sites/{site}/{format}/{locale}/{path}
+```
+
+Anonymous, **`PUBLISHED` only**, cacheable (`public, max-age=300`), indexable, with no banner and
+no editor bridge. `/sites/mysite/` is the home page.
+
+| Segment or header | Rule |
+|---|---|
+| `x-sh-site` header | Names the site, so the URL carries only the content path |
+| `sh-format` header | Replaces the format segment |
+| `{format}` | Must be `default`; anything else is a `404`, so a missing asset such as `/sites/mysite/logo.png` is a `404` rather than the home page |
+| `{locale}` | Accepted when the site has published content in that locale, or when it is the default. See [Content in several languages](/docs/content-i18n/) |
+
+Root-relative `href`s are rebased into whichever space serves the page, so a wrong link 404s
+**inside** the site, where the route lint reports it.
+
+## Static files and images
+
+A file uploaded to Viglet Shio is a `File` post, and its bytes are reachable two ways:
+
+| URL | Use |
+|---|---|
+| `/file_source/{postId}/{fileName}` | The canonical, id-keyed path. `{{file_url FIELD}}` points here |
+| `/sites/{site}/{folder-chain}/{fileName}` | The same bytes at the path a site's own structure implies: what a replicated site's verbatim `<img src="/img/hero.png">` needs |
+
+Either can be transformed on the way out with `?w=`, `?h=`, `?format=` and `?crop=`, the pipeline
+`{{#image}}` writes URLs for. The result cache, the dimension and format ceilings and signed
+transform URLs are in
+[Search & Caching § Image transforms](/docs/search-caching/#image-transforms-the-operators-half).
+
+## Editing the rendered page
+
+Annotate a template with `sh-field` and the fields become editable on the page in the
+[Universal Editor](/docs/universal-editor/), which documents the annotations. Adding
+`?editor=true` to a preview URL injects `/preview/_shio/editor.js`; an ordinary preview carries
+no editor code.
+
+## Proving it renders
+
+A template is checked **when you save it**: Viglet Shio compiles a `PageLayout`'s or `Region`'s
+`HTML` on write and refuses a broken one with the line, the column and a caret. A dry run
+reports the same thing as a plan note instead of failing.
+
+What cannot be decided at write time, since a region interpolates fields of whatever page is
+bound to the layout that slots it, is checked by `shio verify`:
+
+| Finding | Means |
+|---|---|
+| `template-unknown-field` | A template names a field no post type declares (an error at the top level, a warning inside `{{#query}}`) |
+| `unused-region` / `unused-layout` | Content nothing renders through |
+| `missing-theme` | A layout names a `THEME` that is not there |
+| `duplicate-template-title` | Two layouts or regions share a title, so a binding is ambiguous |
+| `dangling-reference` | A section or file reference that resolves to nothing |
+| `section-not-accepted` | A warning: a page composes a section of a type its layout's `sh-accepts` does not name. The finding lists the types the layout accepts; replace the section, or add its type to `sh-accepts`. A layout that declares nothing reports nothing |
+| `site-scripts-dropped` | A bound layout whose HTML never emits `site.scripts`; tick **Omits site scripts on purpose** on the layout if that is deliberate |
+| `dangling-relation` | A `{{#getRelation "/some/url"}}` naming an address the site has no post at, so the block renders its `{{else}}` on every page |
+| `redirect-target-missing` | A `Redirect` pointing at a page that is not there |
+
+A page's structure can also be compared without a screenshot: `GET /api/v2/agent/render`
+returns two digests, `d:` over the page's structure and `a:` over its appearance, kept separate
+so a restyle and a structural break are told apart.
+
+---
+
+## Why templates are Handlebars
+
+Earlier versions of Viglet Shio rendered pages by **executing server-side JavaScript** (Nashorn
+or an external Node.js runtime) through an `shObject` API. That engine was removed for good:
+arbitrary JavaScript inside the CMS was a sandboxing liability, and a template that can do
+anything is one nothing can verify. A Handlebars template can only interpolate the content model
+and call the closed helper set, which is what lets a broken template be refused on save and a
+site be linted without rendering it.
+
+The model (pages, layouts, regions, themes and `sh-region`) did not change, so a site exported
+from a 2018-era instance renders with no migration beyond the template language:
+
+| In the JavaScript engine | In Handlebars |
+|---|---|
+| `shio.website.javascript.engine` / `shio.website.nashorn` | Nothing: the properties do not exist |
+| JavaScript in a layout's `JAVASCRIPT` field that built an HTML string | Handlebars in the layout's `HTML` field |
+| `shObject.post.title` | `{{TITLE}}`: a page's own fields are at the **root** of the model |
+| `shObject.generatePostLink(id)` / `generateFolderLink(id)` | `{{link}}` on a row inside `{{#query}}` / `{{#navigation}}` |
+| A Navigation or Query **Component API** attached to a region | The `{{#navigation}}` and `{{#query}}` **helpers**, called from the region's own template |
+
+---
+
+## Related pages
+
+| Page | Description |
+|---|---|
+| [Core Concepts](/docs/getting-started/core-concepts/) | Sites, folders, posts and post types |
+| [Content Modeling](/docs/content-modeling/) | Post types, fields and the publishing workflow |
+| [The Universal Editor](/docs/universal-editor/) | Editing the rendered page, and the template annotations |
+| [Content Delivery API](/docs/headless/content-delivery-api/) | Serving this content to your own front end |
+| [Configuration Reference](/docs/configuration-reference/) | Application properties |

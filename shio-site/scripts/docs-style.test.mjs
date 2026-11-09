@@ -96,7 +96,6 @@ const BASELINE = {
   "search-caching.md": ["frontmatter-description", "release-relative"],
   "security.md": ["frontmatter-description", "release-relative"],
   "webhooks.md": ["frontmatter-description"],
-  "website-development.md": ["glossary", "release-relative"],
 };
 
 // ---------------------------------------------------------------------------------------------

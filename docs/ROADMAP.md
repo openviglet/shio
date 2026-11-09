@@ -20,7 +20,6 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH1406** (deps: SH1402 ✅) **website-development.md runs 4,000 words with template reference and build procedures interleaved** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1407** (deps: SH1402 ✅) **replication.md runs 3,800 words with no single walk-through from a source URL to a published replica** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1408** (deps: SH1402 ✅) **cli.md runs 2,800 words and mixes the verb reference with how-to prose** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1409** (deps: SH1402 ✅) **administration-guide.md runs 2,700 words with settings described in prose instead of a reference table** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3

@@ -519,8 +519,10 @@ ${report(misses)}`);
       .filter((file) => file.startsWith("Section") && file.endsWith(".json"))
       .map((file) => file.slice(0, -".json".length))
       .sort();
+    // `.mdx` too: SH1406 turned the page listing the vocabulary into `.mdx` for its Steps, and a
+    // `.md`-only filter then read every section type as undocumented.
     const prose = readdirSync(DOCS)
-      .filter((file) => file.endsWith(".md"))
+      .filter((file) => /\.mdx?$/.test(file) && file !== "COVERAGE.md")
       .map((file) => readFileSync(join(DOCS, file), "utf8"))
       .join("\n");
 
