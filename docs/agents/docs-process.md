@@ -766,3 +766,19 @@ it again would inflate the figure by 63.
 The block-completion half of SH1069 already existed as SH861's reader (above), so nothing new was
 built for it. The design's other population, "every surface in AY6's declaration", pointed at an
 anchor that does not exist anywhere in this tree, so nothing was built for it either.
+
+## A page judged as writing (SH1401, SH1402)
+
+The docs suites prove a page's names exist; nothing read how it is written, so the per-task
+"fold into the closest page" grew pages one appended paragraph at a time. The method is not kept
+in this tree: it lives in two user-level skills shared with Turing, Dumont and the other
+repositories on this machine. `docs-writing` holds Diátaxis, the page templates and the style
+guide; `docs-setup` generates a repository's half, which here is `.claude/skills/shio-docs-write`
+(paths, Starlight components, glossary, house style, gates) and the lint.
+
+`shio-site/scripts/docs-style.test.mjs` is that lint, run by `pnpm --filter shio-site test`. Its
+debt is a named map, `BASELINE`, page to rules: a page that breaks a rule it is not listed for
+fails, and so does a listed rule the page no longer breaks, so the entry goes in the commit of the
+rewrite that paid it. Two rules were narrowed on the first run rather than baselined: "no longer"
+describes the product's own state changes as often as a release, and "content type" is the MIME
+type on a line about bytes and the console's own **Content type** filter label.

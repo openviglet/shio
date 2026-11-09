@@ -1487,6 +1487,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1366** — mcp.md § Resources now lists all 13 resources with the endpoint behind each, and docs-vocabulary fails on any registered resource no page names.
 - **SH1367** — cli.md documents shio doctor plus eight verbs the loose substring check had hidden (status, site, preview, gate, index, assets, review, notes); a strict shio-verb assertion gates it.
 - **SH1368** — configuration-reference.md gains the 42 keys it lacked, defaults read from each binding class, and the suite now holds every bound shio.* key against that page.
+- **SH1401** — docs-style.test.mjs holds 38 pages to the mechanical style rules, with 41 page-rules of debt in a baseline that fails when it grows or goes stale.
 
 ## Block S — The public site (shio.viglet.org)
 
