@@ -594,6 +594,34 @@ host has to see a session. Two ways to give it one, and the choice is a security
 Done when a person picks one, an anonymous visitor on a site host signs in and lands
 back on the site host signed in, and a test covers the returnUrl check and the session.
 
+### VI.12 A tenant for a device-token caller (SH1378)
+
+Filed by shio-mobile SHM2, measured against a multi-tenant instance built from 2026.3 on
+2026-11-09. A person signed in with a device token (SH1351, SH1360) cannot reach a
+tenant of their own, for two reasons that are one seam:
+
+- `POST /api/v2/tenant/signup` and `POST /api/v2/tenant/{name}/switch` answer 403
+  `csrf-token-unobtainable`: they are not on the SH167 list of paths exempt for
+  session-less callers, and a `shd_` bearer holds no session by design.
+- Even with a tenant, every bearer request resolves to the default `shio` tenant.
+  `ShVigletTenantResolver` reads the CDA token attribute, then the `SH_TENANT` session
+  attribute `/switch` writes, then the OIDC `workspace_id` claim; a device token supplies
+  none of the three.
+
+What the phone needs, in the console's own terms: the person creates a tenant they own,
+and every later call made with that device lands in a tenant they chose, with the
+membership gate applied as it is for a session.
+
+Two shapes, and the choice is Shio's: a per-request header (`X-Shio-Tenant: <name>`),
+honoured only for a person credential and checked against active membership on every
+call; or the active tenant stored on the device-token row, set by `/switch` for a
+device. The header keeps the token stateless; the row spares every request a parameter.
+Signup and switch join the session-less exemption either way, since a bearer is not a
+CSRF vector.
+
+Done when: a device token can sign up, switch, and read `/tenant/current` answering the
+tenant it chose.
+
 ## VII. Content portability
 
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.

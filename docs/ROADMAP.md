@@ -25,6 +25,7 @@
 ## Block F — Market positioning / bold bets
 
 - 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
+- 📋 **SH1378** (deps: —) **A device-token caller cannot create or choose a tenant: signup and switch answer 403, every call lands in the default** — A native app signs a person in with a stateless bearer, and the tenant the console keeps on a session has no way to reach it. → §VI.12
 
 ## Priority
 
