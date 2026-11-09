@@ -43,6 +43,12 @@ Key: 7f3c9a12b4e05d68af1c2903b
 
 Create keys in the console (Administration → API Tokens) or over `/api/v2/api-token`.
 
+Without a console session (from the mobile app's device token, or a script using HTTP
+Basic), `POST /api/v2/api-token` still issues a key, as long as you are an OWNER or ADMIN
+of the tenant the request names with `X-Shio-Tenant`. The key lands in that tenant.
+Listing, editing and revoking keys still need the console. A key never issues another
+key, whatever its scope: that request is refused.
+
 ### A key carries four independent limits
 
 | Axis | Values | Controls |

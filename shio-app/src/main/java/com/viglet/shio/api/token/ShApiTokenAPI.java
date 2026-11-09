@@ -7,14 +7,25 @@ package com.viglet.shio.api.token;
 
 import java.security.Principal;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
+
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
+import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.tenant.ShTenantMembershipService;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.viglet.shio.api.token.dto.ShApiTokenRequest;
 import com.viglet.shio.persistence.model.token.ShApiToken;
@@ -39,9 +50,15 @@ import lombok.extern.slf4j.Slf4j;
 public class ShApiTokenAPI {
 
     private final ShApiTokenRepository shApiTokenRepository;
+    private final ShTenantMembershipService shTenantMembershipService;
+    private final String sessionCookieName;
 
-    public ShApiTokenAPI(ShApiTokenRepository shApiTokenRepository) {
+    public ShApiTokenAPI(ShApiTokenRepository shApiTokenRepository,
+                         ShTenantMembershipService shTenantMembershipService,
+                         @Value("${server.servlet.session.cookie.name:JSESSIONID}") String sessionCookieName) {
         this.shApiTokenRepository = shApiTokenRepository;
+        this.shTenantMembershipService = shTenantMembershipService;
+        this.sessionCookieName = sessionCookieName;
     }
 
     @GetMapping
@@ -57,8 +74,33 @@ public class ShApiTokenAPI {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Issue a token.
+     *
+     * <p>SH1379 — reachable without a session, for a <b>person</b> only. A device token or HTTP
+     * Basic caller may issue one if it runs the tenant the request resolved (OWNER or ADMIN there,
+     * or a platform admin), and the token lands in that tenant through {@code @TenantId}. An API
+     * token may never issue another, whatever its scope: a credential that can mint credentials is
+     * the escalation Block L exists to prevent. A console session keeps its old reach.</p>
+     */
     @PostMapping
-    public ShApiToken create(@RequestBody ShApiTokenRequest body, Principal principal) {
+    public ResponseEntity<Object> create(@RequestBody ShApiTokenRequest body, Principal principal,
+                                         HttpServletRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getDetails() instanceof ShApiTokenContext) {
+            return refuse("An API token cannot issue another",
+                    "Issue it from the console, or as the person who runs the tenant (a device token "
+                            + "or HTTP Basic). A credential that mints credentials is never a token's.");
+        }
+        if (!hasSessionCookie(request) && !runsTheTenant(authentication)) {
+            return refuse("Only the tenant's OWNER or ADMIN issues a token without a session",
+                    "You are signed in to '" + ShTenantContext.getTenantId() + "' without being its "
+                            + "OWNER or ADMIN. Ask one of them, or issue it from the console.");
+        }
+        return ResponseEntity.ok(issue(body, principal));
+    }
+
+    private ShApiToken issue(ShApiTokenRequest body, Principal principal) {
         ShApiToken token = new ShApiToken();
         token.setTitle(body.title());
         token.setDescription(body.description());
@@ -74,6 +116,42 @@ public class ShApiTokenAPI {
         shApiTokenRepository.saveAndFlush(token);
         log.info("Created CDA API token '{}' by {}", token.getTitle(), token.getOwner());
         return token;
+    }
+
+    /** A platform admin, or an OWNER or ADMIN of the tenant this request resolved to. */
+    private boolean runsTheTenant(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        boolean platformAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        return platformAdmin
+                || shTenantMembershipService.isActiveManager(ShTenantContext.getTenantId(), authentication.getName());
+    }
+
+    /**
+     * The same discriminator {@code ShStatelessRequestMatcher} uses for the CSRF exemption, so the
+     * two agree on which callers are session-less: the cookie, not {@code getSession(false)}.
+     */
+    private boolean hasSessionCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return false;
+        }
+        for (Cookie cookie : cookies) {
+            if (sessionCookieName.equalsIgnoreCase(cookie.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static ResponseEntity<Object> refuse(String title, String fix) {
+        Map<String, Object> problem = new LinkedHashMap<>();
+        problem.put("status", 403);
+        problem.put("title", title);
+        problem.put("fix", fix);
+        return ResponseEntity.status(403).body(problem);
     }
 
     @PutMapping("/{id}")

@@ -250,6 +250,8 @@ public class ShSecurityConfig {
     /** Self-service signup + tenant switch (SH22/C) — authenticated, not admin-gated. */
     private static final String TENANT_SIGNUP_PATH = "/api/v2/tenant/signup";
     private static final String TENANT_SWITCH_PATH = "/api/v2/tenant/*/switch";
+    /** SH1379 — issuing a token, the one api-token route a session-less person reaches. */
+    private static final String API_TOKEN_PATH = "/api/v2/api-token";
 
     private final UserDetailsService userDetailsService;
 
@@ -355,6 +357,12 @@ public class ShSecurityConfig {
                         // bearer or Basic caller is not a CSRF vector; the console keeps the check.
                         // Switch stays a session's: a session-less caller names its tenant per request.
                         new ShStatelessRequestMatcher(mvc.matcher(HttpMethod.POST, TENANT_SIGNUP_PATH),
+                                sessionCookieName),
+                        // SH1379 — a person on a device issues an AGENT token for the tenant they run.
+                        // Issuing only (POST on the root, not the whole path), and the controller is
+                        // the gate: it refuses any API-token principal and a person who is neither
+                        // OWNER nor ADMIN there. Listing, editing and revoking stay a session's.
+                        new ShStatelessRequestMatcher(mvc.matcher(HttpMethod.POST, API_TOKEN_PATH),
                                 sessionCookieName),
                         // SH677 — see MARKETPLACE_PATH. The narrowing is the usual one: the CLI
                         // holds Basic auth and no session, the console holds both and stays

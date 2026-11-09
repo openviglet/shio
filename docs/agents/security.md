@@ -425,6 +425,25 @@ Two ordering facts that are easy to get wrong and would both fail closed:
   "should" be allow-listed. It must not be: the page carries the token, and the token is the
   authorization, allow-listing it would turn a scoped write into an anonymous one.
 
+## Issuing a token without a session (SH1379)
+
+`POST /api/v2/api-token` carries the narrowed CSRF exemption (POST on the root only; list, edit and
+revoke stay a session's), and `ShApiTokenAPI.create` is the gate, because the matcher sees only the
+cookie:
+
+- **Any API-token principal is refused** (`ShApiTokenContext` in the details), whatever its scope.
+  `ShApiTokenFilter` already ignores a `Key` header outside the CDA, agent and MCP paths, so this is
+  the second wall, not the first; the escalation the reachability lint held this row against is
+  still refused, now by a test (`ShAgentTokenFromDeviceIT`) instead of a classification.
+- **A session-less person must run the tenant**: platform `ROLE_ADMIN`, or an ACTIVE `OWNER` or
+  `ADMIN` membership of the tenant SH1378's header resolved (`isActiveManager`). "Session-less" is the
+  session cookie's absence, the discriminator `ShStatelessRequestMatcher` uses, so the two agree.
+- A console session keeps its old reach. The token lands in the request's tenant through
+  `@TenantId`. An empty site allow-list already means every site of that tenant
+  (`ShApiTokenContext.allowsSite`), so the issued token reads them with no edit.
+
+"Signup returns a token" was not taken: it couples creating a tenant to issuing a credential.
+
 ## A form with no script (SH1382)
 
 `POST /api/v2/cda/form/{site}` also takes `application/x-www-form-urlencoded`, so a plain

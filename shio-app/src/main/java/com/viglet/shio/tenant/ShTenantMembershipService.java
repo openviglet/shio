@@ -129,6 +129,22 @@ public class ShTenantMembershipService {
                 .orElse(false);
     }
 
+    /**
+     * SH1379 — whether {@code username} runs the tenant: an ACTIVE membership whose role is
+     * {@code OWNER} or {@code ADMIN}. What a session-less person needs to issue a credential.
+     */
+    @Transactional(readOnly = true)
+    public boolean isActiveManager(String tenantName, String username) {
+        if (!StringUtils.hasText(tenantName) || !StringUtils.hasText(username)) {
+            return false;
+        }
+        return shTenantMembershipRepository.findByTenant_NameAndUsername(tenantName, username)
+                .filter(ShTenantMembership::isActive)
+                .map(membership -> membership.getRole() == ShTenantRole.OWNER
+                        || membership.getRole() == ShTenantRole.ADMIN)
+                .orElse(false);
+    }
+
     /** The tenant named {@code name}, or empty (used by the switch endpoint). */
     @Transactional(readOnly = true)
     public Optional<ShTenant> findByName(String name) {

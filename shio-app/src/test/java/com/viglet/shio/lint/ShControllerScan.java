@@ -174,7 +174,10 @@ public final class ShControllerScan {
 
         Map<String, String> constants = constants(config);
         List<String> patterns = new ArrayList<>();
-        Matcher matcher = Pattern.compile("mvc\\.matcher\\((\\w+)\\)").matcher(block);
+        // SH1379 — a method-scoped exemption, `mvc.matcher(HttpMethod.POST, X)`, is an exemption too.
+        // The reader took only the one-argument form, so SH1356's form path and SH1378's signup were
+        // already invisible to both P1 instruments, and SH1379's issuing path read as unreachable.
+        Matcher matcher = Pattern.compile("mvc\\.matcher\\((?:HttpMethod\\.\\w+,\\s*)?(\\w+)\\)").matcher(block);
         while (matcher.find()) {
             String literal = constants.get(matcher.group(1));
             if (literal == null) {

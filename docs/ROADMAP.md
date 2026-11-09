@@ -13,6 +13,7 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - 🛠 **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; since SH1382 the endpoint takes a script-free form, so the section only names its type and token. → §XI.109
+- 📋 **SH1385** (deps: —) **On a clean release instance the Quilhara showcase cannot be installed from the Marketplace, and the dialog says nothing** — Plan answers 400 page-type-not-bound for InfoPage, so the first thing the README offers a new user fails silently. → §XI.113
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -27,7 +28,6 @@
 ## Block F — Market positioning / bold bets
 
 - 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
-- 📋 **SH1379** (deps: SH1378 ✅) **A device-token caller cannot mint an AGENT token for its tenant: api-token answers 403 without a session** — The phone's backend runs the agent with its tenant's AGENT token; a person may mint one without a session, a token never may. → §VI.13
 - 📋 **SH1381** (deps: —) **A session-less 403 names five fixed agent ops, not the one covering the refused route, so a restore misses post.rollback** — A device token refused on restore had a working road, post.rollback then review approve, and the refusal pointed elsewhere. → §VI.14
 
 ## Priority

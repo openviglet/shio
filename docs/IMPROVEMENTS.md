@@ -335,6 +335,37 @@ What the upgrade has to settle, measured by the guards that went red:
 Then remove the hold in `shio-react/package.json` and, if Dependabot's group config can
 ignore a major, drop any ignore added in the meantime.
 
+### XI.113 Quilhara installs from the Marketplace on a clean instance (SH1385)
+
+**Where it showed.** On 2026-11-09, filming the Shio promo video (task VS52 in
+`alegauss/visibility`) on a clean `ghcr.io/openviglet/shio:latest` (v2026.3-6b5d0ce,
+built 2026-10-31), started with `docker run -p 2711:2710 -e SHIO_ADMIN_PASSWORD=…`.
+Console, Administração > Marketplace, card "Quilhara showcase"
+(`shio-blueprint-quilhara` 1.0.0, from the catalogue the console names as
+`https://openviglet.github.io/shio/marketplace/marketplace.json`), site `quilhara`,
+"Criar o site se ele não existir" on. "Planejar" answers:
+
+`POST /api/v2/marketplace/shio-blueprint-quilhara/setup` → 400, type
+`page-type-not-bound`, "The page type 'InfoPage' is not bound to a layout on this site",
+`at: ops[2]`, fix: "bind 'InfoPage' with `postTypeLayout` in the same site.upsert".
+
+Ticking "Adicionar os campos que faltam aos tipos de post existentes" changes nothing.
+The console shows no toast, so "Instalar e aplicar" just stays disabled and the visitor
+sees nothing happen.
+
+**Why it matters.** The README's quick start and the showcase's own pitch say the
+Marketplace installs Quilhara on a fresh instance with nothing configured, the moment
+the promo video films. Today the first thing a new user tries fails silently.
+
+**What to check.** Whether the published package (catalogue) and the image disagree: the
+package's `site.upsert` names `InfoPage` as the page type without a `postTypeLayout` the
+image's validation accepts, or the image predates a fix. A test planning every catalogue
+package on a fresh release image would catch the next one. The dialog should also show a
+failed plan's title and fix.
+
+**Done when** a clean instance of the release image plans and applies Quilhara from the
+Marketplace, and a failed plan shows its reason in the dialog.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -642,31 +673,6 @@ host has to see a session. Two ways to give it one, and the choice is a security
 
 Done when a person picks one, an anonymous visitor on a site host signs in and lands
 back on the site host signed in, and a test covers the returnUrl check and the session.
-
-### VI.13 An agent token minted from a device (SH1379)
-
-Filed by shio-mobile SHM4, measured on a 2026.3 instance on 2026-11-09; narrowed on
-review the same day. The phone's backend runs the agent with its tenant's AGENT token,
-and nothing session-less can obtain one: `POST /api/v2/api-token` answers 403
-`csrf-token-unobtainable` to HTTP Basic and to a `shd_` device token alike. A fresh
-AGENT token's site allow-list is also empty, so it reads no site until someone edits it.
-
-Joining the SH167 exemption as it stands would be an escalation. The matcher sees only
-the cookie, and a WRITE-scope CDA token carries `ROLE_USER` and may POST outside the
-agent paths (`ShApiTokenFilter`), so it could mint credentials: the case
-`ShStatelessReachabilityLintTest` holds this row against. And "minted by its OWNER" is
-not a gate that exists: `ShApiTokenAPI.create` lets any authenticated member mint.
-
-The shape, chosen on review: a session-less mint is accepted from a person credential
-only (device token or Basic), from an OWNER or ADMIN of the tenant SH1378 resolves, and
-any API-token principal is refused with a problem detail naming the console. The token
-lands in that tenant through `@TenantId`. "Signup returns a token" is not taken: it
-couples creating a tenant to issuing a credential. The lint row changes from "never" to
-"never for a token, yes for a person", asserted both ways.
-
-Done when: a device token mints an AGENT token for its tenant, that token reads the
-tenant's sites over MCP, a member who is not OWNER is refused, and a WRITE token is
-refused.
 
 ### VI.14 A session-less refusal that names the op covering it (SH1381)
 

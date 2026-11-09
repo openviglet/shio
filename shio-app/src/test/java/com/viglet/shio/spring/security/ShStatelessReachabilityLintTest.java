@@ -166,9 +166,11 @@ class ShStatelessReachabilityLintTest {
         // a caller already holds. This route is the console's door to the same rows.
         byPath.put("/api/v2/note", agentEquivalent(Set.of("POST"),
                 "note.add / note.resolve"));
-        byPath.put("/api/v2/api-token", new Requirement(Reason.CONSOLE_ADMIN,
-                "an agent minting or widening its own credential is the escalation Block L is "
-                + "built to prevent — the one entry here that must never move"));
+        // SH1379 — /api/v2/api-token left this list, and the escalation it was held against did not
+        // move with it: it is "never for a token, yes for a person" now. Issuing (POST) is reachable
+        // without a session for a device token or Basic caller who runs the tenant, and the
+        // controller refuses every API-token principal whatever its scope. Both halves are asserted
+        // through the whole chain in ShAgentTokenFromDeviceIT, which is what replaces this row.
         byPath.put("/api/v2/tenant", new Requirement(Reason.CONSOLE_ADMIN,
                 "the SH22 tenant catalogue, ROLE_ADMIN-gated; a tenant is the isolation boundary "
                 + "the agent's own scoping is derived from. Since SH1378 /signup is the exception, "

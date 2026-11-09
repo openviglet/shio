@@ -1406,6 +1406,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1361** — The console's View published site opens a site at its own host: the site reads carry publishedUrl from ShSiteHost.publishedUrl, the one composition the agent's live field also uses, and the console uses it verbatim instead of mirroring a rule it cannot know (design §VI.9 recorded in `docs/agents/renderer.md`).
 - **SH1362** — An anonymous visitor on a members-only page at a site host is sent to the instance's own login (shio.url) and comes back to the page's /sites address on the instance, where the session the login sets applies, instead of a 404 at the site host (design §VI.10 recorded in `docs/agents/security.md`).
 - **SH1378** — A device token or Basic caller now signs up without a session and names its tenant per request with X-Shio-Tenant, membership-checked like a switch; a token naming another tenant gets 403, and password instances let any person sign up (design §VI.12 recorded in `docs/agents/database.md`).
+- **SH1379** — A device token or Basic caller who runs the tenant now issues an AGENT token there without a session, and it reads that tenant's sites; a plain member and every API token are refused (design §VI.13 superseded: an empty site allow-list already means every site of the token's tenant, so the fresh token reads them with no edit) (design §VI.13 recorded in `docs/agents/security.md`).
 
 ## Block E — Console migration (in flight)
 
