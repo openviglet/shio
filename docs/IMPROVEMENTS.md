@@ -622,6 +622,28 @@ CSRF vector.
 Done when: a device token can sign up, switch, and read `/tenant/current` answering the
 tenant it chose.
 
+### VI.13 An agent token minted from a device (SH1379)
+
+Filed by shio-mobile SHM4, measured on a 2026.3 instance on 2026-11-09. The phone's
+backend runs the agent for a tenant with that tenant's AGENT token, and nothing
+stateless can obtain one: `POST /api/v2/api-token` answers 403 `csrf-token-unobtainable`
+to HTTP Basic and to a `shd_` device token alike, so only a console session can mint it.
+A fresh AGENT token's site allow-list is also empty, so it reads no site until someone
+edits it.
+
+What the app needs: right after a person creates a tenant (SH1378), their device mints
+an AGENT token for that tenant, scoped to the sites the tenant owns, and hands it to the
+backend; the person can see and revoke it in the console like any token.
+
+Two shapes, Shio's choice: `/api/v2/api-token` joins the session-less exemption for a
+person credential (a bearer is not a CSRF vector, the reasoning SH1378 uses for signup),
+or signup itself returns an AGENT token for the tenant it created. Either way the token
+is the tenant's, minted by its OWNER, and an AGENT token still never reaches a review
+decision.
+
+Done when: a device token mints an AGENT token for its tenant, and that token reads the
+tenant's sites over MCP.
+
 ## VII. Content portability
 
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.
