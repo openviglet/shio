@@ -5,23 +5,117 @@ sidebar:
   label: The shio CLI
 ---
 
-```bash
-npx @viglet/shio --help
-```
+This page is for developers and agents who drive a Viglet Shio instance from a shell or a CI
+job. The `shio` command is the scripted path into an instance: what a pipeline runs, what
+`claude mcp add` bridges to, and what you use when a shell fits better than an API call. It has
+no runtime dependencies, and every command prints its own flags (`shio verify --help`, or
+`shio help verify`).
 
-The `shio` command is the scripted path into an instance: it is what a CI job runs, what
-`claude mcp add` bridges to, and what you use when a shell is a better fit than an API
-call. Zero runtime dependencies, and every command prints its own flags:
+---
 
-```bash
-shio verify --help          # or: shio help verify
-```
+## Connect to an instance
+
+1. Run the CLI without installing it:
+
+   ```bash
+   npx @viglet/shio --help
+   ```
+
+2. Point it at your instance and sign in, with the variables in [Connecting](#connecting):
+
+   ```bash
+   export SHIO_URL=https://cms.example.com
+   export SHIO_USER=admin SHIO_PASSWORD=…
+   ```
+
+3. Check that you can work there:
+
+   ```bash
+   shio doctor
+   ```
+
+Each line of the report is `ok`, `FAIL` or `??`, with a fix for each problem (see
+[What `shio doctor` checks](#what-shio-doctor-checks)).
+
+## Gate a pull request on drift
+
+Run the three gates in this order, so each failure makes sense after the one before it:
+
+1. Does the model on the server match git?
+
+   ```bash
+   shio push --check
+   ```
+
+2. Does the content match git?
+
+   ```bash
+   shio push --content --check
+   ```
+
+3. Is what is there internally consistent and reachable?
+
+   ```bash
+   shio verify
+   ```
+
+`--check` prints the plan, writes nothing, and **exits non-zero when the plan is not empty**, so
+the job fails on drift instead of reconciling it. `verify` exits non-zero on an error. Put
+`shio doctor` in front of a longer job: it exits `1` when a check fails, so a wrong URL or a
+refused credential stops the job at once with the fix printed. A check it could not answer does
+not fail it. Every non-zero exit closes cleanly, so a piped run keeps its last lines.
+
+## Change one field from a script
+
+**Before you start:** a token of **write** scope (`--token`, or `SHIO_WRITE_TOKEN`) as well as
+the console user that resolves the address. An agent token cannot write this way.
+
+1. Set the field. The command prints the post's new tag:
+
+   ```bash
+   shio post set post:Blog/hello title="Hello again"
+   # post:Blog/hello set title (draft) etag="3a22…"
+   ```
+
+2. Write again only if nobody changed the post since, by passing that tag:
+
+   ```bash
+   shio post set post:Blog/hello summary="Shorter" --if-match '"3a22…"'
+   ```
+
+The change goes to the post's draft; `--publish` publishes it too. If the post changed between
+the command's read and its write, the write is refused and nothing is written.
+
+## Hand a site to another instance
+
+1. On the source instance, download the site as an exchange package:
+
+   ```bash
+   shio export site:Blog --out blog.zip
+   ```
+
+2. On the target instance, import it:
+
+   ```bash
+   shio import blog.zip
+   ```
+
+The import prints how many sites, folders, posts, post types and files arrived, and a line for
+each problem: a post skipped because its folder was not in the package, a post type neither the
+package nor this instance defines, a file listed without its bytes.
+
+A package carries the site, its folders, every post in both states, the post types those posts
+use, the site's notes, and the bytes of its uploaded files. It does not carry users, tokens,
+permissions, revisions, releases or schedules, so it is a hand-over, not a backup or a promotion
+between environments.
+
+---
 
 ## Connecting
 
 | Flag | Environment | Used by |
 |---|---|---|
-| `--url <baseUrl>` | `SHIO_URL` (default `http://localhost:2710`) | everything |
+| `--url <baseUrl>` | `SHIO_URL` (default `http://localhost:2710`) | Everything |
 | `--user` / `--password` | `SHIO_USER` / `SHIO_PASSWORD` | `pull`, `push`, `deploy` (console Basic auth) |
 | `--token <token>` | `SHIO_CDA_TOKEN` | `types`, `dev` (a delivery token) |
 | `--token <token>` | `SHIO_WRITE_TOKEN` | `post set` (a token of **write** scope) |
@@ -37,23 +131,14 @@ shio verify --help          # or: shio help verify
 | `shio init [name]` | Scaffold a Next.js site wired to the delivery API. `--blueprint <name>` takes the starter from the instance instead; add `--site <site>` to apply its content in the same command |
 | `shio blueprints` | List the appliable starting points; `shio blueprints <name>` prints one package's parameters |
 | `shio marketplace <list\|show\|install\|uninstall>` | The package catalogue: what this instance could install, and installing it. `install` needs an administrator. See [Blueprints § Where more packages come from](/docs/blueprints/#where-more-packages-come-from) |
-| `shio import <file.zip>` | Clone an exchange package into this instance: how you accept a site somebody hands you. It prints what arrived and a line for each thing it could not bring |
+| `shio import <file.zip>` | Clone an exchange package into this instance, printing what arrived and a line for each thing it could not bring |
 | `shio export site:<name>` | Download a site as an exchange package (`--out <file.zip>`); the same file the console's **Download** saves |
-
-**Handing a site over.** An export carries the site, its folders, every post in both states,
-the post types those posts use, the site's notes, and the bytes of its uploaded files, so its
-images and downloads work on the other instance. It does not carry users, tokens, permissions,
-revisions, releases or schedules. That makes it a hand-over, not a backup and not a way to
-promote between environments. On import, the report says how many sites, folders, posts, post
-types and files arrived, and names each problem: a post skipped because its folder was not in
-the package, a post type neither the package nor this instance defines, and a file the package
-lists without its bytes.
 
 ### Discover
 
 | Command | Does |
 |---|---|
-| `shio doctor` | Can I work here? Checks the instance, the render model, the sites and the local content tree, and prints a fix for each problem. Run it first in a new session |
+| `shio doctor` | Checks the instance, the render model, the sites and the local content tree, and prints a fix for each problem. Run it first in a new session |
 | `shio status` | The instance in one call: counts, what is waiting, what just happened. The same numbers the console's home shows; a row is printed only when it is not zero |
 | `shio site` | List the sites, marking the ones declared disposable. `shio site rm --scratch` deletes every site created with the scratch flag (`shio convert --create-site --scratch`) in one confirmation; a site without the flag is never touched. The delete is **permanent**, so try `--dry-run` first |
 | `shio context` | The agent context pack (model, sitemap and conventions) in one call. `--out <file>` writes it |
@@ -61,7 +146,7 @@ lists without its bytes.
 | `shio impact <address>` | What a change to this template would affect: layouts, types, page counts |
 | `shio changes` | What changed, with a cursor to resume from (`--since`, `--cursor`) |
 | `shio remember` | The instance memory: bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it |
-| `shio mcp` | Bridge stdio to this instance's MCP endpoint, `claude mcp add shio -- shio mcp` |
+| `shio mcp` | Bridge stdio to this instance's MCP endpoint: `claude mcp add shio -- shio mcp` |
 
 #### What `shio doctor` checks
 
@@ -74,13 +159,13 @@ ok   sites        2: Blog, Docs
 
 | Check | Asks |
 |---|---|
-| `instance` | Does the instance answer, do your credentials work, and **which build is it running**? The build time is what tells you whether the server has your latest change: a change that is not deployed reads exactly like a change that does not work |
+| `instance` | Does the instance answer, do your credentials work, and **which build is it running**? The build time says whether the server has your latest change |
 | `model` | Are the `PageLayout`/`Region`/`Theme` post types provisioned, and do they match this build? |
 | `sites` | Which sites the instance holds |
 | `content` | Is there a local `shio/content` tree to compare? |
 
-Each line is `ok`, `FAIL` or `??`. The third means *could not tell*: when the instance does not
-answer, the checks that need it say so instead of reporting a failure each. `--json` prints the
+Each line is `ok`, `FAIL` or `??`. `??` means *could not tell*: when the instance does not
+answer, the checks that need it say so instead of each reporting a failure. `--json` prints the
 same checks as data.
 
 ### The content model
@@ -88,14 +173,13 @@ same checks as data.
 | Command | Does |
 |---|---|
 | `shio pull` | Post types into `shio/post-types/*.json` |
-| `shio push` | Local post types back to the instance (`--dry-run`, `--check`, `--prune`) |
+| `shio push` | Local post types back to the instance (`--dry-run`, `--check`, `--prune`). `--prune` never removes a system type |
 | `shio build` | Compile local DSL/JSON post types to canonical JSON without touching the server (`--out`) |
 | `shio types` | Generate a TypeScript `.d.ts` from the live post types |
 | `shio deploy` | `push` then `types` |
 
-`push` and `build` compile TypeScript DSL sources to canonical JSON before diffing, so a
-model authored as typed TS and one hand-written as JSON push identically. `--prune` never
-removes a system type.
+`push` and `build` compile TypeScript DSL sources to canonical JSON before diffing, so a model
+written as typed TypeScript and one written as JSON push identically.
 
 ### Content
 
@@ -106,89 +190,52 @@ removes a system type.
 | `shio apply [file]` | Plan/apply a desired-state document, `--dry-run`, `--check`, `-` for stdin. `--blueprint <name> --site <site>` applies a package instead; `--create-site` makes the site in either mode |
 | `shio dev --content` | Watch `shio/content/**` and sync both ways, logging events |
 | `shio preview <file>` | Render one content file's page **before you push it**, saving nothing: prints the page's outline and structural hash and writes the markup to a file you can open (`--out`). `--state published` renders against the live row. The page must already exist on the instance; for a new file, push it once or pass `--address` |
-| `shio post set <address> <field>=<value>…` | Change some fields of one post's draft and leave the rest as they are. `field:=json` sets a number, `true`, a list or an object; `--publish` publishes after the change |
+| `shio post set <address> <field>=<value>…` | Change some fields of one post's draft and leave the rest. `field:=json` sets a number, `true`, a list or an object; `--publish` publishes after the change; `--if-match <tag>` refuses the write unless the post is still at that tag |
 
 See [Content as Files](/docs/content-as-files/) for the tree, the sidecars and the merge.
-
-**Changing one field.** `shio post set` needs a token of write scope (`--token`, or
-`SHIO_WRITE_TOKEN`) as well as the console user that resolves the address; an agent token
-cannot write this way. It is safe to run while someone else is editing: if the post changed
-between the moment the command read it and the moment it writes, the change is refused and
-nothing is written. Each write prints the post's new tag, and `--if-match <tag>` refuses the
-write unless the post is still at that tag. So a script that reads, decides and writes can be
-sure it is writing over what it read:
-
-```bash
-shio post set post:Blog/hello title="Hello again"
-# post:Blog/hello set title (draft) etag="3a22…"
-shio post set post:Blog/hello summary="Shorter" --if-match '"3a22…"'
-```
 
 ### Prove it works
 
 | Command | Does |
 |---|---|
-| `shio verify` | The content and route lint. **Exits non-zero on an error**: this is the CI gate. `--strict` fails on warnings too; `--folder` / `--address` / `--since` scope it; `--baseline` / `--accept` subtract findings you have accepted; `--delivery` adds the stronger proof that a published page is really served |
+| `shio verify` | The content and route lint. **Exits non-zero on an error**: the CI gate. `--strict` fails on warnings too; `--folder` / `--address` / `--since` scope it; `--baseline` / `--accept` subtract findings you have accepted; `--delivery` adds the proof that a published page is really served, **appended** to `--checks` rather than replacing it. The report's `notes` are printed, so a run that covered less than you think says so |
 | `shio digest <page>` | One page's structure: outline, landmarks, links, images |
-| `shio audit <page>` | What is wrong with a rendered page, as text with a selector each |
-| `shio snapshot <page>` | A PNG for a person, plus whether the page looks different |
-| `shio report` | The curator handoff: what changed, a preview link each, and the warnings as open questions, Markdown, for a PR body |
-| `shio diff --against published` | What a publish would change: which **fields** differ between each draft and the live row, per post. `--address` narrows it. **Exits non-zero when anything would change**, so a pipeline can gate on it. It agrees with the console's version dialog on what counts as a change: an object whose keys only moved is not one |
-| `shio gate run --site <name>` | Run the site's publish gates over the addresses named, or every draft, before anything goes live. **Exits `1` when a blocking check fails.** `shio gate list` prints the gates the site declares. The same gates run on the instance at every publish; this is where a pipeline finds out first |
-| `shio index status` | Is published content findable: the search routing table, site by site. A site with published pages and no search site reads `UNROUTABLE`, and the command **exits `1`**. `shio index reindex --site <name>` sends that site's published pages again (`--dry-run` counts them). See [Search & Caching](/docs/search-caching/) |
+| `shio audit <page>` | What is wrong with a rendered page, as text with a selector each (see below) |
+| `shio snapshot <page>` | A PNG for a person, plus whether the page looks different. **A changed page exits 0.** Needs the optional `playwright`; with `pixelmatch` and `pngjs` the diff is per-pixel, otherwise byte-level, and the output says which. A site with no front end is photographed through the preview, and the output says the picture is a draft |
+| `shio report` | The curator handoff: what changed, a preview link each, and the warnings as open questions, in Markdown for a pull request body |
+| `shio diff --against published` | Which **fields** differ between each draft and the live row, per post. `--address` narrows it. **Exits non-zero when anything would change.** An object whose keys only moved is not a change, as in the console's version dialog |
+| `shio gate run --site <name>` | Run the site's publish gates over the addresses named, or every draft. **Exits `1` when a blocking check fails.** `shio gate list` prints the gates the site declares; the same gates run on the instance at every publish |
+| `shio index status` | The search routing table, site by site. A site with published pages and no search site reads `UNROUTABLE`, and the command **exits `1`**. `shio index reindex --site <name>` sends that site's published pages again (`--dry-run` counts them). See [Search & Caching](/docs/search-caching/) |
 | `shio assets prune` | The assets nothing references and no rendered page loads, with the bytes they occupy. A report only: it never deletes. `--site` / `--folder` scope it |
-| `shio redirects` | The site's redirects (where each sends, 301 or 302) and, under them, the addresses it used to serve that no longer answer, each with the `post.redirect` that fixes it. **Exits `1` when there is one.** `--no-check` skips the second half. See [Keeping an old address answering](/docs/content-lifecycle/#keeping-an-old-address-answering) |
-
-Two things about `verify` that matter in a pipeline: the report's `notes` are printed,
-because a run that quietly covered less than you think reads exactly like a clean pass;
-and `--delivery` **appends** its group rather than replacing `--checks`, since a caller
-who wants the stronger proof still wants the lint.
-
-`snapshot` needs `playwright`, which is an **optional** dependency with a teaching error
-naming the install, `@viglet/shio` never drags a browser into your project. With
-`pixelmatch` and `pngjs` present the diff is per-pixel; without them it is byte-level, and
-the output says which. **A changed page exits 0**: a page looking different is usually the
-change you just made, and a gate there is one people wrap in `|| true`. A site with no
-front end is photographed through the instance's own preview, and the output says the
-picture is a draft, because the image cannot.
+| `shio redirects` | The site's redirects (where each sends, 301 or 302) and the addresses it served that no longer answer, each with the `post.redirect` that fixes it. **Exits `1` when there is one.** `--no-check` skips the second half. See [Keeping an old address answering](/docs/content-lifecycle/#keeping-an-old-address-answering) |
 
 #### What `shio audit` reports
 
-Ten rules, and two lines the report prints whether or not anything is wrong. An **error**
-exits non-zero; a **warning** does not, so a pipeline can gate on the first without being
-stopped by the second.
+An **error** exits non-zero; a **warning** does not, so a pipeline can gate on the first without
+being stopped by the second.
 
 | Rule | Severity | Fires when | What to do |
 |---|---|---|---|
-| `request-failed` | error | The page asked for something (an image, a stylesheet, a script) and the server did not give it | Fix the URL or publish the asset. A missing stylesheet is why the rest of the report looks strange |
-| `console-error` | error | The page threw in the browser | Read the message: it *is* the finding, so this one carries no extra detail |
-| `region-script` | error | A region's `JAVASCRIPT` does not parse | The only field whose value is a program. It is shipped to the browser and never run in the JVM, so a region whose script is broken still renders, hashes, lints and verifies clean; this is the one check that runs it |
+| `request-failed` | error | The page asked for something (an image, a stylesheet, a script) and the server did not give it | Fix the URL or publish the asset. A missing stylesheet explains much of the rest of the report |
+| `console-error` | error | The page threw in the browser | Read the message: it is the finding |
+| `region-script` | error | A region's `JAVASCRIPT` does not parse | Fix the script. It runs only in the browser, so a region whose script is broken still renders and verifies clean; this is the check that parses it |
 | `overflow` | warn | A box is wider than the viewport at one of the tested widths | Usually a fixed width, a long unbroken string, or a table. Reported at the width where it is worst |
 | `contrast` | warn | Text fails the WCAG AA ratio against its own background | Darken the text or lighten the background. Large and bold text has a lower floor, and `--contrast` overrides it |
 | `zero-size` | warn | An element occupies no space | Either it should not be in the markup, or something it depends on did not load |
 | `collapsed` | warn | A box has children and no height | Usually a float or grid container that lost its layout |
-| `font-fallback` | warn | A declared font was not available, so the browser substituted one | Ship the font or accept the substitute. What you see locally is not what a reader sees |
-| `no-landmark` | warn | The page has no `main`, `nav`, `header` or `footer` at all | Almost always a page that lost its regions rather than a page that never had them |
-| `no-heading` | warn | The page has no heading of any level | Same reading as `no-landmark`, and the two usually arrive together |
+| `font-fallback` | warn | A declared font was not available, so the browser substituted one | Ship the font or accept the substitute |
+| `no-landmark` | warn | The page has no `main`, `nav`, `header` or `footer` | Usually a page that lost its regions |
+| `no-heading` | warn | The page has no heading of any level | Same reading as `no-landmark`; the two usually arrive together |
 
-The last two exist because the other eight measure what **is** there: a page that has lost
-most of itself has no overflow, perfect contrast, no collapsed box and nothing that fails
-to load. Emptiness scored clean.
+Two lines are printed on every run, findings or not:
 
-Two lines are printed on every run, findings or not, for that same reason. A number
-nobody prints is a fact nobody joins:
+| Line | Says |
+|---|---|
+| `shape:` | The landmarks and the heading count. An intact page reads `main, navigation, contentinfo · 3 headings`; the same page emptied reads `no landmark · 2 headings` |
+| `scripts:` | How many region scripts were parsed; `0 region scripts` tells a page with no script from one whose scripts are all fine |
 
-- **`shape:`**: the landmarks and the heading count, read once because they do not change
-  with the viewport. An intact page reads `main, navigation, contentinfo · 3 headings`;
-  the same page emptied reads `no landmark · 2 headings`. That difference is the whole
-  answer to *did this page keep its regions*.
-- **`scripts:`**: how many region scripts were parsed. `0 region scripts` is an answer:
-  without it, a page carrying no script at all and a page where every script is fine would
-  print the same nothing.
-
-Each rule stops after a fixed number of findings per page load, and the report says so in
-a `note:` line naming the rule and how many it did not examine: a truncated run must not
-read as a clean one.
+Each rule stops after a fixed number of findings per page load, and a `note:` line names the rule
+and how many it did not examine.
 
 ### Working with a curator
 
@@ -199,8 +246,8 @@ read as a clean one.
 | `shio review mine` | What a curator decided about **your own** runs; rejections by default, each with its reason. Read it when resuming work |
 | `shio notes` | What a curator is still asking for, across every site: `--kind request`, `--site` to scope it |
 
-`--strict` on `review list`, `review mine` and `notes` exits `1` while anything is waiting or
-was rejected, so a pipeline can refuse to proceed past an unanswered curator.
+`--strict` on `review list`, `review mine` and `notes` exits `1` while anything is waiting or was
+rejected, so a pipeline can refuse to proceed past an unanswered curator.
 
 ### Replicate an existing site
 
@@ -210,35 +257,11 @@ was rejected, so a pipeline can refuse to proceed past an unanswered curator.
 | `shio propose` | Which captured blocks could become sections, and what each would lose |
 | `shio convert` | Apply the accepted plan: sections, theme and scripts, as **drafts** |
 
-See [Replication](/docs/replication/).
+The whole round, from a source URL to a judged replica, is in [Replication](/docs/replication/).
 
 ---
 
-## In a pipeline
-
-Three commands are gates, and the order they run in is the order the failures make sense
-in:
-
-```bash
-shio push --check          # 1. does the model on the server match git?
-shio push --content --check # 2. does the content match git?
-shio verify                # 3. is what is there internally consistent and reachable?
-```
-
-`--check` prints the plan, writes nothing, and **exits non-zero when the plan is not
-empty**, so a pull-request job fails on drift instead of silently reconciling it.
-`verify` exits non-zero on an error, which is what makes it the last gate rather than a
-report.
-
-Put `shio doctor` in front of a longer job: it exits `1` when any check fails, so a job
-pointed at the wrong URL or with refused credentials stops in a second with the fix printed,
-not ten minutes later. A check it could not answer does not fail it.
-
-Every non-zero exit closes cleanly, so a piped run does not lose its last lines.
-
----
-
-## Related Pages
+## Related pages
 
 | Page | Description |
 |---|---|
