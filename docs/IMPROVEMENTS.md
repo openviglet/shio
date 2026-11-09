@@ -261,29 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.112 Adopting GraphiQL 1.0 (SH1383)
-
-The fix for the red suite held `@graphiql/react` at 0.39, `@graphiql/toolkit` at 0.12
-and `graphiql` at 5, because the 1.0 line broke three guards at once when Dependabot
-offered it. Dependabot will offer it again on every run, and each time the group's other
-updates arrive red with it.
-
-What the upgrade has to settle, measured by the guards that went red:
-
-- **Monaco.** `monaco-editor` is pinned at 0.52.2 and `monaco-graphql` at 1.9.0.
-  `@graphiql/react` 1.0 imports `monaco-editor/base/common/uri.js`, which 0.52.2 does not
-  ship, so the pin moves to the version 1.0 was built against, and SH242's two guards
-  (every specifier resolves; one copy) are re-read against it, not loosened.
-- **The explorer's colours.** SH1212 asserts the explorer fills with the console's primary
-  and that every rule reading GraphiQL's variables is covered; 6.0 renamed or moved some,
-  so the override list is rebuilt from what 6.0 emits.
-- **The bundle.** SH1043 had 69 KB of room under its ceiling with 1.0 installed, short of the
-  4% it needs. The explorer is a lazy route, so measure first whether the growth is eager at
-  all; if it is, the import that pulled it eager is the defect, not the ceiling.
-
-Then remove the hold in `shio-react/package.json` and, if Dependabot's group config can
-ignore a major, drop any ignore added in the meantime.
-
 ### XI.114 Quilhara's forms take submissions out of the box (SH1387)
 
 **Where it showed.** On 2026-11-09, filming the Viglet Shio promo (chapter 10: someone
@@ -309,6 +286,78 @@ Marketplace accepts a submission with nothing configured by hand. The tour page
 **Done when** a clean release instance with Quilhara installed accepts a trip enquiry
 from `/trips/wind-crest-overnight` and the console lists it as a draft, and the coverage
 test holds the matrix's two form pages to it.
+
+### XI.115 The explorer's deprecated GraphiQL fetcher (SH1388)
+
+SH1383 moved the console to `@graphiql/toolkit` 1.0, and in that line
+`createGraphiQLFetcher` is marked deprecated: the explorer page
+(`shio-react/src/app/admin/graphql/graphql.page.tsx`) still builds its fetcher with it,
+and the IDE flags both the import and the call. Nothing is broken today; the next
+toolkit major is where it is likely to go, and that bump would then arrive red for a
+reason no guard names.
+
+What the fetcher has to keep doing, because each part is load-bearing:
+
+- **Token, not session.** It sends the selected CDA token as the `Key` header and passes
+  `credentials: "omit"`, so the `SHJSESSIONID` cookie stays off the request and the session's
+  security context (no `ROLE_CDA`) cannot load first and turn the call into a 403 (SH4).
+- **No incremental delivery.** `enableIncrementalDelivery: false`, because `/graphql` does not
+  serve `@defer`/`@stream`.
+
+Read the toolkit 1.0 changelog for the replacement it names and build the fetcher with
+that, keeping the two properties above. The SH242/SH1383 guards in
+`shio-react/test/monaco-workers-resolve.test.mjs` are unaffected; check the explorer
+still runs a query against a clean instance with a READ token, since no unit test drives
+the fetcher.
+
+### XI.116 Repeatable fields in the review diff (SH1389)
+
+**Where it showed.** On 2026-11-09, in Agent Review (`/bento/admin/review`) on a clean
+`ghcr.io/openviglet/shio:latest` (166cc6c), comparing the agent's new Quilhara trail
+`post:quilhara/trilhas/pedra-do-vigia` ("Comparar"). The "Criado nesta versão" diff
+lists the trail's `facts` field, a repeatable list of label and value pairs, as "[object
+Object],[object Object],[object Object],[object Object]", while the Universal Editor
+shows the same field as `facts.0.label = Distância`, `facts.0.value = 6,5 km ida e
+volta` and so on.
+
+**Why it matters.** The diff is what a curator reads to decide whether to approve an
+agent's work, and a structured field is where an agent is most likely to get something
+wrong; today it is unreadable there.
+
+**What to do.** Render a repeatable or object field in the diff the way the editor
+addresses it: one row per item and sub-field (`facts[0].label`), added, changed or
+removed, in the same style as the text fields. A console test diffs a post with a
+repeatable field and finds no "[object Object]".
+
+**Done when** the diff of a new Quilhara trail shows each fact's label and value.
+
+### XI.117 A draft-only post opens cleanly in the Universal Editor (SH1390)
+
+**Where it showed.** On 2026-11-09, filming the Viglet Shio promo on a clean
+`ghcr.io/openviglet/shio:latest` (166cc6c) with Quilhara installed from the Marketplace.
+An agent session (Claude Code with the Shio plugin) wrote four new posts with
+`shio_write`, all drafts and never published, among them
+`post:quilhara/trilhas/pedra-do-vigia`. Opening that page in the Universal Editor
+(`/bento/universal-editor/<site>`, the frame on
+`/preview/quilhara/trilhas/pedra-do-vigia?editor=true`) renders it and makes its fields
+editable, and at the same time shows a toast with the raw API error, twice:
+
+"Post 9fb6000c-… exists, but not in published … It is stored as [draft] … Did you mean:
+draft".
+
+So the editor asks for the published row of a post that only has a draft, gets a 404,
+and hands the teaching error meant for an agent to a person.
+
+**Why it matters.** Reviewing an agent's drafts on the page is the curator's half of the
+product's pitch, and an agent's draft is the post a curator opens there first.
+
+**What to do.** The editor reads the state the post has (draft when there is no
+published row), and a state it cannot read is shown as a sentence for a person, not the
+API's error text. A console test opens a draft-only post in the editor with no error
+toast and no 4xx request.
+
+**Done when** a post an agent wrote and nobody published opens in the Universal Editor
+with no toast, and an edit saved there lands on its draft.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

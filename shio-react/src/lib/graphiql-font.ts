@@ -1,6 +1,6 @@
 // SH1199 — GraphiQL's editors in the console's one monospace family.
 //
-// GraphiQL v5 creates its Monaco editors with `fontFamily: '"Fira Code"'` and no
+// GraphiQL (5 and 1.0 alike) creates its Monaco editors with `fontFamily: '"Fira Code"'` and no
 // prop to change it, so the explorer was the one route rendering a second mono
 // (the look census counted 122 Fira Code elements there and nowhere else). The
 // family is the design system's `--vg-font-mono` (VDS199), read from the root so

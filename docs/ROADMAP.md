@@ -13,11 +13,13 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - 📋 **SH1387** (deps: —) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — The showcase cannot show forms landing as drafts, and the promo's trip-enquiry chapter has nothing to film. → §XI.114
+- 📋 **SH1389** (deps: —) **Agent Review's diff shows a repeatable field such as a trail's facts as [object Object]** — The diff is what a curator reads before approving an agent's work, and structured fields are where it most needs reading. → §XI.116
+- 📋 **SH1390** (deps: —) **The Universal Editor asks a draft-only post for its published row and shows the API's error as a toast** — An agent's drafts are the first posts a curator opens on the page, and today each shows a 404 meant for an agent. → §XI.117
 
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 🛠 **SH1383** (deps: —) **The console cannot take GraphiQL 1.0: its Monaco imports miss the pinned editor and its explorer escapes the theme** — Dependabot offers the major on every run, and each time the group's other updates arrive red beside it. → §XI.112
+- 📋 **SH1388** (deps: —) **The GraphQL explorer builds its fetcher with createGraphiQLFetcher, which GraphiQL's toolkit 1.0 deprecates** — The next toolkit major is likely to drop it, and that bump would arrive red with no guard naming why. → §XI.115
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

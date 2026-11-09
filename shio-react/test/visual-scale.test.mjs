@@ -135,17 +135,24 @@ test("SH1199: GraphiQL's chrome and editors draw the console's families", () => 
 test("SH1209: GraphiQL's radii and controls read the console's scale", () => {
   // GraphiQL ships its own radius variables and sizes its controls from two width variables and
   // from padding; the census read the explorer as the one route with radii and heights of its own.
+  // SH1383: the list is what the installed GraphiQL reads, not what an earlier one did. GraphiQL 1.0
+  // renamed its radius and size variables, and the overrides SH1209 wrote for 0.x matched nothing
+  // while this test, which read only index.css, stayed green.
   const css = stripComments(readFileSync(join(SRC, "index.css"), "utf8"))
-  for (const [variable, token] of [["--border-radius-2", "control"], ["--border-radius-4", "control"],
-    ["--border-radius-8", "control"], ["--border-radius-12", "panel"]]) {
-    assert.match(css, new RegExp(`${variable}:\\s*var\\(--vg-radius-${token}\\)`),
-      `SH1209: GraphiQL's ${variable} is its own pixel value again, not the ${token} radius`)
+  const graphiql = graphiqlStylesheet()
+  const radii = readVariables(graphiql, /--(?:border-)?radius-[\w-]+/)
+  const sizes = readVariables(graphiql, /--icon-button-size-[\w-]+/)
+  assert.ok(radii.length >= 3 && sizes.length >= 2,
+    `SH1383: read ${radii.length} radius and ${sizes.length} size variables from GraphiQL — the scan stopped finding them`)
+  for (const variable of radii) {
+    assert.match(css, new RegExp(`${variable}:\\s*var\\(--vg-radius-(?:control|panel)\\)`),
+      `SH1209: GraphiQL reads ${variable}, and index.css does not put it on the radius scale`)
   }
-  assert.match(css, /\.graphiql-sessions\s*\{\s*border-radius:\s*var\(--vg-radius-panel\)/,
-    "SH1209: GraphiQL's outer panel is back to its 12 + 8 px radius")
-  assert.match(css, /--toolbar-width:\s*var\(--vg-control-form\)/,
-    "SH1209: GraphiQL's run, copy, merge and prettify buttons are back to 40 px")
-  for (const selector of [".graphiql-sidebar > button", ".graphiql-tab-button", ".graphiql-editor-tools > button", "button.graphiql-tab-add"]) {
+  for (const variable of sizes) {
+    assert.match(css, new RegExp(`${variable}:\\s*var\\(--vg-control-(?:dense|form)\\)`),
+      `SH1209: GraphiQL sizes controls from ${variable}, and index.css does not put it on the control scale`)
+  }
+  for (const selector of [".graphiql-tab-button", ".graphiql-editor-tools > button", "button.graphiql-tab-add"]) {
     const at = css.indexOf(selector)
     assert.ok(at >= 0 && /height:\s*var\(--vg-control-(?:dense|form)\)/.test(css.slice(at, css.indexOf("}", at))),
       `SH1209: ${selector} in the explorer no longer takes a control height`)
@@ -153,19 +160,35 @@ test("SH1209: GraphiQL's radii and controls read the console's scale", () => {
 })
 
 test("SH1212: the explorer fills with the console's primary, and every rule that read GraphiQL's is covered", () => {
+  // GraphiQL 1.0 reads every colour as bare OKLCH components, `oklch(var(--btn-primary))`, so the
+  // console re-points the variables through relative colour syntax and every rule follows. What
+  // must fail here is a primary variable GraphiQL reads that index.css does not re-point (SH1383:
+  // 0.x read `--color-primary` as HSL, 1.0 reads `--btn-primary`, and the next rename is the case).
   const css = stripComments(readFileSync(join(SRC, "index.css"), "utf8"))
-  assert.match(css, /button\.graphiql-execute-button\s*\{\s*background-color:\s*var\(--primary\)/,
-    "SH1212: GraphiQL's run button fills with its own pink again, a second primary beside the console's")
-  // GraphiQL reads --color-primary as bare HSL components, so the console cannot re-point the
-  // variable and overrides the rules instead. Thirteen did when SH1212 shipped; a GraphiQL release
-  // that adds one must fail here, or its pink comes back on whatever the new rule paints.
-  const require_ = createRequire(join(ROOT, "noop.js"))
-  const graphiql = readFileSync(join(dirname(require_.resolve("graphiql/package.json")), "dist", "style.css"), "utf8")
-  const uses = [...graphiql.matchAll(/hsla?\(var\(--color-primary\)/g)].length
-  assert.equal(uses, 13,
-    `SH1212: the installed GraphiQL reads --color-primary in ${uses} rules, and index.css overrides 13. `
-      + "Find the new or removed rule in graphiql/dist/style.css and match the overrides to it.")
+  // `--vscode-*` is Monaco's own theme, which Monaco sets from script and the editors draw: not chrome.
+  const primaries = readVariables(graphiqlStylesheet(), /--(?!vscode-)[\w-]*primary[\w-]*/)
+  assert.ok(primaries.length > 0, "SH1212: GraphiQL reads no primary variable — the scan stopped finding them")
+  const missing = primaries.filter((variable) =>
+    !new RegExp(`${variable}:\\s*from var\\(--primary\\)`).test(css))
+  assert.deepEqual(missing, [],
+    "SH1212: GraphiQL paints from these primary variables and index.css does not re-point them at "
+      + "the console's --primary, so the explorer draws a second primary beside the console's")
+  assert.doesNotMatch(css, /graphiql-execute-button\s*\{\s*background-color/,
+    "SH1383: GraphiQL 1.0's run control is a segmented group; filling the whole of it paints the operation name too")
 })
+
+/** The stylesheet the explorer imports (`graphiql/style.css`), as installed. */
+function graphiqlStylesheet() {
+  const require_ = createRequire(join(ROOT, "noop.js"))
+  return readFileSync(join(dirname(require_.resolve("graphiql/package.json")), "dist", "style.css"), "utf8")
+}
+
+/** The custom properties a stylesheet reads through `var()` whose names match `pattern`, sorted. */
+function readVariables(css, pattern) {
+  const names = new Set()
+  for (const [, name] of css.matchAll(/var\((--[\w-]+)/g)) if (new RegExp(`^${pattern.source}$`).test(name)) names.add(name)
+  return [...names].sort()
+}
 
 test("SH1199: the console's theme maps every radius and mono key the way the installed preset does", () => {
   // The console compiles its own utilities, so without these keys `rounded-xl` is Tailwind's 12 px

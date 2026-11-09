@@ -36,12 +36,11 @@ updates:
     open-pull-requests-limit: 15
     ignore:
       - dependency-name: "typescript"
-      # monaco-editor is capped by the GraphiQL tree, not by us: monaco-graphql's peer
-      # range is ">= 0.20.0 < 0.53" and @graphiql/react depends on 0.52.2. From 0.56.0
-      # monaco-editor also roots its `exports` map at esm/vs/, which breaks every
-      # `monaco-editor/esm/vs/…` deep import those packages (and shio-react's own
-      # monaco-workers.ts) make — `vite build` then fails in the worker bundle (SH242).
-      # Allow 0.52.x patches; lift this when GraphiQL itself moves to a newer Monaco.
+      # monaco-editor is capped by the GraphiQL tree, not by us: @graphiql/react 1.0
+      # depends on ">=0.56.0 <0.58.0" and monaco-graphql 2 peers on the same range
+      # (SH1383). A minor outside it is refused by strictPeerDependencies and by
+      # shio-react/test/monaco-workers-resolve.test.mjs, so it would arrive red; move
+      # the pin when GraphiQL itself moves to a newer Monaco. Patches are allowed.
       - dependency-name: "monaco-editor"
         update-types:
           ["version-update:semver-major", "version-update:semver-minor"]

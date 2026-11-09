@@ -89,31 +89,77 @@ for (const [label, files] of importSites()) {
           error &&
           `${label} imports "${specifier}", which no longer resolves: ${error.code ?? error.message}.\n` +
             `monaco-editor >= 0.56 roots its 'exports' map at esm/vs/, so deep 'esm/vs/…' paths ` +
-            `resolve to esm/vs/esm/vs/… and vite build fails in the worker bundle. Keep ` +
-            `shio-react's monaco-editor within monaco-graphql's peer range (>= 0.20.0 < 0.53).`,
+            `resolve to esm/vs/esm/vs/… and vite build fails in the worker bundle (spell them from ` +
+            `the package root instead: 'monaco-editor/editor/…'). Keep shio-react's monaco-editor ` +
+            `within the range @graphiql/react and monaco-graphql declare (SH1383).`,
       )
     }
   })
 }
 
-test("SH1384: GraphiQL stays on the majors the pinned Monaco serves", () => {
-  // A Dependabot group took @graphiql/react 1.0 and graphiql 6 beside 23 harmless updates, and the
-  // console went red three ways at once with no line saying why. The hold is declared here, so the
-  // next offer of that major fails on one sentence naming the task that adopts it (see SH1383).
-  const declared = JSON.parse(readFileSync(join(HERE, "..", "package.json"), "utf8")).dependencies
-  const major = (range) => Number(String(range).replace(/^[^\d]*/, "").split(".")[0])
-  assert.deepEqual(
-    { react: major(declared["@graphiql/react"]), toolkit: major(declared["@graphiql/toolkit"]),
-      graphiql: major(declared.graphiql), monaco: declared["monaco-editor"] },
-    { react: 0, toolkit: 0, graphiql: 5, monaco: "0.52.2" },
-    "SH1384: GraphiQL's 1.0 line imports Monaco paths 0.52.2 does not ship. Hold @graphiql/react " +
-      "at 0.x, @graphiql/toolkit at 0.x and graphiql at 5 until the adoption task moves Monaco, " +
-      "the explorer's theme and this assertion together.",
-  )
+/** `[major, minor, patch]` of a plain `x.y.z` version. */
+const parts = (version) => String(version).split(/[.-]/).slice(0, 3).map(Number)
+const compare = (a, b) => {
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i]
+  return 0
+}
+
+/**
+ * Whether `version` satisfies a range spelled the way the GraphiQL tree spells its Monaco ranges:
+ * space-separated `>=`/`<`/`<=`/`>` comparators, or one exact version. Anything else throws, so a
+ * new spelling fails here loudly rather than reading as satisfied.
+ */
+function satisfies(version, range) {
+  const v = parts(version)
+  return range.trim().split(/\s+/).every((comparator) => {
+    const m = /^(>=|<=|>|<|=)?\s*(\d+\.\d+\.\d+)$/.exec(comparator)
+    if (!m) throw new Error(`unrecognised range comparator "${comparator}" in "${range}" — extend satisfies()`)
+    const c = compare(v, parts(m[2]))
+    return { ">=": c >= 0, "<=": c <= 0, ">": c > 0, "<": c < 0, "=": c === 0, undefined: c === 0 }[m[1]]
+  })
+}
+
+/** A package's own package.json, found by walking up from its entry: monaco-editor >= 0.56 does not export it. */
+function manifestOf(resolver, name) {
+  let dir = dirname(resolver.resolve(name))
+  for (;;) {
+    try {
+      const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"))
+      if (manifest.name === name) return manifest
+    } catch {
+      // not this directory
+    }
+    const parent = dirname(dir)
+    assert.notEqual(parent, dir, `no package.json named ${name} above its entry`)
+    dir = parent
+  }
+}
+
+test("SH1383/SH1384: the pinned Monaco is the one GraphiQL and monaco-graphql declare", () => {
+  // SH1384 held GraphiQL at 0.x/5 because its 1.0 line imports Monaco paths 0.52.2 does not ship, and
+  // a Dependabot group that took the major went red three ways at once with no line saying why.
+  // SH1383 adopted that line; what has to stay true is the relation, not a version: the monaco-editor
+  // shio-react pins sits inside the range @graphiql/react depends on and monaco-graphql peers on, so
+  // the next GraphiQL major that moves Monaco fails on this one sentence and not in the worker bundle.
+  const pinned = JSON.parse(readFileSync(join(HERE, "..", "package.json"), "utf8")).dependencies["monaco-editor"]
+  assert.match(pinned, /^\d+\.\d+\.\d+$/, "SH1383: monaco-editor is pinned exactly, not ranged — the GraphiQL tree moves it.")
+  const graphiqlReact = JSON.parse(readFileSync(graphiqlReactRequire.resolve("@graphiql/react/package.json"), "utf8"))
+  const monacoGraphql = JSON.parse(readFileSync(require.resolve("monaco-graphql/package.json"), "utf8"))
+  for (const [who, range] of [
+    ["@graphiql/react's dependency", graphiqlReact.dependencies?.["monaco-editor"]],
+    ["monaco-graphql's peer", monacoGraphql.peerDependencies?.["monaco-editor"]],
+  ]) {
+    assert.ok(range, `SH1383: ${who} on monaco-editor is gone — re-read how the GraphiQL tree reaches Monaco.`)
+    assert.ok(
+      satisfies(pinned, range),
+      `SH1383: shio-react pins monaco-editor ${pinned}, outside ${who} range "${range}". Move the pin ` +
+        `to what the GraphiQL tree was built against, then re-run SH242's resolution checks above.`,
+    )
+  }
 })
 
 test("SH242: monaco-editor is one copy, the one @graphiql/react and monaco-graphql were built against", () => {
-  const versionOf = (resolver) => JSON.parse(readFileSync(resolver.resolve("monaco-editor/package.json"), "utf8")).version
+  const versionOf = (resolver) => manifestOf(resolver, "monaco-editor").version
   assert.equal(
     versionOf(require),
     versionOf(createRequire(graphiqlReactRequire.resolve("@graphiql/react/package.json"))),
