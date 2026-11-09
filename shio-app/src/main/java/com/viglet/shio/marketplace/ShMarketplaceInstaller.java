@@ -121,6 +121,11 @@ public class ShMarketplaceInstaller {
         if (registry.names().contains(item.id())) {
             throw new AlreadyInstalledException(item.id());
         }
+        // SH1397 — before the download: a package whose manifest this instance cannot read is one
+        // the registry would refuse after it, with a message about a key rather than a version.
+        if (!item.unreadable().isEmpty()) {
+            throw new NeedsNewerShioException(item.id(), item.unreadable());
+        }
 
         Path staging = null;
         try {
@@ -164,6 +169,10 @@ public class ShMarketplaceInstaller {
         }
         if (registry.names().contains(item.id())) {
             throw new AlreadyInstalledException(item.id());
+        }
+        // SH1397 — the plan downloads too, so it refuses for the same reason the install does.
+        if (!item.unreadable().isEmpty()) {
+            throw new NeedsNewerShioException(item.id(), item.unreadable());
         }
         Path staging = null;
         try {
@@ -405,6 +414,18 @@ public class ShMarketplaceInstaller {
                             + "may be written, and writing to the classpath is not that place.")
                     .withFix("Set shio.blueprint.path to a directory this instance may write to.")
                     .withExample("shio.blueprint.path=/var/lib/shio/blueprints"));
+        }
+    }
+
+    /** SH1397 — the package uses manifest keys this instance does not read. */
+    public static class NeedsNewerShioException extends ShTeachingException {
+
+        public NeedsNewerShioException(String id, List<String> unreadable) {
+            super(ShProblem.of("marketplace-needs-newer-shio", HttpStatus.CONFLICT,
+                            "Package '" + id + "' needs a newer Viglet Shio")
+                    .withDetail("Its manifest uses " + String.join(", ", unreadable)
+                            + ", which this instance does not read, so nothing was downloaded.")
+                    .withFix("Upgrade this Viglet Shio instance, then install the package."));
         }
     }
 

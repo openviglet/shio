@@ -97,6 +97,16 @@ export function MarketplaceSetup({
 
   const names = Object.keys(properties)
 
+  // SH1397 — a package this instance cannot read is refused before its download; say so here,
+  // where the install would have been offered, rather than after a plan that cannot succeed.
+  if (item.unreadable?.length) {
+    return (
+      <p role="status" className="rounded-md border p-3 text-sm">
+        {t("marketplace.needsNewerShio", { keys: item.unreadable.join(", ") })}
+      </p>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3 rounded-md border p-3">
       <p className="flex items-center gap-2 text-sm font-medium">

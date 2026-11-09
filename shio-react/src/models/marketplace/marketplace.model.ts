@@ -26,6 +26,11 @@ export interface ShMarketplaceItem {
   installed: boolean
   /** SH1253 — preview images, loaded through the instance's proxy. Absent when there are none. */
   screenshots?: string[]
+  /**
+   * SH1397 — manifest keys this package uses that this instance does not read; absent when it can
+   * read them all. Installing it is refused before the download, so the dialog says why instead.
+   */
+  unreadable?: string[]
 }
 
 /** Only the parts of the package's JSON Schema the install form reads. */

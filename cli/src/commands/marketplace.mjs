@@ -123,6 +123,10 @@ async function show(client, flags, positionals, ctx) {
     + `${item.builtIn ? " (built-in)" : ""}\n`);
   if (item.author) ctx.stdout.write(`  author:   ${item.author}\n`);
   if (item.requires?.length) ctx.stdout.write(`  requires: ${item.requires.join(", ")}\n`);
+  // SH1397 — the keys this instance cannot read: the install would be refused before downloading.
+  if (item.unreadable?.length) {
+    ctx.stdout.write(`  needs a newer Viglet Shio: this instance does not read ${item.unreadable.join(", ")}\n`);
+  }
   const params = Object.keys(item.params?.properties ?? {});
   if (params.length) ctx.stdout.write(`  params:   ${params.join(", ")}\n`);
   // SH1253 — a terminal cannot draw them, so it names them.

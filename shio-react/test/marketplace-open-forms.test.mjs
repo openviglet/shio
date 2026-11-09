@@ -45,3 +45,10 @@ test("SH1387: every string the offer draws exists in both languages", () => {
     assert.ok(ptValue, `SH1387: pt has no marketplace.${key}`)
   }
 })
+
+test("SH1397: a package this instance cannot read says why, in place of the setup", () => {
+  assert.match(source, /if \(item\.unreadable\?\.length\) \{/u,
+    "SH1397: the dialog offered a plan that the install would refuse after downloading")
+  assert.ok(en.marketplace?.needsNewerShio ?? en.needsNewerShio, "SH1397: en has the sentence")
+  assert.ok(pt.marketplace?.needsNewerShio ?? pt.needsNewerShio, "SH1397: pt has the sentence")
+})

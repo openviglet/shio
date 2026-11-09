@@ -38,6 +38,7 @@
     "setupPostType": "Tipo de post {{name}}: {{action}}",
     "setupContent": "Conteúdo: {{changed}} alteração(ões) de {{ops}} operação(ões)",
     "setupMore": "e mais {{count}}",
+    "needsNewerShio": "Este pacote precisa de um Viglet Shio mais novo: o manifesto usa {{keys}}, que esta instância não lê. Atualize e depois instale.",
     "formsOffer": "Aceitar contatos agora",
     "formsPlan": "Os formulários do pacote vêm fechados. Abri-los envia as mensagens para {{folder}} como {{types}}, a partir de {{origins}}.",
     "formsSections": "{{count}} seção(ões) de formulário recebem o token de formulário do site.",

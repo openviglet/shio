@@ -12,7 +12,6 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 📋 **SH1397** (deps: —) **An older instance refuses a catalogue package that uses a newer manifest key, only after downloading it** — Nothing in the catalogue says which Shio a package needs, so an install fails with a 400 the operator cannot act on. → §XI.123
 
 ## Block BG — The console as an application: cost, resilience and access
 

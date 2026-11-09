@@ -75,6 +75,8 @@ class ShMarketplaceInstallerTest {
     private Path packages;
 
     private HttpServer server;
+    /** SH1397 — how many times a package archive was fetched. */
+    private final java.util.concurrent.atomic.AtomicInteger downloads = new java.util.concurrent.atomic.AtomicInteger();
     private String base;
     private String originalPath;
 
@@ -354,6 +356,29 @@ class ShMarketplaceInstallerTest {
     }
 
     @Test
+    @DisplayName("SH1397: a package using a manifest key this instance does not read is refused before any download")
+    void aPackageNeedingANewerShioIsRefusedBeforeTheDownload() throws IOException {
+        publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",
+                pkg("shio-blueprint-newsroom", "2.0.0")), "[\"manifest:forms\", \"manifest:hologram\"]");
+
+        com.viglet.shio.marketplace.dto.ShMarketplaceItem item = catalog.catalogue().items().stream()
+                .filter(each -> each.id().equals("shio-blueprint-newsroom")).findFirst().orElseThrow();
+        assertThat(item.unreadable())
+                .as("SH1397: forms is a key this instance reads; hologram is the one it would refuse")
+                .containsExactly("hologram");
+        int before = downloads.get();
+        assertThatThrownBy(() -> installer.install("shio-blueprint-newsroom", false))
+                .isInstanceOf(ShMarketplaceInstaller.NeedsNewerShioException.class)
+                .hasMessageContaining("uses hologram, which this instance does not read");
+        assertThatThrownBy(() -> installer.install("shio-blueprint-newsroom", true))
+                .as("SH1397: a dry run downloads too, so it is refused the same way")
+                .isInstanceOf(ShMarketplaceInstaller.NeedsNewerShioException.class);
+        assertThat(downloads.get())
+                .as("SH1397: the refusal comes before the download, not after the registry reads the package")
+                .isEqualTo(before);
+    }
+
+    @Test
     @DisplayName("SH1251: an apply that refuses after the install keeps the installed package")
     void aSetupWhoseApplyRefusesKeepsThePackage() throws IOException {
         publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",
@@ -375,6 +400,11 @@ class ShMarketplaceInstallerTest {
 
     /** Serve one zip, and a catalogue with a single entry pointing at it. */
     private void publish(String id, byte[] zip) throws IOException {
+        publish(id, zip, "[]");
+    }
+
+    /** SH1397 — the same, with the entry's `requires` as a JSON array; downloads are counted. */
+    private void publish(String id, byte[] zip, String requires) throws IOException {
         String catalogue = """
                 [
                   {
@@ -383,14 +413,18 @@ class ShMarketplaceInstallerTest {
                     "version": "1.0.0",
                     "author": "Somebody Else",
                     "category": "community",
-                    "downloadUrl": "%s/%s.zip"
+                    "downloadUrl": "%s/%s.zip",
+                    "requires": %s
                   }
                 ]
-                """.formatted(id, id, base, id);
+                """.formatted(id, id, base, id, requires);
 
         server.createContext("/marketplace.json", exchange -> respond(exchange,
                 catalogue.getBytes(StandardCharsets.UTF_8)));
-        server.createContext("/" + id + ".zip", exchange -> respond(exchange, zip));
+        server.createContext("/" + id + ".zip", exchange -> {
+            downloads.incrementAndGet();
+            respond(exchange, zip);
+        });
         properties.setUrl(base + "/marketplace.json");
     }
 

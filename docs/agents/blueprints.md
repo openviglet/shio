@@ -263,6 +263,19 @@ which `ShStatelessReachabilityLintTest` records as the operator's call, so there
 `ShBlueprintAccessibilityTest.theProposedFormsOpenInOneAct` opens the showcase's forms and posts an
 enquiry from the instance's own origin.
 
+**A catalogue entry names the manifest keys it needs (SH1397).** The registry refuses a manifest key
+it does not know, so a package republished with a newer key (`assets`, `forms`) failed on an older
+instance only after the download. `shio-site/scripts/marketplace.mjs` now puts `manifest:<key>` in
+the entry's `requires` for every key beyond `BASE_MANIFEST_KEYS` (the ten every instance has read);
+`ShMarketplaceItem.unreadable()` is those this instance's `ShBlueprintManifest.KEYS` lacks, serialised
+as `unreadable`, and `ShMarketplaceInstaller` refuses `install` and the dry-run `staged` with
+`marketplace-needs-newer-shio` (409) before fetching. The console draws the sentence in place of the
+setup, and `shio marketplace show` prints it. **Why `requires` and not a field of its own, and not
+a minimum version:** the catalogue reader also refuses an unknown *entry* key, so a new field would
+make every released instance read the whole catalogue as unreachable; and the only release tag is
+`v2026.3` while 2026.3 keeps gaining keys, so a version cannot tell two 2026.3 instances apart. An
+instance released before this reads `requires` as text, which still names the key for a person.
+
 ## The three packages that carry an index page (SH216)
 
 SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`

@@ -21,7 +21,9 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
-import { build } from "./marketplace.mjs";
+import { BASE_MANIFEST_KEYS, build, manifestRequires } from "./marketplace.mjs";
+
+const HERE = import.meta.dirname;
 import { zip } from "./zip.mjs";
 
 const OUT = resolve(process.cwd(), "public", "marketplace");
@@ -181,4 +183,22 @@ test("SH676: the README is derived from the manifest, not written twice", () => 
     "the README does not carry the manifest's own description");
   assert.ok(readme.includes(`shio marketplace install ${items[0].id}`),
     "the README does not say how to install it");
+});
+
+test("SH1397: an entry names the manifest keys it uses beyond the first ten, and nothing else", () => {
+  const { items } = build({ write: false });
+  const byId = Object.fromEntries(items.map((item) => [item.id, item]));
+  assert.deepEqual(byId["shio-blueprint-quilhara"].requires, ["manifest:assets", "manifest:forms"],
+    "SH1397: an instance that cannot read a key must learn it from the catalogue, not after the download");
+  assert.deepEqual(byId["shio-blueprint-small-business"].requires, ["manifest:forms"]);
+  assert.deepEqual(manifestRequires({ name: "x", postTypes: [], verify: {} }), [],
+    "SH1397: a package that uses only the keys every instance reads requires nothing");
+
+  // The base set is the start of the instance's own list, so a key added there and used by a
+  // package is never treated as one every instance has always read.
+  const java = readFileSync(join(HERE, "..", "..", "shio-app", "src", "main", "java", "com", "viglet", "shio",
+    "blueprint", "dto", "ShBlueprintManifest.java"), "utf8");
+  const declared = [...java.match(/KEYS = List\.of\(([^;]+)\);/u)[1].matchAll(/"([a-zA-Z]+)"/gu)].map(([, key]) => key);
+  assert.deepEqual(declared.slice(0, BASE_MANIFEST_KEYS.length), BASE_MANIFEST_KEYS,
+    "SH1397: BASE_MANIFEST_KEYS must be the keys every released instance reads, in the manifest's own order");
 });

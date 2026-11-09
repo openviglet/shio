@@ -241,30 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.123 A catalogue entry names the oldest Shio that can install it (SH1397)
-
-The published catalogue (`shio-site/scripts/marketplace.mjs`, served at
-shio.viglet.org/marketplace) is built from this tree's packages and read by every
-instance that keeps the default `shio.marketplace.url` (SH1257).
-`ShBlueprintRegistry.validateManifestKeys` refuses any manifest key it does not know,
-which is right for a typo and wrong across versions: SH1252 added `assets` and SH1387
-added `forms`, and an instance released before either answers the republished package
-with "unknown manifest key" at install, after the download, with nothing in the
-catalogue or the dialog saying the package needs a newer Shio. `formatVersion` stays
-`1`, so it cannot say so either.
-
-Build: the generator stamps each entry with the oldest Shio version that reads every key
-its manifest uses (a table in `marketplace.mjs` from key to the release that introduced
-it: `assets` to SH1252's, `forms` to SH1387's), as `minShio` on the catalogue entry.
-`ShMarketplaceCatalog` compares it with the running version (the manifest already
-reports one) and answers such an entry as `installable: false` with `needs: "Shio
-<version> or later"`. The console card and `shio marketplace show` print that instead of
-offering Install, and `/install` refuses it with the same sentence and a `fix` naming
-the upgrade, before any download. An entry with no `minShio` behaves as today.
-`shio-site/scripts/marketplace.test.mjs` asserts that every key in
-`ShBlueprintManifest.KEYS` has a row in the table, so the next key cannot ship without
-one.
-
 ### XI.124 The Universal Editor's saving docs match the session merge (SH1398)
 
 `shio-site/docs/src/content/docs/universal-editor.md` § What saving does still describes

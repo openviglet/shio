@@ -38,6 +38,7 @@
     "setupPostType": "Post-type {{name}}: {{action}}",
     "setupContent": "Content: {{changed}} change(s) of {{ops}} operation(s)",
     "setupMore": "and {{count}} more",
+    "needsNewerShio": "This package needs a newer Viglet Shio: its manifest uses {{keys}}, which this instance does not read. Upgrade, then install it.",
     "formsOffer": "Accept enquiries now",
     "formsPlan": "The package's forms ship closed. Opening them sends submissions to {{folder}} as {{types}}, from {{origins}}.",
     "formsSections": "{{count}} form section(s) get the site's form token.",

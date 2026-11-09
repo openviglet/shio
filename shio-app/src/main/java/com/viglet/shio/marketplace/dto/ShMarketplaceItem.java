@@ -104,6 +104,25 @@ public record ShMarketplaceItem(String id, String title, String description, Str
                 params, requires, builtIn, installed, List.of());
     }
 
+    /** SH1397 — how a {@code requires} entry names a manifest key the package uses. */
+    public static final String MANIFEST_REQUIREMENT = "manifest:";
+
+    /**
+     * SH1397 — the manifest keys this package uses that this instance does not read, from the
+     * {@code manifest:<key>} entries of {@code requires}. Non-empty means the install would download
+     * a package the registry then refuses, so it is refused before, by name. Serialised as
+     * {@code unreadable} beside the components, for the console and the CLI to say why.
+     */
+    @com.fasterxml.jackson.annotation.JsonProperty("unreadable")
+    @JsonInclude(Include.NON_EMPTY)
+    public List<String> unreadable() {
+        return requires.stream()
+                .filter(each -> each != null && each.startsWith(MANIFEST_REQUIREMENT))
+                .map(each -> each.substring(MANIFEST_REQUIREMENT.length()))
+                .filter(key -> !com.viglet.shio.blueprint.dto.ShBlueprintManifest.KEYS.contains(key))
+                .toList();
+    }
+
     /** The same entry, with this instance's answer to "do I already have it?" stamped on. */
     public ShMarketplaceItem asInstalled(boolean present) {
         return new ShMarketplaceItem(id, title, description, version, author, category, tags,

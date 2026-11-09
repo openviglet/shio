@@ -146,6 +146,12 @@ keeps it as it is. From a terminal it is `--open-forms`:
 shio marketplace install shio-blueprint-quilhara --apply --site quilhara --create-site --merge-post-types --open-forms
 ```
 
+**A package for a newer instance.** A catalogue entry lists in `requires` the manifest
+features it uses that older instances may not read (`manifest:assets`, `manifest:forms`). When
+your instance cannot read one, the Marketplace says the package needs a newer Viglet Shio
+instead of offering to install it, `shio marketplace show` says the same, and an install is
+refused before anything is downloaded.
+
 An agent reads the catalogue with
 the `shio_marketplace` MCP tool, which lists and describes: it does **not** install.
 That is a deliberate boundary, not an omission: installing a stranger's package is the

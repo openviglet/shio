@@ -23,19 +23,34 @@
 // refuses a package whose manifest disagrees with the catalogue about what it is called. The
 // source packages are untouched: this is a second distribution channel for the same bytes.
 //
-// ## `requires` is empty, and that is a statement rather than an omission
+// ## `requires` names manifest keys, and never the SH151/SH152 opt-ins
 //
 // The field carries the SH151/SH152 opt-ins so a console can ask for consent before an install.
-// It cannot be derived here: `createSite` and `mergePostTypes` are **request options** on an
+// Those cannot be derived here: `createSite` and `mergePostTypes` are **request options** on an
 // apply, not manifest keys, and whether either is needed depends on the target instance rather
 // than on the package. A publisher may declare them about their own package; this generator will
 // not guess on their behalf.
-
+//
+// SH1397 — what it does derive is `manifest:<key>` for every manifest key a package uses beyond
+// the ones every instance has always read. An instance refuses a manifest key it does not know, and
+// learned of it only after downloading the package; one that reads these refuses before. They ride
+// in `requires` and not in a field of their own because an instance also refuses an unknown
+// CATALOGUE key, and a new field would make every released instance read the whole catalogue as
+// unreachable. An old instance shows them as text, which still tells a person what is missing.
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 
 import { zip } from "./zip.mjs";
+
+export const BASE_MANIFEST_KEYS = ["formatVersion", "name", "title", "description", "version",
+  "params", "postTypes", "content", "files", "verify"];
+
+/** SH1397 — `manifest:<key>` for each key this manifest uses that an older instance may not read. */
+export function manifestRequires(manifest) {
+  return Object.keys(manifest).filter((key) => !BASE_MANIFEST_KEYS.includes(key)).sort()
+    .map((key) => `manifest:${key}`);
+}
 
 // @scans prose reason: it reads each package's README and manifest to build the published
 // catalogue, so the long-form description is the subject (SH740).
@@ -219,7 +234,7 @@ export function build({ write = true } = {}) {
       downloadUrl: `${BASE}/${id}/${id}.zip`,
       readmeUrl: `${BASE}/${id}/README.md`,
       params: manifest.params ?? null,
-      requires: [],
+      requires: manifestRequires(manifest),
     };
     // Only when there are some, so the six plain packages publish exactly the bytes they did.
     if (screenshots.length) {
