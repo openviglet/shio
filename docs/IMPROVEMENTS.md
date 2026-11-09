@@ -274,12 +274,11 @@ SH637) already owns the folder and the invited types, so the section names the p
 a submission is stored as, plus a heading, an intro and a submit label. Applying a
 package never opens the door; the curator enables submissions, as SH632 decided.
 
-The finding that has to be settled first: `POST /api/v2/cda/form/<site>` takes a JSON
-body, so a `<form>` the server renders cannot post to it without script. Either the
-endpoint also accepts `application/x-www-form-urlencoded` (answering a browser with a
-redirect back to the page, which a JSON caller never asks for), or a script serializes
-it. Script-free also puts the FORM token in the POST body (SH364 made submissions
-token-scoped): a new credential path, a person's call.
+Decided (the user, 2026-11-09): the form works with no script. `POST
+/api/v2/cda/form/<site>` also accepts `application/x-www-form-urlencoded` and answers
+that caller with a 303 back to the page, a success or error marker in the query; a JSON
+caller keeps today's answer. The FORM token rides in a hidden field of the POST body, a
+credential path beside the header, and is FORM-scoped so it can only submit.
 
 The package, small-business, composes hero, gallery, rich text, form and CTA into home,
 about and contact, with five parameters a phone can ask: name, what it does, where, how
