@@ -81,6 +81,14 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  L: {
+    swept: true,
+    why: "agent safety and the human in the loop, reopened for SH1396 and re-closed with it: the "
+      + "storage meter's tests run on a tenant of their own, so a neighbouring class's uploads no "
+      + "longer move the figures they assert. docs-shio moved: COVERAGE's tenancy row names SH1396 and "
+      + "the mirror is regenerated. README and shio-site are NOT moved: a test's isolation changes no "
+      + "behaviour either describes",
+  },
   F: {
     swept: true,
     why: "market positioning and bold bets, closed by SH1375: a visitor who signs in "
