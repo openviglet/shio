@@ -93,6 +93,7 @@ class ShRenderFormTest {
             </form>
             <div id="unknown">{{#form type="NoSuchType"}}<b>x</b>{{else}}<i>absent</i>{{/form}}</div>
             <div id="nofields">{{#form type="%s"}}<b>y</b>{{else}}<i>empty</i>{{/form}}</div>
+            <div id="multi">{{#form type="%s"}}{{#if multiline}}<textarea name="{{name}}"></textarea>{{/if}}{{/form}}</div>
             </body></html>""";
 
     @Autowired
@@ -140,7 +141,7 @@ class ShRenderFormTest {
             attr(contact, "EMAIL", "Email", ShSystemWidget.TEXT, 2, true);
 
             post(site, root, layoutType, LAYOUT_TITLE, "/layout",
-                    "{\"HTML\":" + quote(LAYOUT_HTML.formatted(contactType, emptyType)) + "}", when);
+                    "{\"HTML\":" + quote(LAYOUT_HTML.formatted(contactType, emptyType, contactType)) + "}", when);
             post(site, root, page, "Contact us", "/", "{}", when);
         });
     }
@@ -183,6 +184,17 @@ class ShRenderFormTest {
                 .contains("name=\"NAME\" data-widget=\"" + ShSystemWidget.TEXT + "\" required")
                 .doesNotContain("name=\"MESSAGE\" data-widget=\""
                         + ShSystemWidget.TEXT_AREA + "\" required");
+    }
+
+    @Test
+    @DisplayName("SH1386: a textarea field says so, since the engine has no equality helper")
+    void aMultilineFieldIsATruth() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("SH1386: `multiline` is what lets a template draw a <textarea> for a Text Area "
+                        + "field and an <input> for the rest, with no `eq` helper to compare `input`")
+                .contains("<div id=\"multi\"><textarea name=\"MESSAGE\"></textarea></div>");
     }
 
     @Test

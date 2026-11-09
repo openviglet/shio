@@ -147,7 +147,7 @@ class ShBlueprintRegistryTest {
                     // file was the exception to it. `blueprint-manifest.test.mjs` is what holds the
                     // directory and the manifest together now, in both directions.
                     .containsExactly("Page", "Menu", "MenuItem", "SectionCta", "SectionFaq",
-                            "SectionFeatureGrid", "SectionGallery", "SectionHero", "SectionLogoWall",
+                            "SectionFeatureGrid", "SectionForm", "SectionGallery", "SectionHero", "SectionLogoWall",
                             "SectionMarkup", "SectionRichText", "SectionTestimonial");
         }
     }

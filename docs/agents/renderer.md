@@ -1874,6 +1874,23 @@ the caption and otherwise also leaves `alt` off. Propose maps no block into it y
 `source-corpus.test.mjs` holds as `UNPRODUCED_TYPES`. SH832's row-scope reader treats the keys
 `{{#image}}` yields as that block's own.
 
+### A form section (SH1386)
+
+`SectionForm` is a heading, an intro, `formType` (required: the post type a submission is stored
+as), `submitLabel` and `formToken`. **No field list of its own**: the union layout draws
+`{{#form type=formType}}`, so the named type's declared fields are the form, and the site's form
+configuration (SH632) still owns where a submission lands. The line is gated on `formType` **and**
+`formToken`, so a package that ships the section closed (empty token) draws heading and intro and no
+form. It posts natively to `{{site.formAction}}` with the hidden `site.formTypeField`,
+`site.formTokenField` and `site.formHoneypot` (SH1382's path), read through the parent context
+inside `{{#getRelation sections}}`; both hidden inputs carry `sh-field-attr="…:value"` so SH503's
+addressability check holds. `{{#form}}` rows gained **`multiline`**, true for a `textarea` input,
+because the engine has no equality helper and a template must branch on a truth to draw
+`<textarea>`. The React `<Form>` draws the same markup only when the host passes
+`form={ action, fields }` through `<Sections>`; `FORM_HIDDEN_FIELDS` spells the three names and
+`form-fields.test.mjs` compares them with the Java constants. Propose maps no block into it (a
+captured form posts to somebody else's endpoint), held in `UNPRODUCED_TYPES`.
+
 ## A listing loads the page, not the folder (SH419)
 
 SH384 built `{{#query}}`'s paging, sorting and filtering as in-memory operations and said why: the

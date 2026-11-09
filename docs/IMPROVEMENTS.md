@@ -264,28 +264,26 @@ editors, and then the merge, filed as its own tasks.
 ### XI.109 A blueprint with a gallery and a contact form (SH1356)
 
 The mobile product's first run is a small business: a few photos, a line about the
-place, a way to be contacted. SectionGallery shipped as the first part (see
-docs/agents/renderer.md, "A gallery section"), and SH1382 made the endpoint take a
-script-free form (docs/agents/security.md, "A form with no script"). What is left is the
-contact section and the package.
-
-SectionForm is not a list of fields of its own. `{{#form type=...}}` already renders a
-post-type's declared fields, and a site's form configuration (sh_site_form, SH631 to
-SH637) already owns the folder and the invited types, so the section names the post-type
-a submission is stored as, plus a heading, an intro and a submit label. Its template
-posts natively: `site.formAction`, then hidden `site.formTypeField`,
-`site.formTokenField` and `site.formHoneypot`, and it reads `shio_form=sent|error` from
-the query to thank or retry.
-
-The token is a field on the section the curator fills when enabling submissions, so
-applying a package never opens the door, as SH632 decided; an empty token renders the
-form disabled with a note to the curator, not a form that fails on submit.
+place, a way to be contacted. Three parts have shipped: SectionGallery (renderer.md, "A
+gallery section"), the script-free form endpoint, SH1382 (security.md, "A form with no
+script"), and SectionForm, SH1386 (renderer.md, "A form section"). What is left is the
+package that composes them.
 
 The package, small-business, composes hero, gallery, rich text, form and CTA into home,
 about and contact, with five parameters a phone can ask: name, what it does, where, how
-to reach it, and the opening line. It ships a Contact post-type for the form,
+to reach it, and the opening line. It ships a Contact post-type for the form (name,
+email, message), and its contact page carries a SectionForm whose `formType` is Contact
+and whose `formToken` is empty: the section draws its heading and intro and no form
+until the curator enables submissions (POST /api/v2/site-form) and fills the token, so
+applying the package never opens the door, as SH632 decided.
+
 verify.posts promises the three pages, and the apply benchmark in
-token-budgets.properties takes a row for it.
+token-budgets.properties takes a row for it, measured. Model it on `landing` (its
+PageLayout, Theme and binding, so the site renders on apply) rather than on
+`marketing-site`, which carries a Next.js front end the phone does not need.
+
+Done when a contact form on a blueprint page submits with script off: apply the package,
+enable the site's form configuration, fill the token, and POST the rendered form.
 
 ### XI.111 An upload into an unknown folder (SH1380)
 

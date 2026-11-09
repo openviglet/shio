@@ -742,6 +742,24 @@ class ShConvertedLayoutRenderTest {
                 .isEmpty();
     }
 
+    @Test
+    @DisplayName("SH1386: a form section draws a native POST to this site's endpoint, with its hidden fields")
+    void aFormSectionPostsWithNoScript() {
+        String html = shPageRenderService.render(siteName, VOCABULARY_URL, ShPostState.DRAFT).html();
+
+        assertThat(html)
+                .as("""
+                        SH1386: the site's endpoint, read from the site frame inside the section block \
+                        — so a submission goes where the operator configured, and nothing in the \
+                        browser has to run for it to arrive""")
+                .contains("method=\"post\" action=\"/api/v2/cda/form/" + siteName + "\"");
+        assertThat(html)
+                .as("SH1386: the type and token ride as hidden fields named by the classes that read them")
+                .contains("name=\"" + com.viglet.shio.api.form.ShFormSubmissionAPI.TYPE_FIELD + "\"")
+                .contains("name=\"" + com.viglet.shio.spring.security.auth.ShApiTokenFilter.FORM_TOKEN_FIELD + "\"")
+                .contains("name=\"" + com.viglet.shio.api.form.ShFormSubmissionAPI.HONEYPOT_FIELD + "\"");
+    }
+
     /**
      * SH503 — the check the other three could not make, and the hole they left between them.
      *

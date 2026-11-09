@@ -8,13 +8,15 @@
 import type { JSX } from "react";
 
 import { SECTION_COMPONENTS } from "./components";
-import { defaultResolveAsset, type SectionPost, type SectionProps } from "./types";
+import { defaultResolveAsset, type FormHost, type SectionPost, type SectionProps } from "./types";
 
 export interface SectionsProps {
   /** The page's sections, already resolved, in render order. */
   sections: SectionPost[];
   resolveAsset?: (value: string) => string;
   className?: string;
+  /** SH1386 — the action and field rows a form section needs; passed to every section, read by one. */
+  form?: FormHost;
   /**
    * What to render for a section type this vocabulary does not know.
    *
@@ -39,6 +41,7 @@ export function Sections({
   sections,
   resolveAsset = defaultResolveAsset,
   className,
+  form,
   fallback,
 }: SectionsProps): JSX.Element {
   return (
@@ -52,6 +55,7 @@ export function Sections({
           data: section.data,
           resolveAsset,
           className,
+          form,
         } as unknown as SectionProps<never>;
         return <Component key={section.url ?? `${section.type}-${index}`} {...props} />;
       })}

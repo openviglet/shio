@@ -25,6 +25,7 @@ import {
   type CtaData,
   type FaqData,
   type FeatureGridData,
+  type FormSectionData,
   type GalleryData,
   type HeroData,
   type LogoWallData,
@@ -182,6 +183,62 @@ export function Faq({ data, className, postId }: SectionProps<FaqData>): JSX.Ele
 }
 
 /**
+ * The hidden fields a script-free form posts (SH1386), named as the endpoint reads them:
+ * `ShFormSubmissionAPI.TYPE_FIELD`, `ShApiTokenFilter.FORM_TOKEN_FIELD` and
+ * `ShFormSubmissionAPI.HONEYPOT_FIELD`. `form-fields.test.mjs` reads the Java source so the two
+ * spellings cannot drift.
+ */
+export const FORM_HIDDEN_FIELDS = Object.freeze({
+  type: "shio_type",
+  token: "shio_key",
+  honeypot: "shio_hp",
+});
+
+/**
+ * A contact form that submits with no script (SH1386).
+ *
+ * A plain `<form method="post">`: the endpoint answers a 303 back to this page with
+ * `shio_form=sent|error`, so nothing here runs in the browser. Drawn only when the section names a
+ * post type and carries the site's FORM token **and** the host supplied the action and that type's
+ * fields; otherwise the heading and intro render and no form does, because a form that cannot post
+ * is worse than none.
+ */
+export function Form({ data, className, postId, form }: SectionProps<FormSectionData>): JSX.Element {
+  const type = str(data.formType);
+  const token = str(data.formToken);
+  const fields = type && form ? form.fields[type] ?? [] : [];
+  const drawn = Boolean(type && token && form?.action && fields.length > 0);
+  return (
+    <section className={cx("shio-section", "shio-form", className)} {...editableSection(postId, "SectionForm")}>
+      {str(data.heading) && <h2 className="shio-form__heading" {...editable("heading")}>{data.heading}</h2>}
+      {str(data.intro) && <p className="shio-form__intro" {...editable("intro")}>{data.intro}</p>}
+      {drawn && (
+        <form className="shio-form__form" method="post" action={form!.action}>
+          <input type="hidden" name={FORM_HIDDEN_FIELDS.type} value={type} {...editable("formType", "value")} />
+          <input type="hidden" name={FORM_HIDDEN_FIELDS.token} value={token} {...editable("formToken", "value")} />
+          {fields.map((field) => (
+            <p className="shio-form__field" key={field.name}>
+              <label htmlFor={`shio-form-${field.name}`}>{field.label ?? field.name}</label>
+              {field.input === "textarea" ? (
+                <textarea id={`shio-form-${field.name}`} name={field.name} required={field.required} />
+              ) : (
+                <input id={`shio-form-${field.name}`} type={field.input ?? "text"} name={field.name}
+                  required={field.required} />
+              )}
+            </p>
+          ))}
+          <input type="text" name={FORM_HIDDEN_FIELDS.honeypot} defaultValue="" tabIndex={-1}
+            autoComplete="off" aria-hidden="true" style={{ position: "absolute", left: "-9999px" }} />
+          <button className="shio-form__submit" type="submit" {...editable("submitLabel")}>
+            {str(data.submitLabel) ?? "Send"}
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
+/**
  * A set of photographs (SH1356).
  *
  * The alt text is the asset's own and a headless host is not handed it, so the caption stands in
@@ -265,6 +322,7 @@ export const SECTION_COMPONENTS: Record<string, (props: SectionProps<never>) => 
   [SECTION_TYPES.logoWall]: LogoWall as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.testimonial]: Testimonial as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.faq]: Faq as (props: SectionProps<never>) => JSX.Element,
+  [SECTION_TYPES.form]: Form as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.gallery]: Gallery as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.markup]: Markup as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.richText]: RichText as (props: SectionProps<never>) => JSX.Element,

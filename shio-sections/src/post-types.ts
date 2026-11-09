@@ -43,6 +43,7 @@ export const SECTION_TYPES = {
   logoWall: "SectionLogoWall",
   testimonial: "SectionTestimonial",
   faq: "SectionFaq",
+  form: "SectionForm",
   gallery: "SectionGallery",
   markup: "SectionMarkup",
   richText: "SectionRichText",
@@ -310,6 +311,30 @@ export const sectionFaq = (): ShPostTypeDef =>
   });
 
 /**
+ * A contact form (SH1386).
+ *
+ * Not a list of fields of its own: `formType` names the post-type a submission is stored as, and
+ * that type's declared fields are the form (`{{#form type=}}` on the Shio side, the host's field rows
+ * on the React side). Where a submission lands and whether the site accepts one at all is the site's
+ * form configuration (SH632), never this section's. `formToken` is the site's FORM token, which is
+ * public by design (it can only submit); the curator fills it when enabling submissions, so applying
+ * a package that carries this section never opens the door, and an empty token draws no form.
+ */
+export const sectionForm = (): ShPostTypeDef =>
+  postType(SECTION_TYPES.form, {
+    title: "Form Section",
+    namePlural: "Form Sections",
+    description: "A form that submits with no script: the fields are the named post type's, the destination is the site's.",
+    fields: [
+      text("heading", { label: "Heading", isTitle: true }),
+      textArea("intro", { label: "Intro", isSummary: true }),
+      text("formType", { label: "Post type a submission is stored as", required: true }),
+      text("submitLabel", { label: "Submit label" }),
+      text("formToken", { label: "Form token" }),
+    ],
+  });
+
+/**
  * A set of photographs (SH1356).
  *
  * The section a small business's site is mostly made of, and the vocabulary had none: every image
@@ -410,6 +435,7 @@ export const sectionPostTypes = (): ShPostTypeDef[] => [
   sectionCta(),
   sectionFaq(),
   sectionFeatureGrid(),
+  sectionForm(),
   sectionGallery(),
   sectionHero(),
   sectionLogoWall(),

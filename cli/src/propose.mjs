@@ -133,6 +133,10 @@ export const SECTION_TYPES = {
     fields: ["heading", "intro", "columns", "images"],
     repeats: { field: "images", of: ["image", "caption"] },
   },
+  // SH1386 — here for SectionGallery's reason: the generated layout draws it, so a curator who adds
+  // a contact form to a converted page sees it post. Nothing maps a captured block into it, since a
+  // captured form posts to somebody else's endpoint; UNPRODUCED_TYPES says so.
+  SectionForm: { fields: ["heading", "intro", "formType", "submitLabel", "formToken"], repeats: null },
 };
 
 /**
@@ -180,6 +184,8 @@ export const SECTION_TYPES = {
 export const SECTION_REQUIRED = {
   SectionCta: ["heading"],
   SectionFeatureGrid: ["heading"],
+  // SH1386 — a form section with no post type names no fields, so it is not a form.
+  SectionForm: ["formType"],
   SectionHero: ["heading"],
   // SH763 — declared here and deliberately **not** in `SECTION_TYPES` above. That table says what a
   // *block* maps into, and no block ever maps into `SectionMarkup`: it holds the remainder `convert`

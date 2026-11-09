@@ -12,7 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 🛠 **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; since SH1382 the endpoint takes a script-free form, so the section only names its type and token. → §XI.109
+- 🛠 **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — The small-business package remains; SectionGallery, the script-free endpoint (SH1382) and SectionForm (SH1386) have shipped. → §XI.109
 - 📋 **SH1385** (deps: —) **On a clean release instance the Quilhara showcase cannot be installed from the Marketplace, and the dialog says nothing** — Plan answers 400 page-type-not-bound for InfoPage, so the first thing the README offers a new user fails silently. → §XI.113
 
 ## Block BG — The console as an application: cost, resilience and access

@@ -194,7 +194,7 @@ public class ShRenderHelpers {
      * {@link #rowKeysFor} which one applies rather than warning on a correct template.</p>
      */
     public static final Set<String> FORM_FIELD_KEYS =
-            Set.of("name", "label", "widget", "input", "required", "ordinal");
+            Set.of("name", "label", "widget", "input", "multiline", "required", "ordinal");
 
     /**
      * The row keys a block of this helper yields — the question SH251's lint has to ask.
@@ -1842,6 +1842,9 @@ public class ShRenderHelpers {
         // template that branched on the widget name would hard-code this catalogue, and one that
         // only had `input` could not tell a Date from a Text it happens to render the same way.
         field.put("input", inputType(widget));
+        // SH1386 — a textarea is an element, not an `<input type>`, and the engine has no equality
+        // helper, so a template needs a truth to branch on: `{{#if multiline}}<textarea>`.
+        field.put("multiline", "textarea".equals(field.get("input")));
         // `required` is a byte in the model, not a boolean; a template branches on truth.
         field.put("required", attr.getRequired() == 1);
         field.put("ordinal", attr.getOrdinal());

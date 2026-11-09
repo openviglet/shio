@@ -280,7 +280,7 @@ checked.
 For pages assembled from blocks rather than written as one document, the
 `@viglet/shio-sections` package ships a shared vocabulary: a `Page` type plus
 `SectionHero`, `SectionFeatureGrid`, `SectionCta`, `SectionLogoWall`,
-`SectionTestimonial`, `SectionFaq`, `SectionGallery`, `SectionRichText` and `SectionMarkup`, with matching
+`SectionTestimonial`, `SectionFaq`, `SectionGallery`, `SectionForm`, `SectionRichText` and `SectionMarkup`, with matching
 unstyled, semantic React components behind stable `shio-*` class names.
 
 `SectionMarkup` is the odd one and is worth knowing about even if you never write one by
@@ -293,6 +293,15 @@ as a field they cannot reach.
 alt-text field of its own: each photo's alt text is the one you give it in the media library,
 so describing a picture once describes it on every page that shows it, and a photo nobody
 described is flagged by `shio verify` instead of being silently marked as decoration.
+
+`SectionForm` is a contact form that works with no script. It does not list fields of its
+own: `formType` names the post type a submission is stored as, and that type's fields are
+the form. Where submissions land, and whether the site accepts them at all, stays in the
+site's form settings (see [Forms](#forms)). `formToken` holds the site's FORM token; until
+someone fills it in, the section shows its heading and intro and draws no form, so adding
+the section never opens a site to submissions by itself. In React, `<Sections>` draws it when
+you pass `form={{ action, fields }}`: the instance's `/api/v2/cda/form/<site>` address and
+each post type's field rows.
 
 A `Page` names its sections **by friendly URL, in order**, in a `Multi Select` whose
 settings declare what it holds:

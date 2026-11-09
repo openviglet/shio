@@ -36,6 +36,7 @@ Nine sections, plus the page and menu types that hold them:
 | `SectionTestimonial` | `sectionTestimonial()` | `<Testimonial>` | Quote, author, portrait |
 | `SectionFaq` | `sectionFaq()` | `<Faq>` | Question / answer rows |
 | `SectionGallery` | `sectionGallery()` | `<Gallery>` | Photographs with captions; alt text is each image's own (SH1356) |
+| `SectionForm` | `sectionForm()` | `<Form>` | A contact form that posts with no script; its fields are the named post type's (SH1386) |
 | `SectionRichText` | `sectionRichText()` | `<RichText>` | Free-form HTML body |
 | `SectionMarkup` | `sectionMarkup()` | `<Markup>` | Markup kept verbatim from a captured page (SH763) |
 | `Page` | `page()` | `<Sections>` | The ordered list of sections |

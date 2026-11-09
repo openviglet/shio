@@ -39,6 +39,7 @@ test("the vocabulary is a fixed, ordered set", () => {
       "SectionCta",
       "SectionFaq",
       "SectionFeatureGrid",
+      "SectionForm",
       "SectionGallery",
       "SectionHero",
       "SectionLogoWall",
@@ -57,6 +58,7 @@ test("the vocabulary is a fixed, ordered set", () => {
     cta: SECTION_TYPES.cta,
     faq: SECTION_TYPES.faq,
     featureGrid: SECTION_TYPES.featureGrid,
+    form: SECTION_TYPES.form,
     gallery: SECTION_TYPES.gallery,
     hero: SECTION_TYPES.hero,
     logoWall: SECTION_TYPES.logoWall,
@@ -164,6 +166,18 @@ test("SH1356: a gallery row is a File and a caption, and its alt text stays the 
   assert.equal(images.fields[0].required, true, "a row with no picture is not a gallery item");
   assert.ok(gallery.fields.some((field) => field.name === "columns"),
     "the feature grid's `columns` choice, so the theme's existing rule lays it out");
+});
+
+test("SH1386: a form section names a post type and a token, and declares no fields of its own", () => {
+  const form = byName(SECTION_TYPES.form);
+  assert.ok(form, "SectionForm is in the vocabulary a package provisions");
+  assert.deepEqual(form.fields.map((field) => field.name),
+    ["heading", "intro", "formType", "submitLabel", "formToken"],
+    "SH1386: the fields are the named post type's, so a Relator of inputs here would be a second "
+      + "form builder beside the content model");
+  assert.equal(form.fields.find((field) => field.name === "formType").required, true);
+  assert.equal(form.fields.find((field) => field.name === "formToken").required, false,
+    "SH1386: an empty token is how a package ships the section closed until the curator opens it");
 });
 
 test("the choice fields encode to the legacy widgetSettings string, not to an object", () => {

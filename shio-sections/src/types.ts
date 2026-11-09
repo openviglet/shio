@@ -52,6 +52,8 @@ export interface SectionProps<T = Record<string, unknown>> {
    * are not wanted, and the editor is opt-in per render rather than per build.
    */
   postId?: string;
+  /** SH1386 — where a form section posts and what fields it draws; only the form section reads it. */
+  form?: FormHost;
 }
 
 /**
@@ -111,6 +113,40 @@ export interface FaqData {
   heading?: string;
   intro?: string;
   questions?: Array<{ question?: string; answer?: string }>;
+}
+
+/** SH1386 — a form section names a post type; the fields are that type's. */
+export interface FormSectionData {
+  heading?: string;
+  intro?: string;
+  formType?: string;
+  submitLabel?: string;
+  formToken?: string;
+}
+
+/**
+ * One field of the post type a form section names, as Shio's `{{#form}}` yields it (SH1386).
+ *
+ * The host reads the post type over the delivery API and hands its fields in; the vocabulary does
+ * not fetch, for `<Sections>`' own reason.
+ */
+export interface FormFieldDef {
+  name: string;
+  label?: string;
+  /** The browser's input type; `textarea` draws a `<textarea>`. */
+  input?: string;
+  required?: boolean;
+}
+
+/**
+ * What a host supplies so a form section can be drawn (SH1386).
+ *
+ * `action` is the instance's `/api/v2/cda/form/<site>`; `fields` maps a post type's name to its field
+ * rows. With either missing, a form section draws nothing rather than a form that cannot post.
+ */
+export interface FormHost {
+  action: string;
+  fields: Record<string, FormFieldDef[]>;
 }
 
 /** SH1356 — a row is a File reference and a caption; the alt text is the asset's own. */

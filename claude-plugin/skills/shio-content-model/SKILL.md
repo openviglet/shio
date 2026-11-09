@@ -16,7 +16,7 @@ two types for one idea costs every later session an archaeology pass.
 
 Check `shio://blueprints` too: `marketing-site` and `landing` ship a **section vocabulary**
 (`Page`, `SectionHero`, `SectionFeatureGrid`, `SectionCta`, `SectionLogoWall`,
-`SectionTestimonial`, `SectionFaq`, `SectionGallery`, `SectionRichText`) with matching React components in
+`SectionTestimonial`, `SectionFaq`, `SectionGallery`, `SectionForm`, `SectionRichText`) with matching React components in
 `@viglet/shio-sections`. If the user is building pages out of blocks, use that vocabulary
 rather than a new one — it is what the console, the front end and the render digest all
 already understand.
