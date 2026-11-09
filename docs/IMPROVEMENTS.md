@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.124 The Universal Editor's saving docs match the session merge (SH1398)
-
-`shio-site/docs/src/content/docs/universal-editor.md` § What saving does still describes
-the editor from before SH335: it lists `GET /api/v2/cda/post/{id}/editable`, `PATCH
-/api/v2/cda/post/{id}` and `POST .../publish` as what the editor calls, and closes with
-"Writes need a token of write scope, and the console uses a credential-less request for
-them: the token authenticates, not your session cookie". SH335 moved the editor onto the
-console session (`PATCH /api/v2/post-unified/{id}` with `{attrs, publish}`, through
-`ShPostDraftMergeService`, with the content ACL as its guard) and removed the token
-picker, so a reader following the page looks for a token setting that no longer exists.
-Found on 2026-11-09 while SH1393 added the panel's field section to the same page.
-
-Fix: rewrite the section from `docs/agents/console-ui.md` § SH335 and the code: the
-console's merge verb, the session, the ACL and publish permission it is held to, what
-`If-Match` still means on that path if it is honoured there (check `ShPostUnifiedAPI`
-before writing it), and that the CDA endpoints remain for an external front end's own
-editor (`@viglet/shio-editor-cors`). Then run the docs suites and `shio-docs-sync`'s
-judgement pass over the rest of the page, which has not been read against the code since
-SH335 either.
-
 ### XI.125 The form drawn beside the page, one save (SH1399)
 
 SH1394 made the Universal Editor where a page opens (the palette, the Pages view, the

@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1398** (deps: —) **The Universal Editor docs say it saves through a write-scope delivery token, which SH335 removed** — A reader following the page looks for a token setting the console no longer has. → §XI.124
 - 📋 **SH1399** (deps: SH1394 ✅) **The Universal Editor's Fields button leaves for the post form, which saves on its own and forgets the selection** — A page's unseen fields are still edited in a second place with a second save, not beside the page. → §XI.125
 
 ## Block BJ — What a visitor finds first: release, links and a demo

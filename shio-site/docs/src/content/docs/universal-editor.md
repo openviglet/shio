@@ -186,32 +186,39 @@ page, the draft is seeded from it first, so the live page is untouched until an 
 publish. A preview client reading with a preview-scoped token renders that draft, which is
 what makes "see it before anyone else does" work with no second deployment.
 
-Three endpoints do the work, and they are ordinary delivery-API calls:
+The editor saves on your console session, with no token to set up: one merge per post,
 
 ```http
-GET   /api/v2/cda/post/{id}/editable    # the post plus its field schema
-PATCH /api/v2/cda/post/{id}            # merge an edit into the draft
-POST  /api/v2/cda/post/{id}/publish    # publish it
+PATCH /api/v2/post-unified/{id}     {"attrs": {"heading": "..."}, "publish": false}
 ```
 
-`editable` returns the **whole field schema**, not just the fields the page happens to
-annotate, so the editor's panel can offer every field the post type declares, including
-the ones no template exposed.
+with the fields you changed in `attrs`, and `"publish": true` when you press **Publish**. It is
+held to the same permissions as the post's own form: you need write permission on the post to
+save, and publish permission as well to publish. A merge only writes the fields it names, so two
+curators editing different fields of one page do not overwrite each other.
 
-The merge can be made conditional. `editable` answers an `ETag` for the post as it is now.
-Send it back as `If-Match` on the `PATCH`, and if someone else changed the post in between, the
-merge is refused with `409 Conflict` (a `stale-expectation` problem saying what changed) and nothing
-is written. Every successful merge
-answers the post's new `ETag`, so a second change can be pinned to the first. Without
-`If-Match`, a merge is applied unconditionally, as before.
+The merge can be made conditional. Reading a post answers an `ETag` for it as it is now. Send it
+back as `If-Match` on the `PATCH`, and if someone else changed the post in between, the merge is
+refused with `409 Conflict` (a `stale-expectation` problem saying what changed) and nothing is
+written. Every successful merge answers the post's new `ETag`, so a second change can be pinned
+to the first. Without `If-Match`, a merge is applied unconditionally.
 
 The editor has its own [assistant dock](/docs/content-console/#the-assistant-dock), at the foot
 of the properties panel so it never covers the page you are editing. While a save is in
 flight it shows the save working. When it lands it names the fields that were saved, and a
 refused save shows the server's explanation there.
 
-Writes need a token of **write** scope, and the console uses a credential-less request for
-them: the token authenticates, not your session cookie.
+An editor of your own, on a front end that is not Viglet Shio's, saves through the delivery API
+instead, with a token of **write** scope, since it has no console session:
+
+```http
+GET   /api/v2/cda/post/{id}/editable    # the post plus its whole field schema
+PATCH /api/v2/cda/post/{id}            # merge an edit into the draft
+POST  /api/v2/cda/post/{id}/publish    # publish it
+```
+
+`editable` returns the **whole field schema**, not just the fields the page happens to annotate,
+and takes `If-Match` the same way.
 
 ---
 
