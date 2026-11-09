@@ -39,11 +39,15 @@ const DOCS_LABELS = /\*\*Shio (Native|Package)\*\*/gu;
 /** Prose only: fenced code, inline code, link targets and HTML tags are technical and stay. */
 function docsProse(text) {
   let fence = false;
+  let diagram = false;
   return text.split(/\r?\n/u).map((line) => {
     if (/^\s*(```|~~~)/u.test(line)) {
+      // SH1374: a Mermaid block renders as a diagram whose labels a reader sees, so it is prose.
+      diagram = !fence && /mermaid/u.test(line);
       fence = !fence;
       return "";
     }
+    if (diagram) return line;
     // SH1377: a tag's attributes are kept (a LinkCard's description is text a visitor reads); only
     // the addresses in it go, with imports. Stripping whole tags is how the .mdx cards were missed.
     if (fence || /^\s*import\s/u.test(line)) return "";

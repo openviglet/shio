@@ -119,6 +119,15 @@ Five rules for editing any of it:
   crawler outputs and the prose of the docs pages, and names its exceptions: the
   historical changelog, and the console's own provider labels (**Shio Native**,
   **Shio Package**), which a page has to spell the way the screen does.
+- **The rendered pages are checked, not only the sources (SH1374).**
+  [`scripts/rendered-contract.test.mjs`](scripts/rendered-contract.test.mjs)
+  reads `dist/` after `pnpm run build:site`: no bare product name in any page's
+  text, labels, metadata or diagram labels, a title, canonical and Open Graph on
+  every page, JSON-LD that parses with a breadcrumb starting at Viglet Shio,
+  internal links and anchors that resolve, and a Markdown twin for every
+  marketing route. Locally a missing or stale build is reported and skipped; CI
+  builds the site first and sets `SHIO_REQUIRE_SITE_BUILD=1`, which turns that
+  skip into a failure.
 - **The home decides; the depth lives on its own page (SH1372).** The home
   renders what a visitor chooses with: the hero, the four ways in, who runs
   it, the showcase, the three seats, what it can do, what stops an agent, an

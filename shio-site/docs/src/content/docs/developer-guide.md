@@ -59,7 +59,7 @@ rather than misleading a reader here.
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'fontSize': '13px', 'primaryColor': '#fff', 'primaryBorderColor': '#c0c0c0', 'lineColor': '#888', 'textColor': '#333'}}}%%
 graph TD
-    A["💻 Your IDE"] -->|"mvn spring-boot:run"| B["☕ Shio backend\nSpring Boot / Java 21"]
+    A["💻 Your IDE"] -->|"mvn spring-boot:run"| B["☕ Viglet Shio backend\nSpring Boot / Java 21"]
     A -->|"pnpm dev"| C["⚛️ React console\nlocalhost:5173"]
     A -->|"shio pull / push"| D["📄 shio/content/**\ncontent as files"]
     C -->|"REST"| B

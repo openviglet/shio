@@ -69,12 +69,18 @@ jobs:
       - name: Build the console, so the size gate measures this tree
         run: pnpm run build:console
 
+      # SH1374 — the public site, so the rendered-contract check reads the pages this tree produces:
+      # full names, titles, canonical and Open Graph, JSON-LD, internal links and Markdown twins.
+      - name: Build the public site, so the rendered contract is checked on this tree
+        run: pnpm run build:site
+
       # SH1126 — and having built it, this run refuses to be told nothing. Locally a stale build is a
       # diagnostic (a source edit must not demand a build before `pnpm test`); here "not measured"
       # means the build step and the suite disagree about the tree, which is a failure.
       - run: pnpm test
         env:
           SHIO_REQUIRE_CONSOLE_BUILD: "1"
+          SHIO_REQUIRE_SITE_BUILD: "1"
 
       # SH665 — the console's own lint, which had not run since ESLint 10. Its config extended a
       # preset whose `plugins` key ESLint 10 rejects, so `eslint` exited 2 on every file including

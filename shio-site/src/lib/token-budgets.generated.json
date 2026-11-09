@@ -37,7 +37,7 @@
     {
       "label": "Add a type and ten posts",
       "calls": 3,
-      "tokens": 2100,
+      "tokens": 2200,
       "callRatio": 3.6,
       "tokenRatio": 3
     },
