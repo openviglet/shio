@@ -12,19 +12,19 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1387** (deps: decision: may an install open a form) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — Opening it at install is what SH632 keeps out of templates; a person decides if the Marketplace may offer it. → §XI.114
+- 📋 **SH1387** (deps: —) **Quilhara's contact and trip pages render no form, though the showcase matrix says both take submissions** — Decided: the Marketplace dialog offers an explicit accept-enquiries step, so the admin's click opens the form, not the package. → §XI.114
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
+- 📋 **SH1319** (deps: SH1315 ✅) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
-- ⏳ **SH1342** (deps: a hosted Viglet Cloud instance) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
+- 📋 **SH1342** (deps: —) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
 
 ## Block F — Market positioning / bold bets
 
-- 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
+- 📋 **SH1375** (deps: SH1362 ✅) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Decided: a one-time handoff code, exchanged on the site host for a session scoped to that host alone. → §VI.11
 
 ## Priority
 

@@ -257,9 +257,10 @@ references); the form-first editor stays the builder's default for types with no
 rendered page (menus, strings). One entry point: opening a page from anywhere goes to
 the same place, and the mode switch keeps the selection.
 
-This is a decision before it is code. The deliverable is the decision recorded in
-`docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
-editors, and then the merge, filed as its own tasks.
+**Decided 2026-11-09: the Universal Editor is the primary**, with the form as its side
+panel and the form-first editor kept for types with no rendered page. The deliverable is
+the decision recorded in `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3
+and 6 measured in both editors, and then the merge, filed as its own tasks.
 
 ### XI.114 Quilhara's forms take submissions out of the box (SH1387)
 
@@ -280,8 +281,8 @@ template setting, since a folder chosen in a template is a folder an attacker ch
 and that enabling it is a console-admin act. A middle path: the Marketplace dialog, run
 by an admin, offers an explicit "accept enquiries now" step that creates the site-form
 row and a FORM token and fills the sections, so the admin's click opens it, not the
-package. Whether that click is enough, when the folder and type still come from the
-package, is the decision.
+package. **Decided 2026-11-09: yes, build that step**; the admin's click is enough, with
+the folder and type from the package shown in the dialog before it opens.
 
 **Done when** a person rules: if yes, build the dialog step and prove a clean release
 instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
@@ -592,8 +593,9 @@ host has to see a session. Two ways to give it one, and the choice is a security
 - a one-time handoff code, minted after sign-in and exchanged on the site host for a
   session scoped to that host alone, the shape SH1360 uses for device tokens.
 
-Done when a person picks one, an anonymous visitor on a site host signs in and lands
-back on the site host signed in, and a test covers the returnUrl check and the session.
+**Decided 2026-11-09: the one-time handoff code**; no site host receives the console
+session. Done when an anonymous visitor on a site host signs in and lands back on the
+site host signed in, and a test covers the returnUrl check and the session.
 
 ## VII. Content portability
 
