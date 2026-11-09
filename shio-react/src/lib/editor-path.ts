@@ -5,6 +5,8 @@
  * site, so a page reaches the editor without a link drawn on another one (a draft nothing links to,
  * most of all), and the address follows the frame, so a reload or a shared link keeps the page.
  */
+import { pageTypesOf, pathOf, type PageSite } from "./site-pages.ts"
+
 /** The query parameter that names the page. */
 export const EDITOR_PATH_PARAM = "path"
 
@@ -21,6 +23,19 @@ export function framePath(requested: string | null): string {
 export function editorHref(editorRoute: string, siteId: string, furl?: string | null): string {
   const rest = (furl ?? "").replace(/^\/+/, "")
   return `${editorRoute}/${siteId}${rest ? `?${EDITOR_PATH_PARAM}=${encodeURIComponent(rest)}` : ""}`
+}
+
+/**
+ * A search result as a page the editor can open: its site's id and its path, or null when the
+ * address names no site in `sites` or its type is not one that site renders as a page (a section, a
+ * menu or a theme has no page of its own to open).
+ */
+export function pageOnSite(address: string, type: string | undefined,
+  sites: readonly (PageSite & { id?: string })[]): { siteId: string; path: string } | null {
+  if (!type) return null
+  const site = sites.find((each) => address === `post:${each.name}` || address.startsWith(`post:${each.name}/`))
+  if (!site?.id || !pageTypesOf(site).has(type)) return null
+  return { siteId: site.id, path: pathOf(address, site.name) }
 }
 
 /**

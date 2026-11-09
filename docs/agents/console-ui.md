@@ -4420,11 +4420,14 @@ redirect to `/bento/...` keeps the query, checked live.
 
 The entries: **Edit on the page** beside Preview in the post editor, for a post its site renders
 as a page (`renderable === true`, SH1167's check, linking with `post.furl`, which is the page's path
-within the site), and an icon on each page row of the site's Pages view (`node.path`). A palette or
-search result reaches it through the post editor, one hop; a direct palette entry is the rest of
-the line. Measured on a clean instance: `preview-draft-ue` completes at 2 clicks, 1 key, 2 screens,
-the form's own cost, and `change-headline-ue` went from 6 clicks over 4 screens to 4 over 2, plus one
-key (selecting the old heading, which the form's field does in place).
+within the site), an icon on each page row of the site's Pages view (`node.path`), and, in the
+palette, an **Edit on the page: <title>** row right after each result that is a page
+(`pageOnSite`: the result's site from the address, and its type among `pageTypesOf` that site;
+the sites are the palette's own `useSites` read, so a section, menu or theme gets no such row).
+Measured on a clean instance through the palette: `preview-draft-ue` is 1 click, 1 key, 1 screen,
+cheaper than the form's preview (2/1/2), and `change-headline-ue` went from 6 clicks over 4 screens
+(SH1319) to 3 clicks, 2 keys, 1 screen, against the form's 4/1/1; the extra key is selecting the old
+heading, which the form's field replaces in place.
 
 ## The content browser has one control row (SH1307)
 

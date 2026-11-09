@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { editorHref, followedAddress, framePath } from "../src/lib/editor-path.ts"
+import { editorHref, followedAddress, framePath, pageOnSite } from "../src/lib/editor-path.ts"
 
 /**
  * SH1392 — the Universal Editor opens a named page, and its address follows the frame.
@@ -45,7 +45,23 @@ test("SH1392: the address follows the frame within the site, and nowhere else", 
     "SH1392: nor one that left the site")
 })
 
+test("SH1392: a search result is a page to open only when its site renders its type as one", () => {
+  const sites = [
+    { id: "s1", name: "Acme", postTypeLayout: "{\"Page\":\"MAIN\"}" },
+    { id: "s2", name: "Acme Blog", pageType: "Post" },
+  ]
+  assert.deepEqual(pageOnSite("post:Acme/pricing", "Page", sites), { siteId: "s1", path: "/pricing" })
+  assert.deepEqual(pageOnSite("post:Acme/", "Page", sites), { siteId: "s1", path: "/" })
+  assert.deepEqual(pageOnSite("post:Acme Blog/hello", "Post", sites), { siteId: "s2", path: "/hello" },
+    "SH1392: a site whose name another site's begins with is still told apart")
+  assert.equal(pageOnSite("post:Acme/sections/pricing/hero", "SectionHero", sites), null,
+    "SH1392: a section has no page of its own to open")
+  assert.equal(pageOnSite("post:Elsewhere/x", "Page", sites), null)
+})
+
 test("SH1392: the editor frames the requested page, and the page entries offer it", () => {
+  assert.match(read("app", "system", "bento.root.page.tsx"), /pageOnSite\(row\.address, row\.type, sites \?\? \[\]\)/u,
+    "SH1392: the palette offers a page on itself, beside its form")
   const editor = read("app", "editor", "visual-editor.page.tsx")
   assert.match(editor, /siteDestination\(site\.data, framePath\(requestedPath\)\)/u,
     "SH1392: the frame's first src is the requested page, not the site's home")

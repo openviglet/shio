@@ -241,27 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.119 The Universal Editor opens a named page (SH1392)
-
-`/bento/universal-editor/:siteId` frames `/preview/<site>/?editor=true` and takes no
-page. Every other page arrives only through a link drawn on one already framed, so a
-draft that nothing links to cannot be opened in the editor at all, and a linked one
-costs the walk to it: SH1319 measured `change-headline-ue` at four screens, three of
-them the way to the page. `preview-draft-ue` is held blocked on this id in
-`curator-task-budget.json`.
-
-Build: the route takes the page, as `?path=<friendly url>` (the SH79 grammar's own part
-after the site, so `post:<site>/pricing` maps to `?path=pricing`, and the home stays the
-bare route). The frame's first `src` is `/preview/<site>/<path>?editor=true`, and the
-url follows in-frame navigation (SH1036 already reports each bridged load's url), so a
-reload or a shared link keeps the page. Then the entries: a page row in search and the
-palette, and the site's pages view (SH1316), each offer "Edit on the page" beside
-opening the form, and the post editor of a page gets the same action.
-
-Done when `preview-draft-ue` completes and is recorded, and `change-headline-ue` drops
-the screens the way to the page cost. Opening the editor by default from those entries
-is the merge line filed beside this one.
-
 ### XI.120 The Universal Editor's panel writes every field kind (SH1393)
 
 Selecting a field the page does not type into (an image, a date, a check box, a content

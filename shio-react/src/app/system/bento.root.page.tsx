@@ -29,6 +29,7 @@ import { ShLogo } from "@/components/logo/sh-logo"
 import { ModeToggle } from "@/components/mode-toggle"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
+import { editorHref, pageOnSite } from "@/lib/editor-path"
 // SH1028 — the palette answers with content and verbs, not only with destinations.
 import { commandsFor, contextOf } from "./bento-commands"
 import { rank, remember } from "@/lib/command-match"
@@ -238,14 +239,28 @@ function BentoShellRoot() {
     queryFn: ({ signal }) => searchService.search({ q: term }, 8, { signal }),
     enabled: term.length >= 2,
   })
-  const found = useMemo<PaletteRow[]>(() => (read.data?.results ?? []).map((row) => ({
-    id: row.address,
-    label: row.title || row.address,
-    // SH1324 — live or not, by `published`: `state` is the working row, DRAFT on a live post too.
-    description: paletteDescription(row.type, t(lifecycleKey(row.published, row.changed))),
-    route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
-    confirm: false,
-  })), [read.data, t])
+  const found = useMemo<PaletteRow[]>(() => (read.data?.results ?? []).flatMap((row) => {
+    const description = paletteDescription(row.type, t(lifecycleKey(row.published, row.changed)))
+    const form: PaletteRow = {
+      id: row.address,
+      label: row.title || row.address,
+      // SH1324 — live or not, by `published`: `state` is the working row, DRAFT on a live post too.
+      description,
+      route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
+      confirm: false,
+    }
+    // SH1392 — a page is also offered on itself, in the Universal Editor, beside its form.
+    const page = pageOnSite(row.address, row.type, sites ?? [])
+    return page
+      ? [form, {
+          id: `${row.address}|on-page`,
+          label: t("palette.editOnPage", { title: row.title || row.address }),
+          description,
+          route: editorHref(ROUTES.UNIVERSAL_EDITOR, page.siteId, page.path),
+          confirm: false,
+        }]
+      : [form]
+  }), [read.data, sites, t])
   const searching = wanted !== term || (term.length >= 2 && read.isFetching)
 
   const onPaletteQuery = useCallback((next: string) => setQuery(next), [])

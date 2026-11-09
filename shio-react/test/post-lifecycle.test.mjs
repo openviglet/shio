@@ -47,7 +47,8 @@ test("SH1324: a palette row's type and state are set apart from its title", () =
 
 test("SH1324: the palette and the header ask whether the post is live, not which row they read", () => {
   assert.match(read("app", "system", "bento.root.page.tsx"),
-    /description: paletteDescription\(row\.type, t\(lifecycleKey\(row\.published, row\.changed\)\)\)/u,
+    // SH1392 named it once, for the form's row and the page's own: `description =` or `description:`.
+    /description(?::| =) paletteDescription\(row\.type, t\(lifecycleKey\(row\.published, row\.changed\)\)\)/u,
     "SH1324: the palette reads the working row's state again, which is DRAFT on every live post")
   assert.match(read("app", "content", "post.edit.page.tsx"), /t\(lifecycleKey\(isLive, draftDiffers\(post, liveRow\)\)\)\]/u,
     "SH1324: the editor's header says Draft above a badge saying the page is live")

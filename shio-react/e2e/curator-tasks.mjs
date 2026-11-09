@@ -205,12 +205,14 @@ async function editorFrame(page, matches) {
 }
 
 /**
- * SH1392 — a page opens in the Universal Editor on itself: find it, then "Edit on the page" from its
- * post editor. Returns the frame once the bridge is editing that page.
+ * SH1392 — a page opens in the Universal Editor on itself: Ctrl+K, the title, and the palette's
+ * "Edit on the page" row for it. Returns the frame once the bridge is editing that page.
  */
 async function openPageInEditor(page, title, path) {
-  await openFromSearch(page, title, "Page")
-  await page.getByRole("link", { name: /^(editar na página|edit on the page)$/i }).first().click()
+  await page.keyboard.press("Control+k")
+  await page.getByRole("combobox").first().fill(title)
+  await page.getByRole("option", { name: new RegExp(`^(editar na página|edit on the page): ${title}`, "i") })
+    .first().click()
   return editorFrame(page, (url) => url.includes(path) && url.includes("editor=true"))
 }
 

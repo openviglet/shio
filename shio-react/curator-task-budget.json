@@ -44,22 +44,22 @@
       "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
     },
     "change-headline-ue": {
-      "clicks": 4,
+      "clicks": 3,
       "keys": 2,
-      "screens": 2,
-      "ms": 1472,
-      "why": "SH1392: Ctrl+K, the Pricing page, Edit on the page, the heading, Ctrl+A and type, Publish. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319); the extra key against the form is selecting the old text, where the form's field is filled in place."
+      "screens": 1,
+      "ms": 862,
+      "why": "SH1392: Ctrl+K, the palette's Edit on the page row for Pricing, the heading, Ctrl+A and type, Publish, on one screen. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319); the extra key against the form is selecting the old text, which the form's field replaces in place."
     },
     "replace-image-ue": {
       "blocked": "SH1393",
       "why": "SH1319: selecting the hero's image shows the post form's image widget in the properties panel, read-only (SH1037), so a curator can see the file and cannot change it."
     },
     "preview-draft-ue": {
-      "clicks": 2,
+      "clicks": 1,
       "keys": 1,
-      "screens": 2,
-      "ms": 1329,
-      "why": "SH1392: Ctrl+K, the draft, Edit on the page, and the editor frames the draft itself, as the visitor will see it: the same cost as the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from."
+      "screens": 1,
+      "ms": 648,
+      "why": "SH1392: Ctrl+K and the palette's Edit on the page row for the draft, and the editor frames the draft itself as the visitor will see it: one click and one screen fewer than the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from."
     }
   }
 }

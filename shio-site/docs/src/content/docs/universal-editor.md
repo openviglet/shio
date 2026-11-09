@@ -53,10 +53,11 @@ the only place the mapping from node to post exists.
 
 ## Opening a page
 
-The quickest way in is from the page itself: a page's editor has **Edit on the page** beside
-**Preview**, and each row of a site's **Pages** view has the same action. Either opens the
-Universal Editor on that page, drafts included, so a page that nothing links to yet can be
-edited where it will be read.
+The quickest way in is from the page itself. Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type the
+page's title: beside each page the search finds there is an **Edit on the page** row. A page's
+editor has the same action beside **Preview**, and so does each row of a site's **Pages** view.
+Each opens the Universal Editor on that page, drafts included, so a page that nothing links to
+yet can be edited where it will be read.
 
 You can also go to **Universal Editor** in the console, which lists the sites and has an
 entry field for an external URL; picking a site opens its home. The page being edited is part
