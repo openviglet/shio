@@ -1197,31 +1197,6 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 
 ## XCVII End-user documentation for 2026.3 (docs-shio)
 
-### XCVII.3 The largest docs pages, rewritten one per task (SH1403)
-
-Once SH1401 measures the debt and SH1402 says how a page is written, the existing pages
-are brought to that shape one per task, never in one sweep: a sweep across 39 pages is a
-diff nobody can review, and one page per commit keeps each rewrite checkable against its
-own lint entry.
-
-The order is by reader traffic and size. universal-editor.md first, since it is the page
-that shows the problem most plainly and the curator's main surface. Then the six pages
-over 2,700 words: agent-surface.md, content-console.md, website-development.md,
-replication.md, cli.md and administration-guide.md.
-
-Each rewrite does the same four things. It classifies every section by Diátaxis and
-splits the ones that mix types, turning procedures into Steps and settings into tables.
-It removes text written for the engineer rather than the user: rationale, test claims,
-internal ids and release-relative words. It gives the page a one-sentence opening that
-says who it is for and what they can do after reading. And it keeps every anchor that
-COVERAGE.md or another page links to, or updates the link in the same commit, which
-docs-links.test.mjs proves.
-
-A page is done when the SH1401 lint drops it from its named list, pnpm conformance:docs
-and the shio-site build are green, and its COVERAGE rows still resolve. Splitting a page
-into two is allowed when the Diátaxis types will not share one, and then the sidebar and
-the hub card grid change in the same commit.
-
 ### XCVII.4 The external URL hint names a retired attribute prefix (SH1410)
 
 The Universal Editor's site list has an **Open External URL** field, and the hint under

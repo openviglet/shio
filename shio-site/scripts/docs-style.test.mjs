@@ -73,7 +73,6 @@ const EM_DASH = /—/;
  * rewrite task removes its page's entry in the same commit.
  */
 const BASELINE = {
-  "administration-guide.md": ["frontmatter-description", "release-relative"],
   "agent-builds-it.mdx": ["frontmatter-description"],
   "agent-safety.md": ["frontmatter-description"],
   "blueprints.md": ["fence-language"],

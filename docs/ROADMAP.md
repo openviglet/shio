@@ -20,7 +20,6 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH1409** (deps: SH1402 ✅) **administration-guide.md runs 2,700 words with settings described in prose instead of a reference table** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1412** (deps: —) **shio-docs-write tells a writer a bare Shio is fine after the first mention, and the full-names lint fails the page** — The skill and the gate disagree, so every Block R rewrite that follows the skill lands red on SH1369. → §XCVII.5
 
 ## Block BF — The visual editor becomes a composer

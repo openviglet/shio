@@ -1,314 +1,283 @@
 ---
 title: Administration
-description: "The operator's half of the Viglet Shio console: home, users, groups, roles, permissions, API tokens, tenants, providers, email, webhooks, activity and the agent review queue."
+description: "Run a Viglet Shio instance from the console: users and access, API and device tokens, members-only pages, sites, tenants and the agent review queue."
 sidebar:
   order: 1
 ---
 
-Everything an operator configures lives in the Viglet Shio console under **Administration**,
-at `/bento/admin` on your instance. This page walks those screens in order.
-
-The curator's half (the content browser, the post form, copy and move, the trash) is on
+This page is for operators: the people who set up who can do what on a Viglet Shio instance.
+Everything an operator configures lives in the console under **Administration**, at
+`/bento/admin`. The page starts with the common tasks, then describes each screen. The curator's
+half (the content browser, the post form, copy and move, the trash) is on
 [The content console](/docs/content-console/).
+
+---
+
+## Change the default password
+
+On first startup the instance creates an administrator account, user `admin` with password
+`admin`.
+
+1. Sign in to the console as `admin`.
+2. Open **Administration**, then **Users**, and choose `admin`.
+3. Set a new password and choose **Save**.
+
+:::caution
+Do this before the instance is reachable by anyone else.
+:::
+
+## Create an API token
+
+1. Open **Administration**, then **API Tokens**.
+2. Choose **New API Token**.
+3. Pick the **scope** (see [API tokens](#api-tokens)) and the environment, **Production** or
+   **Preview**.
+4. To limit the token to some sites, turn **All sites** off and pick them.
+5. For an agent token that may publish, turn on **May publish**.
+6. Choose **Create token**, and copy the value: it is shown once.
+
+Send the value in the `Key` header:
+
+```bash
+curl -H 'Key: YOUR_TOKEN' http://localhost:2710/api/v2/site
+```
+
+## Make a folder members-only
+
+A folder is gated through the agent surface, with the `folder.visibility` batch op:
+
+1. Set `data.visibility` to `members` on the folder's address, and optionally `data.groups` to
+   the groups it is for. With no groups, any signed-in user may read it.
+2. To send anonymous visitors to sign in instead of a 404, set `membersLogin` on the site with
+   `site.upsert`.
+
+Everything inside the folder follows. Gate a single post the same way with `post.visibility`,
+and open a folder again with `public`. What a visitor then sees is in
+[Members-only pages](#members-only-pages-who-may-read-the-published-site).
+
+## Serve each site at its own hostname
+
+1. Set `shio.sites.host-domain=sites.example.org`, or the `SHIO_SITES_HOST_DOMAIN` environment
+   variable.
+2. Point a wildcard DNS record and a certificate for `*.sites.example.org` at the instance.
+3. Restart the instance.
+
+Each site is then served at `<friendly-url>.sites.example.org`; see
+[A site at its own address](#a-site-at-its-own-address) for the rules.
 
 ---
 
 ## Finding your way around
 
-The **navigation rail** down the left carries **Home** and two areas (**Content** and
-**Administration**) rather than a list of every screen. Each area opens its **hub**, which
-lists every screen of the area as a tile in small labelled groups; Administration's are
-*Access*, *Agent and audit*, *Integrations* and *This instance*, and `/bento/admin` lands
-there. To reach a named screen directly, use the **command palette**: <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> from anywhere, or
-<kbd>/</kbd> when you are not typing in a field. It searches descriptions as well as
-titles, so *credentials* finds API Tokens.
+The **navigation rail** down the left carries **Home** and two areas, **Content** and
+**Administration**. Each area opens its **hub**, which lists every screen of the area as a
+tile in small groups; Administration's are *Access*, *Agent and audit*, *Integrations* and
+*This instance*, and `/bento/admin` lands there. To reach a named screen directly, use the
+**command palette**: <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> from anywhere, or <kbd>/</kbd>
+outside a field. It searches descriptions as well as titles, so *credentials* finds API Tokens.
 
 | Area | Screens |
 |---|---|
 | **Content** | Sites · Search · Post Types · Media Library · Trash · Universal Editor |
 | **Administration** | Users (users, groups, roles) · API Tokens · Tenants · Authentication Providers · Exchange Providers · Email · Webhooks · Activity · Agent Review · GraphQL |
 
-Every list of records here (users, groups, roles, tokens, providers, webhooks, tenants,
-and Content's sites) is a **table** you can sort by its column headers, with the create
-action at the top right. Every editor keeps **Save** in its header, and a bar with Save
-fades in once you scroll the header away; it tells you when a field has an **unsaved
-change**. Delete, and a tenant's Suspend, are in the header's **⋯** menu.
-
-**Tenants appears only on a multi-tenant instance.** `shio.multi-tenant` is off by
-default, and a single-tenant install is not offered a screen for managing tenants it
-does not have.
-
-:::note[Addresses moved from `/console` to `/bento`]
-`/console/admin/tokens` is now `/bento/admin/tokens`, and so on. Old addresses redirect,
-carrying any query string and anchor. If your instance is multi-tenant, note that the
-`/{tenant}/console/…` prefix is gone: which tenant you are in comes from your session,
-not from the URL.
-:::
+| Pattern | Behaviour |
+|---|---|
+| Lists of records | A **table** you sort by its column headers, with the create action at the top right |
+| Editors | **Save** in the header, and a bar with Save once you scroll the header away, which says when a field has an **unsaved change** |
+| Delete, Suspend | In the header's **⋯** menu |
+| **Tenants** | Shown only on a multi-tenant instance (`shio.multi-tenant`, off by default) |
+| Addresses under `/console` | Redirect to `/bento`, keeping the query string and anchor. On a multi-tenant instance the tenant comes from your session, not from the URL |
 
 ## Home
 
-The console's landing screen, at `/bento`. It shows how many sites and post types this
-instance has, a list of recent content changes, and shortcuts to the things you do most:
-create a site, browse content, search, model a post type, manage webhooks, open the
-activity log.
-
-Every number on it is a link into the screen it counts.
+The console's landing screen, at `/bento`: how many sites and post types the instance has,
+recent content changes, and shortcuts to creating a site, browsing content, searching, modelling
+a post type, webhooks and the activity log. Every number is a link into the screen it counts.
 
 ---
 
 ## Users
 
-Create, modify and delete users under **Administration → Administration**. A user can
-sign in to the console, be the subject of a permission grant, and own content.
+**Administration → Users** creates, changes and deletes users. A user can sign in to the
+console, be the subject of a permission grant, and own content.
 
-### Default user
-
-On first startup Viglet Shio creates a default administrator account:
-
-| Field | Value |
+| Property | Holds |
 |---|---|
-| **Username** | `admin` |
-| **Password** | `admin` |
-
-:::caution
-Change the default password immediately after first login.
-:::
-
-### User properties
-
-- Username and password
-- Email address
-- First and last name
-- Group memberships
+| Username, password | The sign-in |
+| Email address | |
+| First and last name | |
+| Groups | The groups the user belongs to |
 
 ---
 
 ## Groups and roles
 
-**Groups** collect users. **Roles** name a capability. Both exist so a permission grant
-can be written once against many people rather than once per person, and both are
-managed on the same Administration screen.
+**Groups** collect users and **roles** name a capability, so a permission grant can be written
+once for many people. Both are managed on the Users screen. A grant accepts a **user**, a
+**group** or a **role** as its subject.
 
-A permission grant accepts a **user**, a **group** or a **role** as its subject, so which
-of the three you use is a question of how you want to maintain it, not of what it can
-express.
-
-A **group's page lists its members**. Add one by choosing a user who is not yet a member,
-and remove one from its row; each change is saved at once. Each member's name links to
-their user page. Below the members, the page lists the **roles** that name the group, which
-is what its members may do; each links to the role, where that relation is changed.
+A **group's page lists its members**: add one by choosing a user who is not yet a member, and
+remove one from its row; each change is saved at once. Below the members, the page lists the
+**roles** that name the group, each linking to the role, where that relation is changed.
 
 ---
 
 ## Permissions
 
-Viglet Shio has two independent permission layers. They answer different questions and are
-configured in different places.
+Two independent layers, configured in different places.
 
-### Console access
+| Layer | Decides | Set on |
+|---|---|---|
+| Console access | Whether somebody can sign in, and which screens they reach | Their user, groups and roles |
+| Content permissions (the ACL) | Who may read or write a folder or post | The item's **Permissions** action in the content browser |
 
-Whether somebody can sign in to the console at all, and what they may do once inside, is
-decided by their user, groups and roles. This is the layer that keeps the Administration
-screens away from a content editor.
-
-### Content permissions (the ACL)
-
-Any **folder** or **post** can carry its own grants. Open the item's **Permissions**
-action in the content browser.
-
-- A grant is a **subject** (user, group or role) plus a **permission**: **Read** or
-  **Write**.
-- Grants are **inherited** down the tree: a grant on a folder covers what is inside it.
-- An item with **no grants is open**: anyone signed in can reach it. The console says
-  so on the panel: *"No restrictions: anyone signed in can access this. Add a grant to
-  restrict it."* Adding the first grant is what starts restricting it.
-
-The same ACL is enforced on every surface. An agent's token reaches exactly what a
-curator's session reaches, and no more: a copy needs read on its sources, a move needs
-write on both ends. See [Letting an agent in](/docs/agent-safety/).
+| ACL rule | Behaviour |
+|---|---|
+| A grant | A **subject** (user, group or role) plus a **permission**, **Read** or **Write** |
+| Inheritance | A grant on a folder covers what is inside it |
+| No grants | The item is open to anyone signed in, and the panel says so. The first grant starts restricting it |
+| Surfaces | The same ACL holds on every surface: an agent's token reaches exactly what a curator's session reaches. A copy needs read on its sources, a move needs write on both ends. See [Letting an agent in](/docs/agent-safety/) |
 
 ### Members-only pages (who may read the published site)
 
-The ACL decides who edits. A separate rule decides who may **read a published page**: a
-folder can be made **members-only**, for any signed-in user or for named groups, and
-everything inside it follows. A member is a Viglet Shio user, so a members area needs no
-second account system.
+The ACL decides who edits. A separate rule decides who may **read a published page**: a folder
+or post can be **members-only**, for any signed-in user or for named groups (see
+[Make a folder members-only](#make-a-folder-members-only)). A member is a Viglet Shio user, so a
+members area needs no second account system.
 
-- On the published site (`/sites/...`) a visitor outside the groups gets the same
-  **404** a missing page gets, so the page is not confirmed to exist. A member reads it,
-  and the response is never stored in a shared cache.
-- That 404 is a page of the site when a browser asks for it: the site's own published
-  `/404` page, in the visitor's language when it has a translation, or a plain "Page not
-  found" page with a link home when the site has none. An API client asking the same
-  address still gets the JSON problem.
-- Listings on public pages (menus, `{{#query}}`, related content, search) leave the
-  gated pages out for that visitor, and the page counts stay exact.
-- The delivery API applies the same rule to the **owner of the token** making the
-  request, in single reads and in every listing.
-- A site can send an anonymous visitor to **sign in** instead of the 404: with
-  `membersLogin` on, the visitor goes to the console login and comes back to the page.
-  On a site served at its own hostname, the visitor signs in at the instance's address
-  (`shio.url`) and comes back to the same page on the site's hostname, signed in there.
-  The console session never leaves the instance: the instance hands the site host a
-  one-time code, good for a minute and only in the browser that started the sign-in, and
-  the site host exchanges it for a sign-in of its own. That sign-in lasts eight hours,
-  opens that one site's members-only pages and nothing else (not the console, not the
-  API, not another site), and is never listed among your API tokens. It ends when you sign
-  out of Viglet Shio, when your account is disabled, or from a sign-out link on the site itself:
-  point it at `/api/v2/site-member/sign-out?to=/` on the site's hostname (`to` is the page to
-  land on).
-- Administrators always read everything, and the preview still shows gated pages to
-  editors, because that is where they are edited.
+| Where | A visitor outside the groups gets |
+|---|---|
+| A page under `/sites/...` | The same **404** a missing page gets. A browser receives the site's published `/404` page, in its language when translated, or a plain "Page not found" page with a link home; an API client receives the JSON problem. A member's response is never stored in a shared cache |
+| Listings (menus, `{{#query}}`, related content, search) | The gated pages left out, with exact counts |
+| The delivery API | The same rule, applied to the **owner of the token**, in single reads and in every listing |
+| The preview | Gated pages shown to editors, since that is where they are edited. Administrators always read everything |
 
-Today a folder is gated through the agent surface: the `folder.visibility` operation,
-with `visibility` set to `members` (and optionally `groups`), or `public` to open it
-again. A single post is gated the same way with `post.visibility`, without moving it
-into a gated folder. The site switch is `membersLogin` on `site.upsert`.
+With `membersLogin` on the site, an anonymous visitor is sent to sign in instead of the 404,
+and comes back to the page.
+
+| Signing in on a site at its own hostname | Behaviour |
+|---|---|
+| Where | At the instance's address (`shio.url`), then back on the site's hostname, signed in there |
+| How | The instance hands the site host a one-time code, valid for a minute and only in the browser that started the sign-in; the console session never leaves the instance |
+| What it opens | That one site's members-only pages, for eight hours: not the console, the API or another site. It is never listed among your API tokens |
+| How it ends | Signing out of Viglet Shio, the account being disabled, or a sign-out link on the site: `/api/v2/site-member/sign-out?to=/` on the site's hostname, where `to` is the page to land on |
 
 ---
 
 ## API tokens
 
-**Administration → API Tokens** mints the keys an external front end or an agent uses.
-A token carries a **scope**, and the scope is the whole of what it may do:
+**Administration → API Tokens** mints the keys an external front end or an agent uses. The
+scope is the whole of what a token may do:
 
 | Scope | What it may do |
 |---|---|
-| **Read** | Read published content only. |
-| **Preview** | Read published content *and* unpublished drafts. |
-| **Write** | Read, plus write content back through the Content Delivery API. |
-| **Agent** | Write through the agent surface (`/api/v2/agent`, `/mcp`) and read drafts. It is **not** a CDA write key: it cannot patch published content directly. |
+| **Read** | Read published content only |
+| **Preview** | Read published content *and* unpublished drafts |
+| **Write** | Read, plus write content back through the Content Delivery API |
+| **Agent** | Write through the agent surface (`/api/v2/agent`, `/mcp`) and read drafts. Not a CDA write key: it cannot patch published content directly |
 
-An Agent token also has a **May publish** switch, **off by default**. An agent token
-without it writes drafts that a curator then approves in Agent Review.
+| Setting | Effect |
+|---|---|
+| **May publish** | Agent tokens only, **off by default**. Without it, an agent writes drafts a curator approves in Agent Review |
+| **Production** / **Preview** | Production reads published content; preview reads draft-preferred, so one front end switches by swapping only the token |
+| **All sites** | On by default; off restricts the token to the sites you pick |
+| Disabled | Revokes the token without deleting it |
 
-A token is additionally tagged as a **Production** or **Preview** environment key:
-production reads published content, preview reads draft-preferred, so the same front end
-can be pointed at either by swapping only the token.
-
-By default a token reaches every site. Turn **All sites** off to restrict it to the sites
-you pick. A token can also be **disabled**, which revokes it without deleting it.
-
-The token value is shown once, when it is created. Send it in the `Key` header:
-
-```bash
-curl -H 'Key: YOUR_TOKEN' http://localhost:2710/api/v2/site
-```
-
-See [Content Delivery API](/docs/headless/content-delivery-api/) for what the token then
-reaches.
+The value is shown once, at creation. See
+[Content Delivery API](/docs/headless/content-delivery-api/) for what a token reaches.
 
 ---
 
 ## Device tokens
 
 A device token lets the Viglet Shio mobile app, or any native client, act as **you** without
-storing your password. It reaches exactly what your own sign-in reaches, and changes to your groups
-apply to it at once.
+storing your password. It reaches what your own sign-in reaches, and changes to your groups apply
+to it at once.
 
-**Administration → My devices** lists your devices, shows when each was last used, and revokes
-them. A revoked device is refused on its next call. You can also **add a device** there: the token
-is shown once, to paste into the app.
+**Administration → My devices** lists your devices with when each was last used, revokes them
+(a revoked device is refused on its next call), and adds one with **Add device**: the token is
+shown once, to paste into the app.
 
-The app can also sign you in itself, through this instance's own sign-in page, with your password
-or your company's single sign-on. Nothing needs pasting, and no secret appears in a URL. An operator
-turns that on by listing the app's redirect address:
+The app can also sign you in itself, through this instance's sign-in page, with your password or
+your company's single sign-on, with nothing to paste. An operator turns that on by listing the
+app's redirect address, which must match exactly:
 
 ```properties
 shio.device-auth.redirect-uris=com.example.shio://signed-in
 ```
 
-The address must match exactly. With the setting empty, which is the default, the in-app sign-in
-is off and My devices is the only way to add a device.
+Empty, the default, leaves in-app sign-in off, and **My devices** is the only way to add a
+device.
 
 ---
 
 ## Tenants
 
-**Administration → Tenants** lists the isolated workspaces on this instance. Each tenant
-has its own content, and the reserved `shio` tenant is the single-tenant default: it
-cannot be renamed, disabled or deleted.
+**Administration → Tenants** lists the isolated workspaces on this instance. Each tenant has its
+own content.
 
-A tenant name is lowercase, has no spaces, and is **immutable once created** because it is
-carried on every row of the tenant's content. A new tenant can be **provisioned** with a
-copy of the default tenant's post-type model; provisioning is idempotent, so running it
-again is safe. A tenant can be **suspended** and later reactivated.
+| Rule | Behaviour |
+|---|---|
+| The `shio` tenant | The single-tenant default: it cannot be renamed, disabled or deleted |
+| Names | Lowercase, no spaces, and **immutable once created**, since the name is carried on every row of the tenant's content |
+| Provisioning | Copies the default tenant's post type model into a new tenant; running it again is safe |
+| Suspension | A tenant can be suspended and later reactivated |
 
-Full detail, including how a request is resolved to a tenant, is on
-[Multi-tenancy](/docs/multi-tenancy/).
+How a request is resolved to a tenant is on [Multi-tenancy](/docs/multi-tenancy/).
 
 ---
 
 ## Authentication providers
 
-**Administration → Authentication Providers** configures where console users are
-authenticated. Viglet Shio ships one provider: **Shio Native**, the built-in username and
-password store described above. The screen exists so an external identity source can be
-added as a second provider instance.
-
-For the authentication and authorization mechanics (sessions, CSRF, CORS, token auth),
-see [Security](/docs/security/).
-
----
+**Administration → Authentication Providers** configures where console users are authenticated.
+The built-in provider is **Shio Native**, the username and password store above; an external
+identity source is added as a second provider. For sessions, CSRF, CORS and token
+authentication, see [Security](/docs/security/).
 
 ## Exchange providers
 
-**Administration → Exchange Providers** configures the sources content can be imported
-from and exported to. Viglet Shio ships one: **Shio Package**, the local exchange archive that
-site import and download use.
-
-See [Import & Export](/docs/import-export/) for the package format and the import flow.
-
----
+**Administration → Exchange Providers** configures where content is imported from and exported
+to. The built-in provider is **Shio Package**, the local archive that site import and download
+use. See [Import & Export](/docs/import-export/).
 
 ## Email
 
-**Administration → Email** configures the outgoing SMTP server Viglet Shio sends mail through:
-host, port, credentials and whether the connection is secured. The same settings can be
-supplied as properties at startup. See the
-[Configuration Reference](/docs/configuration-reference/).
-
----
+**Administration → Email** configures the outgoing SMTP server: host, port, credentials and
+whether the connection is secured. The same settings can be given as properties at startup; see
+the [Configuration Reference](/docs/configuration-reference/).
 
 ## Webhooks
 
-**Administration → Webhooks** manages the outbound notifications Viglet Shio fires when content
-is **published**, **unpublished** or **deleted**. A subscription belongs to a site, so a
-static-site rebuild can be triggered by the one site that changed rather than by all of
-them.
-
-The subscription form, the payload each event carries, how to verify its signature and
-what delivery does and does not guarantee are on [Webhooks](/docs/webhooks/).
-
----
+**Administration → Webhooks** manages the outbound notifications sent when content is
+**published**, **unpublished** or **deleted**. A subscription belongs to a site, so a static-site
+rebuild is triggered by the one site that changed. The form, the payloads, signature
+verification and delivery guarantees are on [Webhooks](/docs/webhooks/).
 
 ## Activity
 
 **Administration → Activity** is the audit trail of content changes: who created, edited,
-published, unpublished, deleted or restored what, and when. Every write through any
-surface (console, CLI, CDA, agent) is recorded here under the name of whoever made it.
+published, unpublished, deleted or restored what, and when. Every write through any surface
+(console, CLI, Content Delivery API, agent) is recorded under the name of whoever made it.
 
 ---
 
 ## Agent review
 
-**Administration → Agent Review** groups an agent's writes into **runs** and shows what
-each one changed. **Approve** publishes the drafts that run wrote; **revert** puts things
-back.
+**Administration → Agent Review** groups an agent's writes into **runs** and shows what each one
+changed.
 
-**The queue opens on what is waiting.** *Waiting* lists the runs with changes still to
-decide, and *All runs* lists every run the agent made. When nothing is waiting the page
-says so and offers the full list, which is a different fact from a filter that matched
-nothing. The assistant dock at the foot of the rail tells you when an agent run finishes.
+| Part | Behaviour |
+|---|---|
+| **Waiting** | The runs with changes still to decide; the queue opens here. When nothing is waiting the page says so and offers the full list |
+| **All runs** | Every run the agent made |
+| A run's name | The intent it declared, or its short id and *no intent declared* |
+| A row | What the run created, updated, published or deleted, with **Approve**, which publishes its drafts, and **Revert**, which puts things back |
+| Several rows | Tick them, and the bar that appears decides all of them with **Approve and publish** |
 
-A run is named by the intent it declared; one that declared none shows its short id and
-*no intent declared*. Each row shows what the run created, updated, published or
-deleted. **Approve** and **Revert** on a row decide that run; tick several rows and the
-bar that appears decides all of them at once with **Approve and publish**.
-
-This is the moderation step for content that arrives from anywhere you did not type it
-yourself, including visitor form submissions, which land as drafts of a post type you
-already modelled. See [Letting an agent in](/docs/agent-safety/).
+The assistant dock reports when an agent run finishes. Review is the moderation step for
+anything you did not type yourself, visitor form submissions included. See
+[Letting an agent in](/docs/agent-safety/).
 
 ---
 
@@ -316,51 +285,38 @@ already modelled. See [Letting an agent in](/docs/agent-safety/).
 
 Sites are managed from **Content → Sites**.
 
-### Creating a site
-
-1. Open **Content → Sites**.
-2. Click **New Site**.
-3. Give it a name, a description and the URL its front end is served from.
-
-### Importing a site
-
-1. Open **Content → Sites**.
-2. Click **Import Site**.
-3. Upload the site package.
-
-### Downloading a site
-
-Use the **Download** action on a site row. The package carries the site's content,
-folders and configuration, and is what **Import Site** reads back.
-
-### Site properties
+| Task | How |
+|---|---|
+| Create | **New Site**, then a name, a description and the URL its front end is served from |
+| Import | **Import Site**, then upload the package |
+| Download | **Download** on the site's row: its content, folders and configuration, the package **Import Site** reads back |
 
 | Property | Description |
 |---|---|
-| **Name** | The site's display name, and the name it is addressed by (`site:<name>`). |
-| **Description** | Free text. |
-| **URL** | The base URL of the site's front end. The Universal Editor frames this, and "Preview" and "View published site" open it. Left empty, "Preview" opens Viglet Shio's draft preview at `/preview/<site>/` and "View published site" opens the published pages at `/sites/<furl>/`, exactly as a visitor receives them. |
+| **Name** | The site's display name, and the name it is addressed by (`site:<name>`) |
+| **Description** | Free text |
+| **URL** | The base URL of the site's front end, which the Universal Editor frames and **Preview** and **View published site** open. Empty, **Preview** opens the draft preview at `/preview/<site>/` and **View published site** opens `/sites/<furl>/` |
 
 ### A site at its own address
 
-An instance can also serve each site at a hostname of its own, such as `quilhara.sites.example.org`.
-Set `shio.sites.host-domain=sites.example.org` (or the `SHIO_SITES_HOST_DOMAIN` environment
-variable), then point a wildcard DNS record and certificate for `*.sites.example.org` at the
-instance. Viglet Shio takes care of the rest: the first label of the host is the site's friendly URL, the
-rest of the path is the page, and the page's canonical URL names the host. The friendly URL has to be
-a valid hostname label (lower-case letters, digits and hyphens); a site whose friendly URL is not one
-keeps its `/sites/<furl>/` address. A site with a **URL** of its own keeps that URL as its canonical
-address. A hostname no site claims answers 404, and the 404 says how to fix it. The setting is empty
-by default, and nothing changes until you set it. Once it is set, **View published site** in the
-console opens the site at its hostname, from the site list, the content browser and the site's own
-page, and the site's API read returns that address as `publishedUrl`.
+With `shio.sites.host-domain` set (see
+[Serve each site at its own hostname](#serve-each-site-at-its-own-hostname)):
+
+| Rule | Behaviour |
+|---|---|
+| Routing | The host's first label is the site's friendly URL; the path is the page |
+| Canonical URL | Names the host, unless the site has a **URL** of its own, which stays canonical |
+| Friendly URL | Must be a valid hostname label (lowercase letters, digits, hyphens); otherwise the site keeps its `/sites/<furl>/` address |
+| Unclaimed hostname | Answers 404, saying how to fix it |
+| Console | **View published site** opens the site at its hostname, and the site's API read returns it as `publishedUrl` |
+| Default | Empty: nothing changes until it is set |
 
 ---
 
 ## Search
 
-Search is configured with properties rather than on a console screen. Site search is
-served by Viglet Shio itself; connecting an external index is an operator setting. See
+Search is configured with properties, not on a console screen. Site search is served by
+Viglet Shio itself; connecting an external index is an operator setting. See
 [Search & Caching](/docs/search-caching/).
 
 ---
@@ -376,5 +332,3 @@ served by Viglet Shio itself; connecting an external index is an operator settin
 | [Configuration Reference](/docs/configuration-reference/) | Every `application.properties` setting |
 | [Import & Export](/docs/import-export/) | Packages and content migration |
 | [Installation Guide](/docs/installation-guide/) | Setup and first-time configuration |
-
----
