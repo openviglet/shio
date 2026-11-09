@@ -1236,9 +1236,10 @@ installing as what every launch channel is missing for Turing, Shio and Dumont
 the console behind it; screenshots and `docker run` ask for trust or for ten minutes
 first.
 
-**Design.** A hosted instance on the Viglet Cloud with the Quilhara showcase applied
-from the marketplace (SH1257 already makes that one click), its rendered pages public,
-and the console open to a guest role that can browse, edit drafts and see the review
-queue but not publish, reset from the blueprint on a schedule. The README and the site
-link it beside `docker run`. If a guest console is too costly to keep safe, the rendered
-showcase alone, with a recorded console tour, is the first step.
+**Design.** A hosted instance on the Viglet Cloud, `shio-demo.viglet.cloud`, deployed
+from `D:\Git\viglet\cloud` (the maintainer, 2026-11-09), with the Quilhara showcase
+applied from the marketplace (SH1257 already makes that one click), its rendered pages
+public, and the console open to a guest role that can browse, edit drafts and see the
+review queue but not publish, reset from the blueprint on a schedule. The README and the
+site link it beside `docker run`. If a guest console is too costly to keep safe, the
+rendered showcase alone, with a recorded console tour, is the first step.
