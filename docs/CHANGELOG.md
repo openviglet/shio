@@ -2109,6 +2109,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1384** — pnpm test is green again in the console: GraphiQL held at 0.39/0.12/5 while the other 23 updates stay, and the design-system pin read and moved to 2026.3.25 (design §XI.113 recorded in `shio-react/test/design-system-waits.test.mjs`).
 - **SH1380** — An upload into an unknown folder, a create naming an unknown post type and a restore of an uncaptured revision now answer 404 with a problem detail naming the id, not Spring's 500 (design §XI.111 recorded in `docs/agents/content-api.md`).
 - **SH1383** — The console runs GraphiQL 1.0 / graphiql 6 on Monaco 0.57: worker imports spelled from the new exports root, the run button and radii back on the console's tokens, and the guards read what GraphiQL now emits (design §XI.112 recorded in `shio-react/test/monaco-workers-resolve.test.mjs`).
+- **SH1388** — The GraphQL explorer talks to /graphql through createTransport, POST-only and token-only as before, so it runs queries with GraphiQL's network stats and imports nothing the toolkit deprecates (design §XI.115 recorded in `shio-react/test/graphiql-transport.test.mjs`).
 
 ## Block BH — One content model, many languages
 

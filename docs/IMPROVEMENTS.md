@@ -287,29 +287,6 @@ package, is the decision.
 instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
 line as the closed form it already is.
 
-### XI.115 The explorer's deprecated GraphiQL fetcher (SH1388)
-
-SH1383 moved the console to `@graphiql/toolkit` 1.0, and in that line
-`createGraphiQLFetcher` is marked deprecated: the explorer page
-(`shio-react/src/app/admin/graphql/graphql.page.tsx`) still builds its fetcher with it,
-and the IDE flags both the import and the call. Nothing is broken today; the next
-toolkit major is where it is likely to go, and that bump would then arrive red for a
-reason no guard names.
-
-What the fetcher has to keep doing, because each part is load-bearing:
-
-- **Token, not session.** It sends the selected CDA token as the `Key` header and passes
-  `credentials: "omit"`, so the `SHJSESSIONID` cookie stays off the request and the session's
-  security context (no `ROLE_CDA`) cannot load first and turn the call into a 403 (SH4).
-- **No incremental delivery.** `enableIncrementalDelivery: false`, because `/graphql` does not
-  serve `@defer`/`@stream`.
-
-Read the toolkit 1.0 changelog for the replacement it names and build the fetcher with
-that, keeping the two properties above. The SH242/SH1383 guards in
-`shio-react/test/monaco-workers-resolve.test.mjs` are unaffected; check the explorer
-still runs a query against a clean instance with a READ token, since no unit test drives
-the fetcher.
-
 ### XI.116 Repeatable fields in the review diff (SH1389)
 
 **Where it showed.** On 2026-11-09, in Agent Review (`/bento/admin/review`) on a clean

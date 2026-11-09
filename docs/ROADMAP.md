@@ -20,7 +20,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1388** (deps: —) **The GraphQL explorer builds its fetcher with createGraphiQLFetcher, which GraphiQL's toolkit 1.0 deprecates** — The next toolkit major is likely to drop it, and that bump would arrive red with no guard naming why. → §XI.115
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

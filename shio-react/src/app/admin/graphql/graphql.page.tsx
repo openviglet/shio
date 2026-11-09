@@ -5,7 +5,7 @@ import "@/lib/monaco-workers"
 import "graphiql/style.css"
 
 import { GraphiQL } from "graphiql"
-import { createGraphiQLFetcher } from "@graphiql/toolkit"
+import { createTransport } from "@graphiql/toolkit"
 import { IconBrandGraphql, IconKey } from "@tabler/icons-react"
 import { KeyRound, Info } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
@@ -82,11 +82,17 @@ export default function GraphiQLPage() {
     // we authorize via the CDA token's `Key` header instead. credentials:"omit" keeps
     // the SHJSESSIONID cookie off the request — otherwise the session security context
     // (no ROLE_CDA) would load first and the Key header would be ignored (→ 403).
-    const fetcher = useMemo(() => {
+    //
+    // SH1388 — a Transport, not the Fetcher toolkit 1.0 deprecates; it also gives the explorer its
+    // network stats (status, timing, size). `/graphql` takes POST only and serves no @defer/@stream,
+    // so the method is pinned, which also skips the OPTIONS probe the transport would otherwise send.
+    const transport = useMemo(() => {
         const headers: Record<string, string> = selectedToken?.token ? { Key: selectedToken.token } : {}
-        return createGraphiQLFetcher({
+        return createTransport({
             url: "/graphql",
             headers,
+            method: "POST",
+            supportedMethods: ["POST"],
             enableIncrementalDelivery: false,
             fetch: (input, init) => fetch(input, { ...init, credentials: "omit" }),
         })
@@ -189,7 +195,7 @@ export default function GraphiQLPage() {
             </div>
 
             <div className="min-h-0 flex-1 p-4 md:px-6">
-                <GraphiQL fetcher={fetcher} forcedTheme={resolvedTheme} />
+                <GraphiQL transport={transport} forcedTheme={resolvedTheme} />
             </div>
         </div>
     )
