@@ -264,7 +264,8 @@ adding one.
 3. **Write for the user, not the commit.** Explain *what the feature does and how to
    use it* — configuration keys, console steps, API/CLI/MCP calls, examples. Not a
    changelog, not a design-rationale dump. Never paste `IMPROVEMENTS.md` prose
-   verbatim; match the surrounding page's tense, voice and structure.
+   verbatim; match the surrounding page's tense, voice and structure. Write it with the
+   `shio-docs-write` skill.
 4. **Product name & brand.** User-facing text says **Viglet Shio**; public links point
    at the public `openviglet/shio` repo.
 5. **Record the verdict in `COVERAGE.md`** — the page + anchor you wrote (✅ / 🧩), or

@@ -82,6 +82,7 @@ describes. The per-area detail below is **authoritative**; do not restate it her
 | Replication: the chain, the region rule, and **the acceptance criterion that says when a round is done** | [docs/agents/replication.md](docs/agents/replication.md) | `shio-replication-test` |
 | Judging a replication run against a live instance: the checks a suite cannot make | `cli/conformance/` | `shio-replication-test` |
 | The public site at shio.viglet.org: its stack, its prerender, and the one file all its copy lives in | [shio-site/README.md](shio-site/README.md) | none |
+| Writing or rewriting a `shio-site/docs` page: Diátaxis type, Starlight components, glossary, the docs-style lint and its baseline | [.claude/skills/shio-docs-write/](.claude/skills/shio-docs-write/SKILL.md) | `shio-docs-write` |
 | Checking that `shio-site/docs` matches the code: the docs suites, the reverse code-to-docs report, and what only a reader can judge | [.claude/skills/shio-docs-sync/](.claude/skills/shio-docs-sync/SKILL.md) | `shio-docs-sync` |
 | ROADMAP / CHANGELOG / IMPROVEMENTS upkeep rules: those three are **owned by `roadkeep`** ([roadkeep.toml](roadkeep.toml)), never hand-edited | [docs/agents/docs-process.md](docs/agents/docs-process.md) | `shio-roadmap-docs` |
 
