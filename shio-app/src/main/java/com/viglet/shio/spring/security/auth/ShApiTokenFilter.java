@@ -159,6 +159,14 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         this.clock = clock;
     }
 
+    /** SH1395 — whose sign-in a {@code MEMBER} token is; absent in a unit test that builds the filter. */
+    private com.viglet.shio.persistence.repository.auth.ShUserRepository users;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setUsers(com.viglet.shio.persistence.repository.auth.ShUserRepository users) {
+        this.users = users;
+    }
+
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request,
                                     @NotNull HttpServletResponse response,
@@ -255,6 +263,15 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         if ((scope == ShApiTokenScope.MEMBER) != siteHost) {
             filterChain.doFilter(request, response);
             return;
+        }
+        // SH1395 — a sign-in is a person's, so it ends with the person: one deleted or disabled since
+        // the site host signed them in reads as a visitor, the check ShDeviceTokenFilter makes.
+        if (scope == ShApiTokenScope.MEMBER && users != null) {
+            com.viglet.shio.persistence.model.auth.ShUser person = users.findByUsername(apiToken.getOwner());
+            if (person == null || person.getEnabled() != 1) {
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
         // SH1382 — the body field is a FORM credential and nothing else. A WRITE or AGENT key pasted
         // into a page's markup is left unauthenticated here, so a leaked field never writes content.

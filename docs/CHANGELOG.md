@@ -2119,6 +2119,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1392** — A page's palette result offers Edit on the page directly, so a draft opens in the Universal Editor in one click and one screen, fewer than the form's preview (design §XI.119 recorded in `docs/agents/console-ui.md`).
 - **SH1393** — The Universal Editor's panel changes an image, a date or a reference through the form's own widget, drawn from the stored value; replace-image-ue completes in 6 clicks, one fewer than the form (design §XI.120 recorded in `docs/agents/console-ui.md`).
 - **SH1394** — A page opens in the Universal Editor from the palette, the Pages view and the search page, with its form one step away; notes, insights and home's drafts keep the form on purpose, and the side-panel form is SH1399 (design §XI.121 recorded in `docs/agents/console-ui.md`).
+- **SH1395** — A site-host sign-in ends with the site's sign-out link, with a sign-out of Shio, or when the person is disabled, so a shared computer no longer keeps a member's pages open after they leave (design §XI.122 recorded in `docs/agents/security.md`).
 
 ## Block BH — One content model, many languages
 

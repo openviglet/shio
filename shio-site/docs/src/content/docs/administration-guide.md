@@ -153,7 +153,10 @@ second account system.
   one-time code, good for a minute and only in the browser that started the sign-in, and
   the site host exchanges it for a sign-in of its own. That sign-in lasts eight hours,
   opens that one site's members-only pages and nothing else (not the console, not the
-  API, not another site), and is never listed among your API tokens.
+  API, not another site), and is never listed among your API tokens. It ends when you sign
+  out of Viglet Shio, when your account is disabled, or from a sign-out link on the site itself:
+  point it at `/api/v2/site-member/sign-out?to=/` on the site's hostname (`to` is the page to
+  land on).
 - Administrators always read everything, and the preview still shows gated pages to
   editors, because that is where they are edited.
 

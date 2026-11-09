@@ -241,31 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.122 Signing out of a site host (SH1395)
-
-SH1375 signs a visitor in on a site host with an ephemeral `MEMBER` token in a host-only
-`shio-site-member` cookie, good for eight hours. Nothing ends it early. Signing out of
-the console (`/logout`, or Keycloak's back-channel logout) invalidates the instance
-session and leaves every site-host sign-in that person holds alive until it expires, and
-the site host itself has no address a "Sign out" link could point at: `ShSiteHostFilter`
-re-addresses every GET into delivery, and `/api/v2/site-member` has only `handoff` and
-`exchange`. A disabled user is the same case: the token filter does not ask whether the
-owner can still sign in.
-
-Build, in this order:
-
-1. `GET /api/v2/site-member/sign-out?to=/path` on the site host: disable the token the cookie
-   carries, clear the cookie (same name, path `/`, max-age 0), and redirect to the path (SH1299's
-   rule, `ShSiteMemberAPI.sitePath`). A template helper or a documented href is what a site's
-   own "Sign out" link uses.
-2. `ShLogoutHandler` (both chains) disables the person's enabled `MEMBER` tokens, so signing out
-   of Shio signs them out of every site host on their next request.
-3. The token filter refuses a `MEMBER` token whose owner is disabled or gone, the check
-   `ShDeviceTokenFilter` already makes for a device token.
-
-Assert each in `ShSiteMemberHandoffTest`: the cookie stops opening the gated page after
-each of the three, and a fresh sign-in still works afterwards.
-
 ### XI.123 A catalogue entry names the oldest Shio that can install it (SH1397)
 
 The published catalogue (`shio-site/scripts/marketplace.mjs`, served at

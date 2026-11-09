@@ -114,6 +114,14 @@ class ShSiteMemberHandoffTest {
             user.setEnabled(1);
             user.getShGroups().add(members);
             entityManager.persist(user);
+            // SH1395 — a second member, disabled by one test and so kept apart from the others.
+            ShUser second = new ShUser();
+            second.setUsername(member + "-b");
+            second.setEmail(member + "-b@example.invalid");
+            second.setPassword("not-a-real-hash");
+            second.setEnabled(1);
+            second.getShGroups().add(members);
+            entityManager.persist(second);
             gated[0] = site(label, when);
             gated[1] = site(otherLabel, when);
         });
@@ -220,6 +228,54 @@ class ShSiteMemberHandoffTest {
                 .startsWith(ShSiteMemberAPI.HANDOFF + "?");
     }
 
+
+    // --- SH1395: a site-host sign-in ends ---
+
+    private void readsTheLounge(Cookie signedIn, boolean expected, String why) throws Exception {
+        mockMvc.perform(onHost(label, "/lounge").cookie(signedIn))
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString().contains("members lounge"))
+                        .as(why).isEqualTo(expected));
+    }
+
+    @Test
+    @DisplayName("SH1395: signing out on the site host ends that sign-in, and a fresh one still works")
+    void signingOutOnTheSiteHostEndsIt() throws Exception {
+        Cookie signedIn = signIn(label);
+        readsTheLounge(signedIn, true, "SH1395: the sign-in works before the sign-out");
+        MockHttpServletResponse out = mockMvc.perform(onHost(label, ShSiteMemberAPI.SIGN_OUT + "?to=%2Flounge")
+                        .cookie(signedIn))
+                .andExpect(status().isFound()).andReturn().getResponse();
+        assertThat(out.getRedirectedUrl()).isEqualTo("/lounge");
+        assertThat(out.getCookie(ShApiTokenFilter.MEMBER_COOKIE).getMaxAge())
+                .as("SH1395: the browser is told to drop the cookie").isZero();
+        readsTheLounge(signedIn, false,
+                "SH1395: the same cookie, kept by hand, opens nothing once its sign-in has ended");
+        readsTheLounge(signIn(label), true, "SH1395: and signing in again works");
+    }
+
+    @Test
+    @DisplayName("SH1395: signing out of Shio ends the person's site-host sign-ins")
+    void signingOutOfShioEndsThem() throws Exception {
+        Cookie signedIn = signIn(label);
+        readsTheLounge(signedIn, true, "SH1395: the sign-in works before the console sign-out");
+        // The console signs out with a GET to /logout (ShSecurityConfig's logout matcher).
+        mockMvc.perform(get("/logout").with(user(member)));
+        readsTheLounge(signedIn, false,
+                "SH1395: a shared computer would keep the member's pages open after they signed out of Shio");
+    }
+
+    @Test
+    @DisplayName("SH1395: a sign-in ends with its person, once disabled")
+    void aDisabledPersonsSignInEnds() throws Exception {
+        String second = member + "-b";
+        Cookie signedIn = signIn(label, second);
+        readsTheLounge(signedIn, true, "SH1395: the second member reads the lounge while enabled");
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> entityManager
+                .createQuery("select u from ShUser u where u.username = :name", ShUser.class)
+                .setParameter("name", second).getSingleResult().setEnabled(0));
+        readsTheLounge(signedIn, false, "SH1395: a disabled person's site-host sign-in reads as a visitor");
+    }
+
     /** The members-only page on the site host, turned away: where it sends the visitor, and its state. */
     private Handoff startOn(String site) throws Exception {
         MockHttpServletResponse turned = mockMvc.perform(onHost(site, "/lounge?from=card"))
@@ -234,8 +290,12 @@ class ShSiteMemberHandoffTest {
     }
 
     private Cookie signIn(String site) throws Exception {
+        return signIn(site, member);
+    }
+
+    private Cookie signIn(String site, String who) throws Exception {
         Handoff handoff = startOn(site);
-        URI exchange = URI.create(mockMvc.perform(at(handoff.returnUrl()).with(user(member)))
+        URI exchange = URI.create(mockMvc.perform(at(handoff.returnUrl()).with(user(who)))
                 .andReturn().getResponse().getRedirectedUrl());
         return mockMvc.perform(onHost(site, exchange.getPath() + "?" + exchange.getRawQuery()).cookie(handoff.state()))
                 .andReturn().getResponse().getCookie(ShApiTokenFilter.MEMBER_COOKIE);

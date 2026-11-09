@@ -988,6 +988,18 @@ the same pages answer an anonymous visitor unmetered. Ephemeral rows are not lis
 whole flow through the chain, including the replay, the missing state, another site, the
 instance's `/sites` address, `/api` and seven hostile `to` values.
 
+**And it ends (SH1395).** Three ways, each asserted in that test: `GET /api/v2/site-member/sign-out?to=`
+on the site host disables the token its cookie carries, clears the cookie and goes back to the path
+(`sitePath`, so never another origin); signing out of the console (`GET /logout`, `ShLogoutHandler`)
+disables every `MEMBER` token the person holds; and `ShApiTokenFilter` reads a `MEMBER` token whose
+owner is deleted or disabled as a visitor (the user lookup is setter-injected, so the filter's unit
+tests still build it with three arguments). Both disables are native `UPDATE`s on `api_token`,
+because the rows were written under the site host's tenant context and not the person's, and a
+filtered read from the console's logout would miss them. The sign-out is a GET so a plain link can be
+it; a cross-site page can sign a visitor out, which every site's logout link allows. Keycloak's
+back-channel logout ends the instance session through Spring and does not pass `ShLogoutHandler`, so
+it leaves site-host sign-ins to their eight hours.
+
 ## A user's password is encoded on create and never serialised (SH1334)
 
 `POST /api/v2/user/{username}` encodes the password with the application's `PasswordEncoder`

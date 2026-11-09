@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -58,4 +59,22 @@ public interface ShApiTokenRepository extends JpaRepository<ShApiToken, String> 
     /** Opportunistic purge (SH13) of expired preview tokens — called on each mint. */
     @Transactional
     void deleteByEphemeralTrueAndExpiresAtBefore(Instant when);
+
+    /**
+     * SH1395 — end every site-host sign-in a person holds, whichever tenant wrote it: the rows are
+     * written under the site host's context (SH1375), not under the person's, so a tenant-filtered
+     * read from the console's logout would miss them. Native, like {@link #findByTokenAcrossTenants}.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE api_token SET enabled = false WHERE owner = :owner AND scope = 'MEMBER' AND enabled = true",
+            nativeQuery = true)
+    int disableMemberTokensOf(@Param("owner") String owner);
+
+    /** SH1395 — end one site-host sign-in, the one a site's sign-out link carries in its cookie. */
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE api_token SET enabled = false WHERE token = :token AND scope = 'MEMBER'",
+            nativeQuery = true)
+    int disableMemberToken(@Param("token") String token);
 }

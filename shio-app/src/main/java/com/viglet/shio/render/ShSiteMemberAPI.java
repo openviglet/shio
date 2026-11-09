@@ -263,6 +263,33 @@ public class ShSiteMemberAPI {
                 .cacheControl(CacheControl.noStore()).build();
     }
 
+    /** SH1395 — where a site's own "Sign out" link points, on the site host. */
+    public static final String SIGN_OUT = PATH + "/sign-out";
+
+    /**
+     * SH1395 — sign out of this site host: the sign-in the cookie carries stops working, the cookie
+     * goes, and the visitor lands back on the page they named (a path on this host, never another).
+     *
+     * <p>A GET, so a plain link can be it, as a template draws one. That leaves a cross-site page able
+     * to sign a visitor out, which costs them one sign-in and gains the page nothing, the trade every
+     * site's logout link makes.</p>
+     */
+    @GetMapping("/sign-out")
+    @Operation(summary = "Sign out of the site host this is called on, then go back to a page on it")
+    public ResponseEntity<Void> signOut(@RequestParam(name = "to", required = false) String to,
+                                        HttpServletRequest request) {
+        String value = cookie(request, ShApiTokenFilter.MEMBER_COOKIE);
+        if (value != null && !value.isBlank()) {
+            tokens.disableMemberToken(value);
+        }
+        ResponseCookie cleared = ResponseCookie.from(ShApiTokenFilter.MEMBER_COOKIE, "").httpOnly(true)
+                .secure(request.isSecure()).sameSite("Lax").path("/").maxAge(Duration.ZERO).build();
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.SET_COOKIE, cleared.toString())
+                .location(URI.create(sitePath(to)))
+                .cacheControl(CacheControl.noStore()).build();
+    }
+
     /** A person: not anonymous, and not an API token standing in for one. */
     private static boolean signedIn(Authentication authentication) {
         return authentication != null && authentication.isAuthenticated()

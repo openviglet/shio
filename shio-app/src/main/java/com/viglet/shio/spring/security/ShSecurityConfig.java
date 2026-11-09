@@ -250,6 +250,8 @@ public class ShSecurityConfig {
      */
     private static final String SITE_MEMBER_HANDOFF_PATH = "/api/v2/site-member/handoff";
     private static final String SITE_MEMBER_EXCHANGE_PATH = "/api/v2/site-member/exchange";
+    /** SH1395 — a site host's sign-out link: public, since the visitor's credential is the cookie it ends. */
+    private static final String SITE_MEMBER_SIGN_OUT_PATH = "/api/v2/site-member/sign-out";
     /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless, equally narrowed. */
     private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
@@ -444,6 +446,7 @@ public class ShSecurityConfig {
                         // SH1375 — see SITE_MEMBER_HANDOFF_PATH.
                         mvc.matcher(HttpMethod.GET, SITE_MEMBER_HANDOFF_PATH),
                         mvc.matcher(HttpMethod.GET, SITE_MEMBER_EXCHANGE_PATH),
+                        mvc.matcher(HttpMethod.GET, SITE_MEMBER_SIGN_OUT_PATH),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
@@ -522,6 +525,7 @@ public class ShSecurityConfig {
                                 // SH1375 — see SITE_MEMBER_HANDOFF_PATH.
                                 mvc.matcher(HttpMethod.GET, SITE_MEMBER_HANDOFF_PATH),
                                 mvc.matcher(HttpMethod.GET, SITE_MEMBER_EXCHANGE_PATH),
+                        mvc.matcher(HttpMethod.GET, SITE_MEMBER_SIGN_OUT_PATH),
                                 mvc.matcher("/__tur/**"),
                                 mvc.matcher("/"),
                                 mvc.matcher("/assets/**"),
