@@ -660,6 +660,32 @@ decision.
 Done when: a device token mints an AGENT token for its tenant, and that token reads the
 tenant's sites over MCP.
 
+### VI.14 A rollback from a device, reviewed (SH1381)
+
+Filed by shio-mobile SHM17, measured on a 2026.3 instance on 2026-11-09. The phone's
+history screen lists a site's publications and offers "restore as a draft", which then
+goes through review and publish again. Two things stop it for a person signed in with a
+device token:
+
+- `POST /api/v2/post-unified/{id}/revisions/{version}/restore` answers 403
+  `csrf-token-unobtainable`: it is not on the SH167 session-less list.
+- A restored draft has no road back to live from the phone. The review queue lists agent
+  runs, and a person's restore is not one, so it never appears there; the direct publish
+  route has the same CSRF refusal.
+
+The seam is SH1378's and SH1379's: a person's own writes, made with a bearer that is not
+a CSRF vector. Restore can join that exemption. For the second half, Shio's choice: a
+restore recorded as a review session of its own (actor the person, intent "restore
+version N"), so the queue that already gates publishing gates the rollback too; or a
+publish route a device token may call, behind the same gates and waiver as an approve.
+
+A rollback reviewed like any change is what the phone's design assumes, and it keeps
+"the agent never approves itself" and "nothing goes live untapped" both true for an
+undo.
+
+Done when: a device token restores a revision, the restore appears in the review queue,
+and approving it publishes the restored content.
+
 ## VII. Content portability
 
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.
