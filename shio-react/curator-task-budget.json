@@ -42,6 +42,21 @@
       "screens": 2,
       "ms": 1359,
       "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
+    },
+    "change-headline-ue": {
+      "clicks": 6,
+      "keys": 1,
+      "screens": 4,
+      "ms": 1021,
+      "why": "SH1319: Content, the hub's Universal Editor card, the site, the frame's Pricing link, the heading, Ctrl+A and type, Publish. The editor opens only on a site's home, so three of the four screens are the way to the page."
+    },
+    "replace-image-ue": {
+      "blocked": "SH1393",
+      "why": "SH1319: selecting the hero's image shows the post form's image widget in the properties panel, read-only (SH1037), so a curator can see the file and cannot change it."
+    },
+    "preview-draft-ue": {
+      "blocked": "SH1392",
+      "why": "SH1319: the editor frames a site's home and reaches another page only through a link on one, and a draft is linked from nowhere, so it cannot be opened there at all."
     }
   }
 }

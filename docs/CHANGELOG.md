@@ -2113,6 +2113,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1380** — An upload into an unknown folder, a create naming an unknown post type and a restore of an uncaptured revision now answer 404 with a problem detail naming the id, not Spring's 500 (design §XI.111 recorded in `docs/agents/content-api.md`).
 - **SH1383** — The console runs GraphiQL 1.0 / graphiql 6 on Monaco 0.57: worker imports spelled from the new exports root, the run button and radii back on the console's tokens, and the guards read what GraphiQL now emits (design §XI.112 recorded in `shio-react/test/monaco-workers-resolve.test.mjs`).
 - **SH1388** — The GraphQL explorer talks to /graphql through createTransport, POST-only and token-only as before, so it runs queries with GraphiQL's network stats and imports nothing the toolkit deprecates (design §XI.115 recorded in `shio-react/test/graphiql-transport.test.mjs`).
+- **SH1319** — The Universal Editor is the primary page editor, decided against tasks 1, 3 and 6 measured in both editors (form wins all three today: 4/1/1 vs 6/1/4, two blocked); the merge is SH1392-SH1394 (design §XI.85 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

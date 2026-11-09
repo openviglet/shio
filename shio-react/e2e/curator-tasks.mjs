@@ -195,8 +195,41 @@ async function publish(page) {
 }
 
 /**
- * The six jobs. `setup` runs before the meter (fixture, and anything the job assumes is already
+ * SH1319 — the Universal Editor's way to a site: the rail's Content, the hub's Universal Editor
+ * card, then the site. It lands on the site's home with no way to name another page, so the rest is
+ * the frame's own links. Returns the frame once the bridge has turned edit mode on.
+ */
+async function openInEditor(page) {
+  await page.getByRole("navigation").getByRole("link", { name: /^(conteúdo|content)$/i }).first().click()
+  await page.getByRole("link", { name: /^(editor universal|universal editor)/i }).first().click()
+  await page.getByRole("button", { name: new RegExp(`^${SITE}`) }).first().click()
+  return editorFrame(page, (url) => url.includes("editor=true"))
+}
+
+/** The framed page whose url passes `matches`, once the bridge says it is editing (SH185). */
+async function editorFrame(page, matches) {
+  for (let waited = 0; waited < 20_000; waited += 250) {
+    const frame = page.frames().find((f) => f !== page.mainFrame() && matches(f.url()))
+    if (frame && await frame.locator("[data-shio-editing='true']").count().catch(() => 0)) return frame
+    await page.waitForTimeout(250)
+  }
+  throw new Error("the Universal Editor never framed an editing page")
+}
+
+/** A link inside the framed page: a new page for the curator, and one the main frame never sees. */
+async function followInFrame(page, frame, name, path, ctx) {
+  await frame.getByRole("navigation").getByRole("link", { name }).first().click()
+  ctx.screensExtra = (ctx.screensExtra ?? 0) + 1
+  return editorFrame(page, (url) => url.includes(path) && url.includes("editor=true"))
+}
+
+/** The jobs SH1319 measures in both editors, which need the console and the renderer on one origin. */
+const SAME_ORIGIN = new URL(BASE).origin === new URL(API).origin
+
+/**
+ * The jobs. `setup` runs before the meter (fixture, and anything the job assumes is already
  * there); `run` is the curator's path from `/bento`; `check` asks the instance whether it happened.
+ * A name ending in `-ue` is the same job in the Universal Editor (SH1319).
  */
 const TASKS = [
   {
@@ -329,6 +362,87 @@ const TASKS = [
     // A draft left behind is a run left waiting, which the next approve-run would find first.
     cleanup: (ctx) => trash(`post:${SITE}/draft-${RUN}`),
   },
+  // SH1319 — tasks 1, 3 and 6 again, in the Universal Editor, so "which editor is primary" is
+  // answered by the same meter as everything else rather than by an opinion.
+  {
+    name: "change-headline-ue",
+    what: "change a page's headline and publish it, in the Universal Editor",
+    ue: true,
+    async run(page, ctx) {
+      ctx.heading = `Pricing, plainly ${RUN}`
+      const home = await openInEditor(page)
+      const pricing = await followInFrame(page, home, "Pricing", "/pricing", ctx)
+      // The heading is typed where it is drawn: select it, replace it, and the bridge reports it.
+      const heading = pricing.locator("h1[data-shio-prop='heading']").first()
+      await heading.click()
+      await page.keyboard.press("Control+a")
+      await page.keyboard.type(ctx.heading)
+      await page.getByText(/\d+\s+(altera|change)/i).first().waitFor({ timeout: 10_000 })
+      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
+        (url) => /\/post-unified\//.test(url))
+    },
+    async check(ctx) {
+      const post = await read(`post:${SITE}/sections/pricing/hero`)
+      return post.published === true && JSON.stringify(post).includes(ctx.heading)
+    },
+    cleanup: () => restoreHero(),
+  },
+  {
+    name: "replace-image-ue",
+    what: "replace a page's image with one from the library, in the Universal Editor",
+    ue: true,
+    async setup(page, ctx) {
+      const sections = await api(`/agent/resolve?address=${encodeURIComponent(`folder:${SITE}/sections`)}`)
+      const old = await upload(page, sections.id, `hero-old-${RUN}.png`)
+      ctx.file = `hero-new-${RUN}.png`
+      ctx.fileId = (await upload(page, sections.id, ctx.file)).id
+      await restoreHero({ image: old.id })
+    },
+    async run(page, ctx) {
+      const home = await openInEditor(page)
+      const pricing = await followInFrame(page, home, "Pricing", "/pricing", ctx)
+      await pricing.locator("[data-shio-prop='image']").first().click()
+      // The panel draws the post form's own image widget for the selection (SH1037), read-only:
+      // its Search is under `pointer-events: none`, so the click below is the step that cannot be taken.
+      const panel = page.getByRole("complementary")
+      await panel.getByRole("button", { name: /^(pesquisar|search)$/i }).click({ timeout: 5_000 })
+        .catch(() => { throw new Error("SH1393: the properties panel shows the image field and cannot change it") })
+      const dialog = page.getByRole("dialog")
+      await dialog.getByRole("button", { name: new RegExp(`^${ctx.file.replace(".", "\\.")}`) }).first().click()
+      await dialog.getByRole("button", { name: /^(selecionar|select)$/i }).click()
+      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)$/i }),
+        (url) => /\/post-unified\//.test(url))
+    },
+    cleanup: () => restoreHero(),
+    async check(ctx) {
+      return (await read(`post:${SITE}/sections/pricing/hero`)).data?.image === ctx.fileId
+    },
+  },
+  {
+    name: "preview-draft-ue",
+    what: "preview a draft as the visitor will see it, in the Universal Editor",
+    ue: true,
+    async setup(_page, ctx) {
+      ctx.title = `Draft ${RUN}`
+      ctx.text = `Only in the draft ${RUN}`
+      await agentRun(`ux-${RUN}-preview-ue`, "Draft a page", [{
+        op: "post.upsert", address: `post:${SITE}/draft-ue-${RUN}`, type: "Page", folder: "/",
+        data: { title: ctx.title, description: ctx.text, content: ctx.text },
+      }])
+    },
+    async run(page, ctx) {
+      // The editor frames the site's home and nothing else: a page reaches the frame only through
+      // a link on another page, and a draft is linked from nowhere yet, which is why it is a draft.
+      const home = await openInEditor(page)
+      const link = home.getByRole("link", { name: ctx.title })
+      if (!await link.count()) throw new Error(`SH1392: the Universal Editor has no way to open '${ctx.title}', which no page links to`)
+      ctx.frame = await followInFrame(page, home, ctx.title, `draft-ue-${RUN}`, ctx)
+    },
+    async check(ctx) {
+      return (await ctx.frame.content()).includes(ctx.text)
+    },
+    cleanup: () => trash(`post:${SITE}/draft-ue-${RUN}`),
+  },
 ]
 
 async function runTask(browser, task) {
@@ -367,8 +481,16 @@ async function main() {
   const measured = {}
   let failed = 0
   const previous = JSON.parse(await readFile(BUDGET, "utf8").catch(() => "null"))
+  const skipped = []
   for (const task of TASKS) {
     if (ONLY?.length && !ONLY.includes(task.name)) continue
+    // SH1319 — the editor's bridge answers to the renderer's origin (SH659), so behind the Vite
+    // proxy it never hand-shakes and the task would measure a dead frame. Named, never silent.
+    if (task.ue && !SAME_ORIGIN) {
+      skipped.push(task.name)
+      console.log(`${task.name.padEnd(18)} SKIPPED  the console (${BASE}) and the renderer (${API}) are two origins; run with --base ${API}`)
+      continue
+    }
     const result = await runTask(browser, task)
     const blocked = previous?.tasks?.[task.name]?.blocked
     if (!result.ok) {
@@ -392,13 +514,15 @@ async function main() {
     return
   }
   if (RECORD) {
-    await writeFile(BUDGET, JSON.stringify(record(measured, previous, { filtered: Boolean(ONLY?.length) }), null, 2) + "\n")
+    const filtered = Boolean(ONLY?.length) || skipped.length > 0
+    await writeFile(BUDGET, JSON.stringify(record(measured, previous, { filtered }), null, 2) + "\n")
     console.log(`recorded ${Object.keys(measured).length} task(s) to ${BUDGET}`)
     return
   }
   if (!previous) throw new Error(`no budget at ${BUDGET}: run once with --record`)
-  const budget = ONLY?.length
-    ? { tasks: Object.fromEntries(Object.entries(previous.tasks).filter(([k]) => ONLY.includes(k))) }
+  const kept = (k) => (!ONLY?.length || ONLY.includes(k)) && !skipped.includes(k)
+  const budget = ONLY?.length || skipped.length
+    ? { tasks: Object.fromEntries(Object.entries(previous.tasks).filter(([k]) => kept(k))) }
     : previous
   const verdict = compare(measured, budget)
   for (const line of verdict.regressions) console.log(`REGRESSED ${line}`)

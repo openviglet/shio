@@ -241,27 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.85 One way to edit a page (SH1319)
-
-The post editor is a form with a live preview pane beside it; the Universal Editor is
-the rendered page with editable regions, a composer since Block BF, reached from its own
-route and its own site list. Both save the same post. A curator opening a page from the
-content browser lands in the form; one opening the site in the editor lands in the page.
-The two have different save models (SH335), different language switching and different
-review affordances.
-
-Direction: pick one primary and make the other an explicit mode of it. The likely
-primary for a curator is the page itself (what the visitor sees, click to edit), with
-the form available as a side panel for fields the page does not render (SEO, dates,
-references); the form-first editor stays the builder's default for types with no
-rendered page (menus, strings). One entry point: opening a page from anywhere goes to
-the same place, and the mode switch keeps the selection.
-
-**Decided 2026-11-09: the Universal Editor is the primary**, with the form as its side
-panel and the form-first editor kept for types with no rendered page. The deliverable is
-the decision recorded in `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3
-and 6 measured in both editors, and then the merge, filed as its own tasks.
-
 ### XI.114 Quilhara's forms take submissions out of the box (SH1387)
 
 **Where it showed.** On 2026-11-09, filming the promo's trip-enquiry chapter, Quilhara
@@ -287,6 +266,68 @@ the folder and type from the package shown in the dialog before it opens.
 **Done when** a person rules: if yes, build the dialog step and prove a clean release
 instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
 line as the closed form it already is.
+
+### XI.119 The Universal Editor opens a named page (SH1392)
+
+`/bento/universal-editor/:siteId` frames `/preview/<site>/?editor=true` and takes no
+page. Every other page arrives only through a link drawn on one already framed, so a
+draft that nothing links to cannot be opened in the editor at all, and a linked one
+costs the walk to it: SH1319 measured `change-headline-ue` at four screens, three of
+them the way to the page. `preview-draft-ue` is held blocked on this id in
+`curator-task-budget.json`.
+
+Build: the route takes the page, as `?path=<friendly url>` (the SH79 grammar's own part
+after the site, so `post:<site>/pricing` maps to `?path=pricing`, and the home stays the
+bare route). The frame's first `src` is `/preview/<site>/<path>?editor=true`, and the
+url follows in-frame navigation (SH1036 already reports each bridged load's url), so a
+reload or a shared link keeps the page. Then the entries: a page row in search and the
+palette, and the site's pages view (SH1316), each offer "Edit on the page" beside
+opening the form, and the post editor of a page gets the same action.
+
+Done when `preview-draft-ue` completes and is recorded, and `change-headline-ue` drops
+the screens the way to the page cost. Opening the editor by default from those entries
+is the merge line filed beside this one.
+
+### XI.120 The Universal Editor's panel writes every field kind (SH1393)
+
+Selecting a field the page does not type into (an image, a date, a check box, a content
+reference) fills the properties panel with the post form's own widget for it (SH1037),
+under `pointer-events-none` with an `onChange` that does nothing. A curator sees the
+hero's image and cannot change it, so `replace-image-ue` is held blocked on this id in
+`curator-task-budget.json`, while the post form replaces the same image in seven clicks.
+
+Build: the panel's widget writes. Its `onChange` becomes a pending change exactly as a
+typed field is one (`changes`, keyed by post and prop, with `was` for SH1041's revert),
+sent to the frame as `sh:field-set` so the page redraws, and saved or published by the
+same `persist` through the SH335 merge verb. No second save path. The widgets already
+take `postId`, which is what the media picker needs to open beside the post (SH1325).
+
+This is the half of "the form as the editor's side panel" that a selection reaches. The
+other half, the fields no element draws (SEO, dates, references), is the form mode of
+the merge line filed beside this one.
+
+Done when `replace-image-ue` completes, is recorded, and costs no more than
+`replace-image`.
+
+### XI.121 Every page opens in the Universal Editor, the form a mode of it (SH1394)
+
+SH1319 decided the Universal Editor is the primary way to edit a page, with the form as
+its side panel, and measured why the merge cannot simply be a redirect: the editor
+cannot yet open a named page (SH1392) or change a non-text field (SH1393). This line is
+the merge itself, after both.
+
+Build: opening a **page** from anywhere (search, the palette, the site's pages view,
+home's inbox, a note's link) lands in the editor on that page. A page is what
+`pageTypesOf` says it is (SH1316); every other type keeps opening the post form, which
+stays the builder's default for types with no rendered page. Inside the editor, a
+"Fields" mode shows the whole post form for the page (SEO, dates, references, everything
+no element draws) and keeps the selection: switching with the hero's heading selected
+opens the form on that section's field, and switching back reselects it. One save model,
+the editor's (SH335), so a change made in either mode is one pending set.
+
+Judged by `curator-tasks.mjs`: every `-ue` task costs no more than its post-form twin
+before the default flips, and the post-form tasks for a page are then re-recorded
+through the editor.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

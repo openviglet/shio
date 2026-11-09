@@ -16,7 +16,9 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1319** (deps: SH1315 ✅) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
+- 📋 **SH1392** (deps: —) **The Universal Editor opens only on a site's home, so a page nothing links to cannot be opened there** — A draft cannot be previewed in the editor at all, and three of the four screens a headline costs there are the walk to the page. → §XI.119
+- 📋 **SH1393** (deps: —) **The Universal Editor's panel shows an image, date or reference field and cannot change it** — A curator who selects the hero's image there has to leave for the post form to replace it, so the editor cannot finish the job. → §XI.120
+- 📋 **SH1394** (deps: SH1392, SH1393) **Opening a page lands in the post form, while the Universal Editor, the primary editor, is a separate place** — Two entry points with two save models keep a curator learning both and split every editing improvement between surfaces. → §XI.121
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
@@ -34,13 +36,6 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
-
-## Done when — SH1319
-
-- **Opening a page from anywhere lands in one editor, with the other a mode** Checked
-  live after the maintainer picks the primary editor: the browser, search, home and the
-  site list all open a page in the same editor, the other is a switch inside it that
-  keeps the selection, and the decision is recorded in console-ui.md.
 
 ## Done when — SH1342
 

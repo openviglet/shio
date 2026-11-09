@@ -4370,6 +4370,42 @@ confirmation and one gate for a page, however recently it was saved; `create-pag
 Publish is three clicks by design: Actions, Publish, then the confirmation (P7). And `/agent/read`
 answers one address with an array of one.
 
+## One way to edit a page: the Universal Editor is the primary (SH1319)
+
+A page could be edited in two places that save the same post: the post form (fields beside a live
+preview), and the Universal Editor (the rendered page, click to edit, a composer since Block BF).
+Different entry points, different save models (SH335), different review affordances, and nothing
+telling a curator which one to use. **Decided 2026-11-09 by the maintainer: the Universal Editor is
+the primary**, with the form as its side panel for what the page does not draw (SEO, dates,
+references), and the form-first editor kept as the builder's default for types with no rendered
+page (menus, strings, sections edited on their own).
+
+**Measured before merging anything.** `e2e/curator-tasks.mjs` now drives SH1315's tasks 1, 3 and 6
+in the editor too (`change-headline-ue`, `replace-image-ue`, `preview-draft-ue`), on the same meter,
+from `/bento`, on a clean instance served from **one origin** (`--base` equal to `--api`; behind the
+Vite proxy the bridge never hand-shakes, SH659, and the three are skipped by name):
+
+| Task | Post form | Universal Editor |
+|---|---|---|
+| change a headline and publish | 4 clicks, 1 key, 1 screen | 6 clicks, 1 key, 4 screens |
+| replace an image | 7 clicks, 1 key, 1 screen | blocked: the panel shows the image and cannot change it (SH1393) |
+| preview a draft | 2 clicks, 1 key, 2 screens | blocked: the editor cannot open a page nothing links to (SH1392) |
+
+**Today the form wins all three, and the decision stands anyway, because of where each cost sits.**
+The editor's cost is its *entry*: it opens only on a site's home, reached through Content, the hub's
+card and the site, so three of its four screens are the way to the page and its edit itself is two
+clicks and a keystroke. Its two blocks are missing capabilities, not a worse design. The form's cost
+is intrinsic: the headline belongs to a section, so the path is search, section, field, whatever the
+entry. Removing the editor's costs is the merge, filed as three tasks: **SH1392** (open a named page in
+the editor, from search, the palette and the post editor), **SH1393** (the panel writes every field kind
+through the form's own widgets, which is the form as side panel) and **SH1394** (one entry point:
+opening a page from anywhere lands in the editor, with the form a mode that keeps the selection).
+
+**The merge is judged by this table.** Each of those tasks re-records the `-ue` rows, and the merge is
+done when every `-ue` task costs no more than its post-form twin. Until then the form stays reachable
+everywhere it is today: making the editor the only door before it can replace an image would take a
+job away from the curator (P7).
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a
