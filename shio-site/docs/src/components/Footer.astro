@@ -5,6 +5,7 @@
  */
 import Default from "@astrojs/starlight/components/Footer.astro";
 import mark from "../assets/shio-mark.svg";
+import { hrefOf } from "../../../src/lib/destinations";
 
 // The site's base (`/`): this area's base without its `docs/`.
 const site = import.meta.env.BASE_URL.replace(/docs\/?$/, "");
@@ -30,10 +31,13 @@ const columns = [
   {
     heading: "Open and inspectable",
     links: [
-      { label: "Source", href: "https://github.com/openviglet/shio" },
-      { label: "Roadmap", href: "https://github.com/openviglet/shio/blob/2026.3/docs/ROADMAP.md" },
-      { label: "Changelog", href: "https://www.viglet.org/shio/release-notes/" },
-      { label: "viglet.org", href: "https://www.viglet.org" },
+      // SH1371: the destinations the marketing footer uses, from one map.
+      { label: "Installation", href: hrefOf("install", site) },
+      { label: "Download", href: hrefOf("download") },
+      { label: "Release notes", href: hrefOf("releaseNotes") },
+      { label: "Source", href: hrefOf("source") },
+      { label: "Development roadmap", href: hrefOf("roadmap") },
+      { label: "All Viglet products", href: hrefOf("portfolio") },
     ],
   },
 ];

@@ -119,6 +119,14 @@ Five rules for editing any of it:
   crawler outputs and the prose of the docs pages, and names its exceptions: the
   historical changelog, and the console's own provider labels (**Shio Native**,
   **Shio Package**), which a page has to spell the way the screen does.
+- **Every link out comes from one map (SH1371).**
+  [`src/lib/destinations.ts`](src/lib/destinations.ts) names each destination by
+  its job: Get started is the installation guide, Download and Release notes are
+  the hub's pages, and the roadmap is labelled as the development record it is.
+  The marketing nav and footer, the docs header and footer (`hrefOf`), and the
+  links in `public/llms.txt` all take it from there.
+  [`scripts/destinations.test.mjs`](scripts/destinations.test.mjs) holds every
+  surface to it, so "Get started" cannot lead to two places again.
 - **The site uses the hub's visual grammar (SH1370).** The home hero, the shared
   `PageHero`, the section bands (laws, the curator's half, the call to action and
   the console, curator and replicate pages) and both footers draw on the theme's

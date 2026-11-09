@@ -30,6 +30,7 @@ import {
 import { ceiling } from "./token-budgets";
 import { SHOWCASE_ID, SHOWCASE_LOCALES, SHOWCASE_SITE } from "./showcase";
 import { withBase } from "./base";
+import { DESTINATIONS } from "./destinations";
 
 /*
  * ─────────────────────────────────────────────────────────────────────────────
@@ -1723,18 +1724,22 @@ export const TOKEN_SCOPES: TokenScope[] = [
 
 /* ── Links ───────────────────────────────────────────────────────────────── */
 
+/** SH1371: the job-named destinations come from `destinations.ts`, which the docs area reads too. */
 export const LINKS = {
-  docs: withBase("/docs/"),
-  repo: "https://github.com/openviglet/shio",
+  docs: withBase(DESTINATIONS.docs.path),
+  install: withBase(DESTINATIONS.install.path),
+  download: DESTINATIONS.download.url,
+  releaseNotes: DESTINATIONS.releaseNotes.url,
+  repo: DESTINATIONS.source.url,
   license: "https://github.com/openviglet/shio/blob/HEAD/LICENSE",
-  roadmap: "https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md",
-  changelog: "https://github.com/openviglet/shio/blob/HEAD/docs/CHANGELOG.md",
+  roadmap: DESTINATIONS.roadmap.url,
+  ledger: DESTINATIONS.ledger.url,
   laws: "https://github.com/openviglet/shio/blob/HEAD/agents.md",
   spec: "https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md",
   npm: "https://www.npmjs.com/package/@viglet/shio-client",
   cli: "https://www.npmjs.com/package/@viglet/shio",
   turing: "https://turing.viglet.org",
-  viglet: "https://www.viglet.org",
+  viglet: DESTINATIONS.portfolio.url,
   mcpSpec: "https://modelcontextprotocol.io",
 } as const;
 

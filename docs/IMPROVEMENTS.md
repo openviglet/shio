@@ -654,34 +654,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.19 Navigation, installation and release destinations (SH1371)
-
-Review of 2026-11-08: published pages and current source, compared with viglet.org. The
-header Get started uses LINKS.docs (shio-site/src/components/sections/site-nav.tsx:157)
-and the footer Changelog is the GitHub task ledger (site-footer.tsx:39,
-site-content.ts:1731), while the docs area already sends both elsewhere
-(shio-site/docs/src/components/SocialIcons.astro:15, Footer.astro:35). The hero primary
-action only scrolls to four paths. The hub already has /shio/download/ and
-/shio/release-notes/, and the product publishes changelog.json.
-
-Define one typed destination map used by marketing navigation, footer, CTAs, Astro
-overrides and the hand-written shio-site/public/llms.txt links (:130-137); Markdown
-twins follow from the rendered HTML. Separate Try/Explore, Install, Documentation,
-Release notes, Source and Portfolio by their actual job. Get started should reach an
-actionable supported setup path with prerequisites and a first-success check;
-Documentation may keep the overview. Keep GitHub Source on openviglet/shio; label the
-development roadmap separately from user release notes. Use existing hub
-download/release pages and product documentation instead of adding another release
-ledger or installation authority. docs.viglet.org/shio already answers 301 and
-cli/test/readme-hosts.test.mjs guards it; preserve inbound routes and anchors. The
-return to viglet.org and product identity must remain discoverable in mobile menus and
-docs.
-
-Acceptance: follow every primary CTA from home, a depth page and docs in a fresh
-browser, including narrow-screen menus and keyboard use; verify response status and
-destination content rather than URL spelling alone. Check release-feed availability and
-no circular hub/product redirects. Do not deploy or rewrite historical published slugs.
-
 ### XIX.20 A focused home page with product-specific depth (SH1372)
 
 Review of 2026-11-08: published pages and current source, compared with viglet.org. At

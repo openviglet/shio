@@ -5,6 +5,7 @@
  * (`/`, this area's base without its `docs/`), as the site's own nav is.
  */
 import Default from "@astrojs/starlight/components/SocialIcons.astro";
+import { hrefOf } from "../../../src/lib/destinations";
 
 const site = import.meta.env.BASE_URL.replace(/docs\/?$/, "");
 const links = [
@@ -12,7 +13,7 @@ const links = [
   { label: "Console", href: `${site}console/` },
   { label: "Coding agent", href: `${site}claude-code/` },
   { label: "Compare", href: `${site}compare/` },
-  { label: "Get started", href: `${site}docs/installation-guide/`, highlight: true },
+  { label: "Get started", href: hrefOf("install", site), highlight: true },
 ];
 ---
 

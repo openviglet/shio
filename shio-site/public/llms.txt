@@ -130,8 +130,11 @@ A feature that breaks one is wrong even if it was requested.
 ## Links
 
 - Documentation: https://shio.viglet.org/docs/
+- Install (prerequisites and a first-success check): https://shio.viglet.org/docs/installation-guide/
+- Download a release: https://www.viglet.org/shio/download/
+- Release notes: https://www.viglet.org/shio/release-notes/ (feed: https://shio.viglet.org/changelog.json)
 - Source: https://github.com/openviglet/shio
 - The design laws: https://github.com/openviglet/shio/blob/HEAD/agents.md
 - The concept spec: https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md
-- Roadmap: https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md
+- Development roadmap: https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md
 - Viglet Turing, the sibling enterprise search product: https://turing.viglet.org

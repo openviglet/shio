@@ -158,8 +158,9 @@ export function SiteNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* SH1371: Get started is the setup path, as it is in the docs header; Docs is its own link. */}
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <a href={LINKS.docs}>
+            <a href={LINKS.install}>
               Get started
               <ArrowRight className="size-4" />
             </a>
@@ -181,7 +182,7 @@ export function SiteNav() {
         <nav className="border-t border-border bg-background/95 backdrop-blur-md lg:hidden">
           <Container className="flex flex-col py-3">
             <Button asChild size="sm" className="mb-2 w-fit sm:hidden">
-              <a href={LINKS.docs} onClick={closeMenu}>
+              <a href={LINKS.install} onClick={closeMenu}>
                 Get started
                 <ArrowRight className="size-4" />
               </a>

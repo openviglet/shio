@@ -33,12 +33,17 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "Open and inspectable",
     links: [
+      // SH1371: release notes are the hub's, for someone running it; the roadmap is labelled as
+      // the development record it is, and the install and download pages each have a row.
       { label: "Documentation", href: LINKS.docs },
+      { label: "Installation", href: LINKS.install },
+      { label: "Download", href: LINKS.download },
+      { label: "Release notes", href: LINKS.releaseNotes },
       { label: "Source", href: LINKS.repo },
-      { label: "Roadmap", href: LINKS.roadmap },
-      { label: "Changelog", href: LINKS.changelog },
+      { label: "Development roadmap", href: LINKS.roadmap },
       { label: "npm", href: LINKS.npm },
       { label: "Viglet Turing", href: LINKS.turing },
+      { label: "All Viglet products", href: LINKS.viglet },
     ],
   },
 ];
