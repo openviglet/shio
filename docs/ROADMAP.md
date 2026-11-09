@@ -12,6 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
+- 📋 **SH1411** (deps: —) **The fallback error page a browser gets is unstyled and always in English, even under a pt-br address** — A visitor turned away from a missing or members-only page sees bare browser-default HTML, which reads as a broken site. → §XI.127
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
@@ -19,12 +20,13 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH1404** (deps: SH1402 ✅) **agent-surface.md runs 4,600 words with procedures, reference and rationale mixed under one heading** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
+- 🛠 **SH1404** (deps: SH1402 ✅) **agent-surface.md runs 4,600 words with procedures, reference and rationale mixed under one heading** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1405** (deps: SH1402 ✅) **content-console.md runs 4,300 words and describes console surfaces as prose instead of tasks a curator does** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1406** (deps: SH1402 ✅) **website-development.md runs 4,000 words with template reference and build procedures interleaved** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1407** (deps: SH1402 ✅) **replication.md runs 3,800 words with no single walk-through from a source URL to a published replica** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1408** (deps: SH1402 ✅) **cli.md runs 2,800 words and mixes the verb reference with how-to prose** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
 - 📋 **SH1409** (deps: SH1402 ✅) **administration-guide.md runs 2,700 words with settings described in prose instead of a reference table** — Rewritten with shio-docs-write, one Diátaxis type per section and anchors kept, until the SH1401 lint drops it from its list. → §XCVII.3
+- 📋 **SH1412** (deps: —) **shio-docs-write tells a writer a bare Shio is fine after the first mention, and the full-names lint fails the page** — The skill and the gate disagree, so every Block R rewrite that follows the skill lands red on SH1369. → §XCVII.5
 
 ## Block BF — The visual editor becomes a composer
 
