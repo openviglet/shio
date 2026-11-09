@@ -132,6 +132,20 @@ and choose **Plan**. The plan lists both halves, the install when the package is
 yet and everything the apply would create, and writes nothing. The confirm button only
 works on a plan for exactly the inputs on screen; change anything and you plan again.
 
+**Accepting enquiries.** A package can ship forms (Quilhara's trip and contact pages, the
+small-business contact page), and they ship closed: applying a package never opens a
+form, because where submissions go is the operator's decision, not a template's. A package
+that has forms proposes a destination, a folder and the post types it accepts, and the
+plan shows it beside **Accept enquiries now**. Tick it and confirm, and the same act
+creates the site's form configuration (that folder and type, the instance's own address
+and the site's own hostname as the allowed origins), creates the site's form token, and
+puts it on every form section still closed. A site that already has a form configuration
+keeps it as it is. From a terminal it is `--open-forms`:
+
+```bash
+shio marketplace install shio-blueprint-quilhara --apply --site quilhara --create-site --merge-post-types --open-forms
+```
+
 An agent reads the catalogue with
 the `shio_marketplace` MCP tool, which lists and describes: it does **not** install.
 That is a deliberate boundary, not an omission: installing a stranger's package is the

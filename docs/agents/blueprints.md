@@ -243,6 +243,26 @@ holds every page the matrix describes as taking a form to a closed `SectionForm`
 and `ShBlueprintAccessibilityTest.theShowcaseTripEnquirySubmitsWithScriptOff` opens it as a curator
 would and posts an enquiry through the chain. Opening it at install is not a package's to decide.
 
+**A package proposes its destination; an administrator opens it (SH1387).** The manifest's `forms`
+key (`{"folder": "/enquiries", "types": ["Enquiry"]}` on Quilhara, `/messages` and `Contact` on
+small-business) is a proposal and never a setting: applying still opens nothing. The registry refuses a
+`forms` whose folder is not a path or that names a type the package does not declare.
+`ShMarketplaceSetup` answers it as `forms` on every setup of such a package: on a plan, what opening
+would do (`ShSiteFormOpener.plan`: folder, types, the origins it would allow, and how many closed
+sections it would fill); with the administrator's `openForms`, what it did. The console shows it
+beside the plan as **Accept enquiries now**, unticked; the CLI's `--open-forms` calls
+`POST /api/v2/marketplace/{id}/forms` after its own apply, so opening never re-applies. Opening is
+one act in `ShSiteFormOpener.open`: the site-form row (that folder and types, enabled, origins =
+`shio.url`'s, the site host's and the site's own front end's), the site's standing FORM token
+(reused when one exists, listed in API tokens so it can be revoked), and that token on every draft
+and published `SectionForm` of a proposed type whose `formToken` is empty. A site that already has a
+form row keeps it untouched and the answer says `kept`, since that row is the operator's. All of it
+stays behind `ROLE_ADMIN` on `/api/v2/marketplace/**`: enabling a form makes a public write path,
+which `ShStatelessReachabilityLintTest` records as the operator's call, so there is no agent op.
+`openForms` on a package with no proposal is a 400 (`marketplace-no-forms`), never silently ignored.
+`ShBlueprintAccessibilityTest.theProposedFormsOpenInOneAct` opens the showcase's forms and posts an
+enquiry from the instance's own origin.
+
 ## The three packages that carry an index page (SH216)
 
 SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`

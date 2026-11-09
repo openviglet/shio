@@ -336,6 +336,24 @@ class ShMarketplaceInstallerTest {
     }
 
     @Test
+    @DisplayName("SH1387: openForms on a package that proposes no form destination is refused, and the plan says none")
+    void openFormsNeedsAProposal() throws IOException {
+        publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",
+                pkg("shio-blueprint-newsroom", "2.0.0")));
+
+        ShMarketplaceSetup.Result planned = setup.run("shio-blueprint-newsroom",
+                new ShMarketplaceSetup.Request("SH1387 Newsroom", JsonNodeFactory.instance.objectNode(),
+                        true, false, true), "admin");
+        assertThat(planned.forms()).as("SH1387: a package with no proposal shows no forms step").isNull();
+
+        assertThatThrownBy(() -> setup.run("shio-blueprint-newsroom",
+                new ShMarketplaceSetup.Request("SH1387 Newsroom", JsonNodeFactory.instance.objectNode(),
+                        true, false, true, true), "admin"))
+                .as("SH1387: consent to open forms the package never proposed is refused, not ignored")
+                .isInstanceOf(ShMarketplaceSetup.NoFormsProposedException.class);
+    }
+
+    @Test
     @DisplayName("SH1251: an apply that refuses after the install keeps the installed package")
     void aSetupWhoseApplyRefusesKeepsThePackage() throws IOException {
         publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",

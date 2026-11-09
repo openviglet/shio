@@ -82,6 +82,10 @@
     "assets/fonts/inter-400.woff2",
     "assets/fonts/inter-600.woff2"
   ],
+  "forms": {
+    "folder": "/enquiries",
+    "types": ["Enquiry"]
+  },
   "verify": {
     "posts": [
       "/",

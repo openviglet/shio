@@ -241,32 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.114 Quilhara's forms take submissions out of the box (SH1387)
-
-**Where it showed.** On 2026-11-09, filming the promo's trip-enquiry chapter, Quilhara
-installed from the Marketplace rendered no `<form>` on `/contact` or
-`/trips/wind-crest-overnight`.
-
-**What landed (part one).** Both pages carry an `Enquiry` `SectionForm` in both
-languages, with an `/enquiries` folder, shipped closed: the token is empty, so neither
-page draws a form until a curator opens it (`POST /api/v2/site-form` with folder
-`/enquiries`, type `Enquiry`, the site's origin, then the site's FORM token on the four
-form sections). `docs/agents/blueprints.md` records how; `ShBlueprintAccessibilityTest`
-proves the opened form submits with script off.
-
-**What is left, and why it needs a person.** The ask was an install that accepts a
-submission with nothing set by hand. SH632 decided a site's form destination is never a
-template setting, since a folder chosen in a template is a folder an attacker chooses,
-and that enabling it is a console-admin act. A middle path: the Marketplace dialog, run
-by an admin, offers an explicit "accept enquiries now" step that creates the site-form
-row and a FORM token and fills the sections, so the admin's click opens it, not the
-package. **Decided 2026-11-09: yes, build that step**; the admin's click is enough, with
-the folder and type from the package shown in the dialog before it opens.
-
-**Done when** a person rules: if yes, build the dialog step and prove a clean release
-instance with Quilhara from the Marketplace accepts a trip enquiry; if no, ship this
-line as the closed form it already is.
-
 ### XI.119 The Universal Editor opens a named page (SH1392)
 
 `/bento/universal-editor/:siteId` frames `/preview/<site>/?editor=true` and takes no
@@ -353,6 +327,30 @@ Build, in this order:
 
 Assert each in `ShSiteMemberHandoffTest`: the cookie stops opening the gated page after
 each of the three, and a fresh sign-in still works afterwards.
+
+### XI.123 A catalogue entry names the oldest Shio that can install it (SH1397)
+
+The published catalogue (`shio-site/scripts/marketplace.mjs`, served at
+shio.viglet.org/marketplace) is built from this tree's packages and read by every
+instance that keeps the default `shio.marketplace.url` (SH1257).
+`ShBlueprintRegistry.validateManifestKeys` refuses any manifest key it does not know,
+which is right for a typo and wrong across versions: SH1252 added `assets` and SH1387
+added `forms`, and an instance released before either answers the republished package
+with "unknown manifest key" at install, after the download, with nothing in the
+catalogue or the dialog saying the package needs a newer Shio. `formatVersion` stays
+`1`, so it cannot say so either.
+
+Build: the generator stamps each entry with the oldest Shio version that reads every key
+its manifest uses (a table in `marketplace.mjs` from key to the release that introduced
+it: `assets` to SH1252's, `forms` to SH1387's), as `minShio` on the catalogue entry.
+`ShMarketplaceCatalog` compares it with the running version (the manifest already
+reports one) and answers such an entry as `installable: false` with `needs: "Shio
+<version> or later"`. The console card and `shio marketplace show` print that instead of
+offering Install, and `/install` refuses it with the same sentence and a `fix` naming
+the upgrade, before any download. An entry with no `minShio` behaves as today.
+`shio-site/scripts/marketplace.test.mjs` asserts that every key in
+`ShBlueprintManifest.KEYS` has a row in the table, so the next key cannot ship without
+one.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

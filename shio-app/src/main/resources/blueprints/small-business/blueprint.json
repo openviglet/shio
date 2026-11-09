@@ -55,6 +55,10 @@
   "content": [
     "content/small-business.json"
   ],
+  "forms": {
+    "folder": "/messages",
+    "types": ["Contact"]
+  },
   "verify": {
     "posts": [
       "/",

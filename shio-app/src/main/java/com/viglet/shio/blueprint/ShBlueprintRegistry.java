@@ -535,7 +535,36 @@ public class ShBlueprintRegistry {
                 assets);
         validatePlaceholders(blueprint);
         validatePromise(blueprint);
+        validateForms(blueprint, base);
         return blueprint;
+    }
+
+    /**
+     * SH1387 — a proposed form destination names a folder path and only types the package declares,
+     * so what the Marketplace shows an administrator before opening is what opening would do.
+     */
+    private static void validateForms(ShBlueprint blueprint, String base) {
+        ShBlueprintManifest.Forms forms = blueprint.manifest().forms();
+        if (forms == null) {
+            return;
+        }
+        if (forms.folder() == null || !forms.folder().startsWith("/") || forms.types().isEmpty()) {
+            throw new BlueprintFormatException(base, "`forms` needs a `folder` path starting with / and "
+                    + "at least one post type in `types`, e.g. {\"folder\":\"/enquiries\",\"types\":[\"Enquiry\"]}");
+        }
+        java.util.Set<String> declared = new java.util.HashSet<>();
+        for (JsonNode type : blueprint.postTypes()) {
+            if (type.hasNonNull("name")) {
+                declared.add(type.get("name").asString());
+            }
+        }
+        for (String type : forms.types()) {
+            if (!declared.contains(type)) {
+                throw new BlueprintFormatException(base, "`forms.types` names '" + type
+                        + "', which the package's `postTypes` do not declare (declared: "
+                        + String.join(", ", new java.util.TreeSet<>(declared)) + ")");
+            }
+        }
     }
 
     // --- validation ---

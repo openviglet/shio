@@ -75,6 +75,21 @@ export interface ShMarketplaceSetupRequest {
   createSite: boolean
   mergePostTypes: boolean
   dryRun: boolean
+  /** SH1387 — the administrator's consent to open the forms the package proposes. */
+  openForms?: boolean
+}
+
+/** SH1387 — what opening the site's forms would do (a plan) or did. */
+export interface ShMarketplaceFormsOpening {
+  folder: string
+  types: string[]
+  origins: string[]
+  opened: boolean
+  /** `created`, or `kept` when the site already had a form configuration, left as it is. */
+  configuration: "created" | "kept"
+  enabled: boolean
+  /** Closed form sections given the token; null on a plan for a site that does not exist yet. */
+  sections: number | null
 }
 
 /** The parts of `ShBlueprintApplied` the dialog shows. */
@@ -94,6 +109,8 @@ export interface ShMarketplaceApplied {
 export interface ShMarketplaceSetupResult {
   install: ShMarketplaceInstalled | null
   apply: ShMarketplaceApplied
+  /** SH1387 — present only for a package that proposes a form destination. */
+  forms?: ShMarketplaceFormsOpening | null
 }
 
 export const MARKETPLACE_BUILTIN_ONLY = "builtin-only"

@@ -87,6 +87,11 @@ import tools.jackson.databind.JsonNode;
  *                      {@code files}, these belong in the CMS, so the server writes them; the
  *                      plan lists each one, and identical bytes already there are left alone (P5).
  *                      Omitted from JSON when empty, so a package without any costs nothing
+ * @param forms         SH1387 — where the package's own forms would send a submission: a folder and
+ *                      the post types it accepts. A <b>proposal</b>, never a setting: applying the
+ *                      package opens nothing (SH632, a destination chosen by a template is one an
+ *                      attacker chooses), and the Marketplace setup shows it to an administrator, who
+ *                      opens it with an explicit {@code openForms}. Omitted when the package has none
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -96,7 +101,8 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
                                   String description, String version, JsonNode params,
                                   List<String> postTypes, List<String> content,
                                   List<FileRef> files, Verify verify,
-                                  @JsonInclude(Include.NON_EMPTY) List<AssetRef> assets) {
+                                  @JsonInclude(Include.NON_EMPTY) List<AssetRef> assets,
+                                  Forms forms) {
 
     /** The only format revision that exists. */
     public static final int FORMAT_VERSION = 1;
@@ -107,7 +113,7 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
     /** Every key the manifest may carry — anything else is a typo, and typos are 400s. */
     public static final List<String> KEYS = List.of("formatVersion", "name", "title",
             "description", "version", "params", "postTypes", "content", "files", "verify",
-            "assets");
+            "assets", "forms");
 
     /** SH1252 — the directory every asset path lives under, which is also what it loses in the site. */
     public static final String ASSETS_DIRECTORY = "assets/";
@@ -125,7 +131,30 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
                                String version, JsonNode params, List<String> postTypes,
                                List<String> content, List<FileRef> files, Verify verify) {
         this(formatVersion, name, title, description, version, params, postTypes, content, files,
-                verify, List.of());
+                verify, List.of(), null);
+    }
+
+    /** The pre-SH1387 form: a package that proposes no form destination. */
+    public ShBlueprintManifest(int formatVersion, String name, String title, String description,
+                               String version, JsonNode params, List<String> postTypes,
+                               List<String> content, List<FileRef> files, Verify verify,
+                               List<AssetRef> assets) {
+        this(formatVersion, name, title, description, version, params, postTypes, content, files,
+                verify, assets, null);
+    }
+
+    /**
+     * SH1387 — the destination a package proposes for its forms.
+     *
+     * @param folder where a submission is filed, a folder the package's own content creates
+     * @param types  the post types a submission may be, each one the package declares
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Forms(String folder, List<String> types) {
+
+        public Forms {
+            types = types == null ? List.of() : List.copyOf(types);
+        }
     }
 
     /**

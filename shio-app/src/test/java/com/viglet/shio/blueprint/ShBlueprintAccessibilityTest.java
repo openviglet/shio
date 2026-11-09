@@ -428,6 +428,63 @@ class ShBlueprintAccessibilityTest {
                 .satisfies(each -> assertThat(each.getState()).isEqualTo(ShPostState.DRAFT));
     }
 
+    @Autowired
+    private com.viglet.shio.api.form.ShSiteFormOpener siteFormOpener;
+
+    /**
+     * SH1387 — the Marketplace's "accept enquiries now": the showcase proposes its destination, the
+     * plan names it, and the administrator's one act opens every closed form section so a browser on
+     * the instance's own origin can submit. Applying still opens nothing.
+     */
+    @Test
+    @DisplayName("SH1387: opening the showcase's proposed forms makes the trip page take an enquiry")
+    void theProposedFormsOpenInOneAct() throws Exception {
+        var mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        String site = freshSite("quilhara-open");
+        blueprintService.apply(SHOWCASE, site, paramsFor(registry.all().get(SHOWCASE)), "admin");
+        var forms = registry.all().get(SHOWCASE).manifest().forms();
+        assertThat(forms).as("SH1387: the showcase proposes where its enquiries go").isNotNull();
+        assertThat(forms.folder()).isEqualTo("/enquiries");
+        assertThat(forms.types()).containsExactly("Enquiry");
+
+        var plan = siteFormOpener.plan(site, forms);
+        assertThat(plan.opened()).isFalse();
+        assertThat(plan.configuration()).isEqualTo("created");
+        assertThat(plan.sections()).as("SH1387: the plan counts the closed form sections it would fill").isPositive();
+        assertThat(renderService.render(site, "/trips/wind-crest-overnight", ShPostState.DRAFT).html())
+                .as("SH1387: planning opens nothing").doesNotContain("<form");
+
+        var opened = siteFormOpener.open(site, forms, "admin");
+        assertThat(opened.opened()).isTrue();
+        assertThat(opened.enabled()).isTrue();
+        assertThat(opened.sections()).isEqualTo(plan.sections());
+        String origin = opened.origins().getFirst();
+        assertThat(origin).as("SH1387: the instance's own origin may submit").startsWith("http");
+        String html = renderService.render(site, "/trips/wind-crest-overnight", ShPostState.DRAFT).html();
+        java.util.regex.Matcher token = java.util.regex.Pattern
+                .compile("name=\"" + ShApiTokenFilter.FORM_TOKEN_FIELD + "\" value=\"([^\"]+)\"").matcher(html);
+        assertThat(token.find()).as("SH1387: the trip page draws its form with the site's token").isTrue();
+
+        MvcResult sent = mvc.perform(post("/api/v2/cda/form/" + site)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .header("Origin", origin)
+                        .param(ShFormSubmissionAPI.TYPE_FIELD, "Enquiry")
+                        .param(ShApiTokenFilter.FORM_TOKEN_FIELD, token.group(1))
+                        .param(ShFormSubmissionAPI.HONEYPOT_FIELD, "")
+                        .param("name", "Ana").param("email", "ana@example.com")
+                        .param("message", "SH1387 opened in one act"))
+                .andReturn();
+        assertThat(sent.getResponse().getStatus())
+                .as("SH1387: an install opened from the Marketplace accepts a trip enquiry: "
+                        + sent.getResponse().getContentAsString())
+                .isIn(201, 303);
+
+        var again = siteFormOpener.open(site, forms, "admin");
+        assertThat(again.configuration())
+                .as("SH1387: a second opening keeps the configuration it made").isEqualTo("kept");
+        assertThat(again.sections()).as("SH1387: and fills nothing that already has a token").isZero();
+    }
+
     /** The curator's edit: the site's FORM token on the contact form section. */
     private void fillFormToken(String siteId, String value) {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {

@@ -393,6 +393,15 @@ export class ShioAdminClient {
     return this.#marketplace(`/${encodeURIComponent(id)}/install${query}`, "POST");
   }
 
+  /**
+   * POST /api/v2/marketplace/{id}/forms — SH1387: open a site's forms with the destination the
+   * applied package proposes. Admin-gated with the rest of the marketplace.
+   */
+  openPackageForms(id, site, { dryRun = false } = {}) {
+    const query = `?site=${encodeURIComponent(site)}${dryRun ? "&dryRun=true" : ""}`;
+    return this.#marketplace(`/${encodeURIComponent(id)}/forms${query}`, "POST");
+  }
+
   /** DELETE /api/v2/marketplace/{id} — removes a package installed from a catalogue. */
   uninstallPackage(id) {
     return this.#marketplace(`/${encodeURIComponent(id)}`, "DELETE");

@@ -152,6 +152,23 @@ public class ShMarketplaceAPI {
     }
 
     /**
+     * SH1387 — open a site's forms with the destination an applied package proposes: the site-form
+     * configuration, the site's FORM token, and the token on every closed form section. The CLI's
+     * {@code --open-forms}; the console sends {@code openForms} with {@code /setup} instead.
+     * {@code dryRun=true} answers what it would do. Admin-only with the rest of this path, because
+     * enabling a form makes a public write path (the operator's call, not a package's).
+     */
+    @PostMapping("/{id}/forms")
+    @Operation(summary = "Open a site's forms with the destination an applied package proposes")
+    public com.viglet.shio.api.form.ShSiteFormOpener.Opening forms(
+            @PathVariable String id,
+            @RequestParam(name = "site") String site,
+            @RequestParam(name = "dryRun", required = false, defaultValue = "false") boolean dryRun,
+            Principal principal) {
+        return setup.forms(id, site, dryRun, principal == null ? null : principal.getName());
+    }
+
+    /**
      * Remove an installed package.
      *
      * <p>Only one that came from a catalogue: a package that shipped with the instance is on the

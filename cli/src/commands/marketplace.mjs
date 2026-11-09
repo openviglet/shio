@@ -198,7 +198,19 @@ async function installAndApply(client, id, flags, ctx) {
 
   try {
     const applied = await applyBlueprint({ ...flags, blueprint: id }, [], ctx);
-    return { install: installed, apply: applied, exitCode: applied?.exitCode };
+    // SH1387 — the forms the package proposes stay closed unless the operator says otherwise, and
+    // only once the apply succeeded: opening forms on a site the apply refused is opening nothing.
+    let forms = null;
+    if (flags["open-forms"] && !applied?.exitCode) {
+      forms = await client.openPackageForms(id, flags.site, { dryRun });
+      ctx.stdout.write(`shio marketplace: ${dryRun ? "would open" : "opened"} the forms of `
+        + `${flags.site}: submissions go to ${forms.folder} as ${forms.types.join(", ")}, `
+        + `from ${forms.origins.join(", ") || "no origin"}; `
+        + `${forms.sections ?? "?"} form section(s) ${dryRun ? "would get" : "got"} the site's token`
+        + `${forms.configuration === "kept" ? " (the site's existing form configuration was kept"
+          + `${forms.enabled ? "" : " and is disabled"})` : ""}.\n`);
+    }
+    return { install: installed, apply: applied, forms, exitCode: applied?.exitCode };
   } catch (error) {
     if (installed && !dryRun) {
       // The package is valid and stays where the registry sees it: say so, or the operator

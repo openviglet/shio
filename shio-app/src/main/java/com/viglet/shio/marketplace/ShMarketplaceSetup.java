@@ -12,10 +12,15 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.form.ShSiteFormOpener;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.blueprint.ShBlueprintService;
 import com.viglet.shio.blueprint.ShBlueprintWriteService;
+import com.viglet.shio.blueprint.dto.ShBlueprint;
 import com.viglet.shio.blueprint.dto.ShBlueprintApplied;
+import com.viglet.shio.blueprint.dto.ShBlueprintManifest;
 import com.viglet.shio.marketplace.dto.ShMarketplaceItem;
 
 import tools.jackson.databind.JsonNode;
@@ -44,9 +49,13 @@ public class ShMarketplaceSetup {
     private final ShMarketplaceInstaller installer;
     private final ShBlueprintRegistry registry;
     private final ShBlueprintService blueprints;
+    /** SH1387 — the forms half, run only on the administrator's explicit {@code openForms}. */
+    private final ShSiteFormOpener opener;
 
     public ShMarketplaceSetup(ShMarketplaceCatalog catalog, ShMarketplaceInstaller installer,
-                              ShBlueprintRegistry registry, ShBlueprintService blueprints) {
+                              ShBlueprintRegistry registry, ShBlueprintService blueprints,
+                              ShSiteFormOpener opener) {
+        this.opener = opener;
         this.catalog = catalog;
         this.installer = installer;
         this.registry = registry;
@@ -61,16 +70,39 @@ public class ShMarketplaceSetup {
      * @param createSite     SH151's opt-in, a consent the plan names before it happens
      * @param mergePostTypes SH152's opt-in, likewise
      * @param dryRun         plan both halves and write nothing
+     * @param openForms      SH1387 — also open the site's forms with the destination the package
+     *                       proposes, the administrator's explicit consent; refused for a package
+     *                       that proposes none
      */
     public record Request(String site, JsonNode params, boolean createSite, boolean mergePostTypes,
-                          boolean dryRun) {
+                          boolean dryRun, boolean openForms) {
+
+        /** The pre-SH1387 form: forms stay closed. */
+        public Request(String site, JsonNode params, boolean createSite, boolean mergePostTypes,
+                       boolean dryRun) {
+            this(site, params, createSite, mergePostTypes, dryRun, false);
+        }
     }
 
     /**
      * @param install the install half, or {@code null} when the package was already here
      * @param apply   the apply, or its plan on a dry run
+     * @param forms   SH1387 — for a package that proposes a form destination: what opening the
+     *                site's forms would do (a dry run, or a run that did not ask), or what it did;
+     *                {@code null} for a package that proposes none
      */
-    public record Result(ShMarketplaceInstaller.Installed install, ShBlueprintApplied apply) {
+    public record Result(ShMarketplaceInstaller.Installed install, ShBlueprintApplied apply,
+                         ShSiteFormOpener.Opening forms) {
+    }
+
+    /** SH1387 — {@code openForms} on a package that proposes no form destination. */
+    public static class NoFormsProposedException extends ShTeachingException {
+        NoFormsProposedException(String id) {
+            super(ShProblem.badRequest("marketplace-no-forms",
+                            "Package '" + id + "' proposes no form destination")
+                    .withFix("Leave openForms off for this package, or open the site's form in the console "
+                            + "(Content -> Forms) with a folder and type of your own."));
+        }
     }
 
     public Result run(String id, Request request, String actor) {
@@ -84,19 +116,58 @@ public class ShMarketplaceSetup {
 
         if (request.dryRun()) {
             if (!needsInstall) {
+                ShBlueprintManifest.Forms forms = proposed(registry.all().get(id), request, id);
                 return new Result(null, blueprints.plan(id, request.site(), request.params(), actor,
-                        options));
+                        options), forms == null ? null : opener.plan(request.site(), forms));
             }
-            return installer.staged(id, (directory, wouldInstall) -> new Result(wouldInstall,
-                    blueprints.plan(registry.readStaged(directory), request.site(),
-                            request.params(), actor, options)));
+            return installer.staged(id, (directory, wouldInstall) -> {
+                ShBlueprint staged = registry.readStaged(directory);
+                ShBlueprintManifest.Forms forms = proposed(staged, request, id);
+                return new Result(wouldInstall, blueprints.plan(staged, request.site(),
+                        request.params(), actor, options),
+                        forms == null ? null : opener.plan(request.site(), forms));
+            });
         }
 
+        if (request.openForms() && !needsInstall) {
+            // Refused before anything is written, where the package is already here to ask.
+            proposed(registry.all().get(id), request, id);
+        }
         ShMarketplaceInstaller.Installed installed = needsInstall ? installer.install(id, false) : null;
         // Not rolled back when the apply refuses: the package is valid and installed, and the
         // refusal (an unknown site, a missing parameter) is about the apply. The caller is told it
         // stays by the install half of an earlier dry run, and the next apply can use it.
-        return new Result(installed, blueprints.apply(id, request.site(), request.params(), actor,
-                options));
+        ShBlueprintApplied applied = blueprints.apply(id, request.site(), request.params(), actor, options);
+        ShBlueprintManifest.Forms forms = proposed(registry.all().get(id), request, id);
+        if (forms == null) {
+            return new Result(installed, applied, null);
+        }
+        String site = applied.site() != null ? applied.site() : request.site();
+        return new Result(installed, applied, request.openForms()
+                ? opener.open(site, forms, actor) : opener.plan(site, forms));
+    }
+
+    /**
+     * SH1387 — the forms half alone, for a package already applied to {@code site}: what the CLI's
+     * {@code --open-forms} calls after its own apply, so opening never re-applies the package.
+     */
+    public ShSiteFormOpener.Opening forms(String id, String site, boolean dryRun, String actor) {
+        if (!registry.names().contains(id)) {
+            List<ShMarketplaceItem> items = catalog.catalogue().items();
+            throw new ShMarketplaceInstaller.UnknownItemException(id,
+                    items.stream().map(ShMarketplaceItem::id).toList());
+        }
+        ShBlueprintManifest.Forms forms = proposed(registry.all().get(id),
+                new Request(site, null, false, false, dryRun, true), id);
+        return dryRun ? opener.plan(site, forms) : opener.open(site, forms, actor);
+    }
+
+    /** The package's proposed destination, refusing {@code openForms} where there is none (SH1387). */
+    private static ShBlueprintManifest.Forms proposed(ShBlueprint blueprint, Request request, String id) {
+        ShBlueprintManifest.Forms forms = blueprint == null ? null : blueprint.manifest().forms();
+        if (forms == null && request.openForms()) {
+            throw new NoFormsProposedException(id);
+        }
+        return forms;
     }
 }

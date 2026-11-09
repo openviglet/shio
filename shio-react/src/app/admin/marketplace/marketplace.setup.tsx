@@ -51,6 +51,8 @@ export function MarketplaceSetup({
   // SH1385 — a refused plan is said here, in the dialog, and not only in a toast the modal can hide:
   // the Marketplace's first run failed with "Install and apply" quietly disabled and nothing else.
   const [failure, setFailure] = useState<string | null>(null)
+  // SH1387 — off unless ticked: a package's forms ship closed, and opening them is the admin's act.
+  const [openForms, setOpenForms] = useState(false)
 
   /** Any change invalidates the plan: a confirm must write what was planned, and nothing else. */
   const change = (next: () => void) => {
@@ -66,6 +68,8 @@ export function MarketplaceSetup({
     createSite,
     mergePostTypes,
     dryRun,
+    // Only a package whose plan proposed forms can be asked to open them.
+    openForms: openForms && Boolean(plan?.forms),
   })
 
   const run = (dryRun: boolean) => {
@@ -173,12 +177,43 @@ export function MarketplaceSetup({
 
       {plan && <PlanSummary result={plan} />}
 
+      {/* SH1387 — the package proposes where its forms send submissions; this is the admin's yes. */}
+      {plan?.forms && (
+        <div className="flex flex-col gap-1 rounded-md border p-3 text-sm">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="marketplace-setup-forms"
+              checked={openForms}
+              onCheckedChange={(checked) => setOpenForms(checked === true)}
+            />
+            <Label htmlFor="marketplace-setup-forms">{t("marketplace.formsOffer")}</Label>
+          </div>
+          <p className="text-muted-foreground">
+            {t("marketplace.formsPlan", {
+              folder: plan.forms.folder,
+              types: plan.forms.types.join(", "),
+              origins: plan.forms.origins.join(", "),
+            })}{" "}
+            {plan.forms.sections != null && t("marketplace.formsSections", { count: plan.forms.sections })}
+          </p>
+          {plan.forms.configuration === "kept" && (
+            <p className="text-muted-foreground">{t("marketplace.formsKept")}</p>
+          )}
+        </div>
+      )}
+
       {done && (
         <p className="text-sm">
           {t("marketplace.setupDone", { site: done.apply.site })}{" "}
           <Link className="underline" to={ROUTES.CONTENT_ROOT}>
             {t("marketplace.setupOpen")}
           </Link>
+        </p>
+      )}
+      {done?.forms?.opened && (
+        <p className="text-sm">
+          {t("marketplace.formsOpened", { count: done.forms.sections ?? 0, folder: done.forms.folder })}
+          {!done.forms.enabled && <> {t("marketplace.formsOpenedDisabled")}</>}
         </p>
       )}
 

@@ -254,6 +254,31 @@ test("SH1251: a dry run of a package not yet installed plans the install and say
   assert.match(output(), /nothing was written/);
 });
 
+test("SH1387: --open-forms opens the site's forms after the apply, and never without it", async () => {
+  const done = { id: "shio-blueprint-newsroom", version: "2.0.0", origin: "/pkg", installed: true, loaded: 7 };
+  const opened = { folder: "/enquiries", types: ["Enquiry"], origins: ["http://shio.test"], opened: true,
+    configuration: "created", enabled: true, sections: 4 };
+  const { ctx, calls, output } = applyContext([
+    ["/install", json(done)], ["/forms?site=News", json(opened)], ...APPLY_ROUTES,
+    ["/api/v2/marketplace", json(CATALOGUE)],
+  ]);
+
+  const result = await run({ apply: true, site: "News", "open-forms": true },
+    ["install", "shio-blueprint-newsroom"], ctx);
+
+  const order = calls.map((call) => `${call.method} ${new URL(call.url).pathname}`);
+  const apply = order.indexOf("POST /api/v2/agent/blueprints/shio-blueprint-newsroom/apply");
+  const forms = order.indexOf("POST /api/v2/marketplace/shio-blueprint-newsroom/forms");
+  assert.ok(apply >= 0 && forms > apply, `SH1387: the forms open after the apply succeeded; got ${order}`);
+  assert.equal(result.forms.sections, 4);
+  assert.match(output(), /opened the forms of News: submissions go to \/enquiries as Enquiry/);
+
+  const closed = applyContext([["/install", json(done)], ...APPLY_ROUTES, ["/api/v2/marketplace", json(CATALOGUE)]]);
+  await run({ apply: true, site: "News" }, ["install", "shio-blueprint-newsroom"], closed.ctx);
+  assert.ok(!closed.calls.some((call) => call.url.includes("/forms")),
+    "SH1387: without --open-forms a package's forms stay closed");
+});
+
 test("SH1251: install --apply needs a site, and a failed apply says the package stays", async () => {
   const bare = applyContext([]);
   await assert.rejects(() => run({ apply: true }, ["install", "blog"], bare.ctx), /needs --site/);
