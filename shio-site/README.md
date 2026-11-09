@@ -128,6 +128,15 @@ Five rules for editing any of it:
   marketing route. Locally a missing or stale build is reported and skipped; CI
   builds the site first and sets `SHIO_REQUIRE_SITE_BUILD=1`, which turns that
   skip into a failure.
+  The browser half, [`scripts/site-journeys.browser.test.mjs`](scripts/site-journeys.browser.test.mjs),
+  is opt-in like the scroll test: with `SHIO_SITE_URL` pointing at a running
+  build (`vite preview`) it renders the home, a solution page, a feature page,
+  the docs overview and an article at 390, 768 and 1440 px in both themes with
+  reduced motion, drives the phone menu by keyboard, and walks consent fresh,
+  declined and withdrawn. It keeps every screenshot and a `report.json` in
+  `test-results/site-journeys/` for someone to look at. `SHIO_SITE_LINKS=1` adds
+  a retry-bounded check of the external destinations, where a network failure
+  is reported as inconclusive rather than as a regression.
 - **The home decides; the depth lives on its own page (SH1372).** The home
   renders what a visitor chooses with: the hero, the four ways in, who runs
   it, the showcase, the three seats, what it can do, what stops an agent, an

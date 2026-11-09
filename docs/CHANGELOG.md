@@ -1510,7 +1510,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1372** — The home keeps eleven deciding sections and indexes the depth as cards that keep their anchors; the agent protocol renders in full on /claude-code/, taking the phone-width home from 36,097 to 20,809 pixels (design §XIX.20 recorded in `shio-site/README.md`).
 - **SH1373** — The delivery page and llms.txt explain the optional Viglet Turing indexing with its boundary (off by default, on publish only, never drafts), and the docs name Claude Code as the one host with a plugin, every other MCP client using the generic endpoint.
 - **SH1377** — The five .mdx section landing pages and their card descriptions name Viglet Shio in full, and the full-names lint now reads .mdx pages and tag attributes, dropping only addresses and imports.
-- **SH1374 (the build check)** — A check over the built site asserts the hub contract on all 50 pages: full names in text, labels, metadata and diagrams, titles, canonical, Open Graph, JSON-LD, internal links and Markdown twins, required in CI.
+- **SH1374** — An opt-in browser check renders five representative pages at 390, 768 and 1440 in both themes, drives the phone menu by keyboard and walks consent fresh, declined and withdrawn, keeping screenshots and a route report.
 
 ## Block T — End-user documentation, round two (the curator's half)
 

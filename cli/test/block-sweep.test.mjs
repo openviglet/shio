@@ -345,7 +345,11 @@ const SWEEP = {
       + "in it changed the site (the home and niche titles, the consent banner) or GitHub's repo page, "
       + "which no matrix describes. Earlier closure: SH930, on how far the em-dash rule reaches. "
       + "Reopened for SH1258 and re-closed with it: shio-site/src gained the /showcase page and "
-      + "landing section, so the site is again its own sweep",
+      + "landing section, so the site is again its own sweep. Reopened for the hub alignment "
+      + "(SH1369-SH1374, SH1377) and re-closed by SH1374: full names, the hub's visual grammar, one "
+      + "destination map, a focused home, the Turing boundary and checks over the built pages all "
+      + "changed shio-site itself, and COVERAGE's Block S row names each with the mirror regenerated. "
+      + "README is NOT moved: it lists no site copy or route that changed",
   },
   Q: {
     swept: true,

@@ -27,10 +27,6 @@
 
 - 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
 
-## Block S — The public site (shio.viglet.org)
-
-- 🛠 **SH1374** (deps: SH1369 ✅, SH1370 ✅, SH1371 ✅, SH1372 ✅, SH1373 ✅) **No acceptance check compares the product site with the revised hub contract** — The opt-in browser layer remains: 390/768/1440 in both themes, keyboard and menu focus, consent states, kept screenshots. → §XIX.22
-
 ## Priority
 
 ## Done when — SH1245
@@ -59,15 +55,6 @@
 - **A contact form on a blueprint page submits with script off** An applied
   small-business site's contact page, with submissions enabled, stores a Contact post
   from a plain browser form post, and verify reports its three promised pages.
-
-## Done when — SH1374
-
-- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
-  satisfy the acceptance checks in the design, and preserve technical identifiers and
-  existing URLs.
-- **The hub contract survives the change** Review full names, relevant light/dark and
-  mobile layouts, and links to installation, documentation and the portfolio; retain the
-  product-specific behavior.
 
 ## Non-goals (do NOT add as tasks)
 

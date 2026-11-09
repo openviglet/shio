@@ -654,35 +654,6 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
-### XIX.22 Rendered brand and journey regression coverage (SH1374)
-
-Review of 2026-11-08: published pages and current source, compared with viglet.org. The
-sampled home and docs routes returned 200 at 1440/390 pixels without document-wide
-overflow or page errors. That is a healthy baseline, not a whole-site accessibility
-certification. Existing shio-site build checks do not assert the new cross-site brand
-contract.
-
-Extend existing tests rather than adding a parallel framework or workflow: deterministic
-checks join shio-site's node tests (scripts/site-claims.test.mjs), which suites.yml
-already runs on push and pull request; its js job builds no site
-(.github/workflows/suites.yml:58-70), so a check over dist adds build:site there.
-Enumerate generated marketing routes and representative documentation templates; verify
-full product names with technical exceptions, title/canonical/OG/JSON-LD/llms
-consistency, internal anchors and the destination map. Add browser coverage with the
-root playwright ^1.64.1 and pixelmatch (package.json:49-50), opt-in by SHIO_SITE_URL
-like scroll-drift.browser.test.mjs, at 390/768/1440 pixels, both themes, reduced motion,
-keyboard navigation, menu opening/closing and focus return. Inspect actual screenshots
-for clipping, readability and decorative chips; do not substitute a CSS-class assertion
-for visual review. Test consent fresh, denied and withdrawn without loosening it to
-simplify the layout, and preserve demo failure states. Separate deterministic build
-checks from retry-bounded external-link checks so network resets are reported as
-inconclusive, not product regressions.
-
-Acceptance: run the existing site/docs build gates plus the new checks and retain
-representative screenshots and a route-result report. A later production smoke verifies
-deployed output; local success alone never claims deployment. No performance-score or
-conversion guarantees.
-
 ## XX End-user documentation, round two (Block T)
 
 Block R measured this and could not fix it. It took the coverage matrix from **33 wrong
