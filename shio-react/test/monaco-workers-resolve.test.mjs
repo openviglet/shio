@@ -96,6 +96,22 @@ for (const [label, files] of importSites()) {
   })
 }
 
+test("SH1384: GraphiQL stays on the majors the pinned Monaco serves", () => {
+  // A Dependabot group took @graphiql/react 1.0 and graphiql 6 beside 23 harmless updates, and the
+  // console went red three ways at once with no line saying why. The hold is declared here, so the
+  // next offer of that major fails on one sentence naming the task that adopts it (see SH1383).
+  const declared = JSON.parse(readFileSync(join(HERE, "..", "package.json"), "utf8")).dependencies
+  const major = (range) => Number(String(range).replace(/^[^\d]*/, "").split(".")[0])
+  assert.deepEqual(
+    { react: major(declared["@graphiql/react"]), toolkit: major(declared["@graphiql/toolkit"]),
+      graphiql: major(declared.graphiql), monaco: declared["monaco-editor"] },
+    { react: 0, toolkit: 0, graphiql: 5, monaco: "0.52.2" },
+    "SH1384: GraphiQL's 1.0 line imports Monaco paths 0.52.2 does not ship. Hold @graphiql/react " +
+      "at 0.x, @graphiql/toolkit at 0.x and graphiql at 5 until the adoption task moves Monaco, " +
+      "the explorer's theme and this assertion together.",
+  )
+})
+
 test("SH242: monaco-editor is one copy, the one @graphiql/react and monaco-graphql were built against", () => {
   const versionOf = (resolver) => JSON.parse(readFileSync(resolver.resolve("monaco-editor/package.json"), "utf8")).version
   assert.equal(

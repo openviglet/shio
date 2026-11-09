@@ -329,8 +329,24 @@ already modelled rather than a second form builder:
 `site.formAction` is this site's submission endpoint and `site.formHoneypot` is the field name the
 server checks, so neither the URL nor the honeypot's name is a literal you keep in step by hand.
 
-The endpoint takes JSON and reads the token from a `Key` header, so submit with `fetch` rather than
-letting the browser post the form natively:
+The form works with no script at all. Post it natively and carry the post type and your FORM token
+in two more hidden fields, named by the site so they are not literals either:
+
+```handlebars
+<form action="{{site.formAction}}" method="post">
+  <input type="hidden" name="{{site.formTypeField}}" value="Contact">
+  <input type="hidden" name="{{site.formTokenField}}" value="YOUR_FORM_TOKEN">
+  ...the fields and the honeypot, as above...
+</form>
+```
+
+The endpoint answers a native post with a `303` back to the page it came from, adding
+`shio_form=sent` or `shio_form=error` to the query, so the page can thank the visitor or ask them to
+try again. It returns to the full address only when the page's origin is on the site's allowed
+list; otherwise it keeps the path alone, on this instance. Only a FORM token is accepted in the
+hidden field: a key with any other scope is ignored there.
+
+Or submit with `fetch`, which sends JSON and reads the token from a `Key` header:
 
 ```html
 <script>

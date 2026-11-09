@@ -9,6 +9,7 @@
 package com.viglet.shio.render;
 
 import com.viglet.shio.api.form.ShFormSubmissionAPI;
+import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.site.ShSiteLocaleService;
@@ -405,6 +406,10 @@ public class ShRenderModel {
         // stops working, with every submission passing and nothing anywhere reporting it.
         frame.put("formAction", "/api/v2/cda/form/" + site.getName());
         frame.put("formHoneypot", ShFormSubmissionAPI.HONEYPOT_FIELD);
+        // SH1382 — the two hidden fields a form with no script posts, read from the classes that
+        // read them for the honeypot's reason: the post-type it is about, and the FORM token.
+        frame.put("formTypeField", ShFormSubmissionAPI.TYPE_FIELD);
+        frame.put("formTokenField", ShApiTokenFilter.FORM_TOKEN_FIELD);
         // SH389 — three positioned lists, always present even when empty. A layout writes
         // `{{#each site.scripts.head}}`, and Shio never injects one: the delivery layer reads the same
         // post through the CDA, so there is no path by which a consent banner behaves one way in the

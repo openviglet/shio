@@ -8,18 +8,24 @@
  */
 package com.viglet.shio.api.form;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import tools.jackson.databind.JsonNode;
@@ -37,7 +43,9 @@ import com.viglet.shio.persistence.repository.form.ShSiteFormRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.post.type.ShFormEligibility;
+import com.viglet.shio.render.ShSiteFrontEnd;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
+import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -98,6 +106,18 @@ public class ShFormSubmissionAPI {
      */
     public static final String HONEYPOT_FIELD = "shio_hp";
 
+    /** SH1382 — the post-type a script-free form names, in a hidden field of the body. */
+    public static final String TYPE_FIELD = "shio_type";
+
+    /** SH1382 — the query parameter a script-free caller is sent back with, and its two values. */
+    public static final String RESULT_PARAM = "shio_form";
+    public static final String RESULT_SENT = "sent";
+    public static final String RESULT_ERROR = "error";
+
+    /** Fields of a urlencoded body that steer the submission and are never stored. */
+    private static final Set<String> RESERVED_FIELDS =
+            Set.of(TYPE_FIELD, HONEYPOT_FIELD, ShApiTokenFilter.FORM_TOKEN_FIELD);
+
     private final ShSiteFormRepository shSiteFormRepository;
     private final ShSiteRepository shSiteRepository;
     private final ShFormDestination shFormDestination;
@@ -123,9 +143,120 @@ public class ShFormSubmissionAPI {
     public ResponseEntity<Object> submit(@PathVariable String siteName,
                                          @RequestHeader(value = "Origin", required = false) String origin,
                                          @RequestBody ShFormSubmission body) {
+        Outcome outcome = accept(siteName, origin, body);
+        if (outcome.status() != 200) {
+            return refuse(outcome.status(), outcome.title(), outcome.fix());
+        }
+        return ResponseEntity.ok(outcome.id() == null
+                ? Map.of("received", true)
+                : Map.of("received", true, "id", outcome.id(), "state", ShPostState.DRAFT.name()));
+    }
+
+    /**
+     * The same submission from a page with no script (SH1382).
+     *
+     * <p>A plain {@code <form method="post">} sends {@code application/x-www-form-urlencoded} and
+     * follows whatever comes back, so a JSON answer would leave the visitor staring at it. This
+     * caller gets a {@code 303} back to the page it came from with {@code shio_form=sent} or
+     * {@code shio_form=error} in the query, which a template reads to say thanks or try again. The
+     * honeypot answers {@code sent}, as it answers a success on the JSON path.</p>
+     *
+     * <p>Three field names are reserved and never stored: {@link #TYPE_FIELD}, the honeypot and the
+     * token field the filter already read. Every other field is the submission.</p>
+     */
+    @PostMapping(value = "/{siteName}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<Void> submitForm(@PathVariable String siteName,
+                                           @RequestHeader(value = "Origin", required = false) String origin,
+                                           @RequestHeader(value = "Referer", required = false) String referer,
+                                           @RequestParam MultiValueMap<String, String> params) {
+        ObjectNode data = objectMapper.createObjectNode();
+        params.forEach((name, values) -> {
+            if (RESERVED_FIELDS.contains(name) || values == null || values.isEmpty()) {
+                return;
+            }
+            if (values.size() == 1) {
+                data.put(name, values.getFirst());
+            } else {
+                values.forEach(data.putArray(name)::add);
+            }
+        });
+        Outcome outcome = accept(siteName, origin,
+                new ShFormSubmission(params.getFirst(TYPE_FIELD), data, params.getFirst(HONEYPOT_FIELD)));
+        if (outcome.status() != 200) {
+            log.info("Form submission to '{}' refused ({}): {}", siteName, outcome.status(), outcome.title());
+        }
+        String back = backTo(siteName, origin, referer,
+                outcome.status() == 200 ? RESULT_SENT : RESULT_ERROR);
+        return ResponseEntity.status(303).location(URI.create(back)).build();
+    }
+
+    /**
+     * Where the visitor is sent back to, with the result marker appended.
+     *
+     * <p>The full {@code Referer} only when its origin is the browser's {@code Origin} and the site
+     * accepts that origin, so this endpoint is never an open redirect to wherever a forged header
+     * points. Otherwise the {@code Referer}'s path alone, which stays on this instance, and with no
+     * usable {@code Referer} the site's own front end.</p>
+     */
+    private String backTo(String siteName, String origin, String referer, String result) {
+        String target = null;
+        URI ref = parse(referer);
+        if (ref != null && ref.getScheme() != null && ref.getHost() != null) {
+            String refOrigin = ref.getScheme() + "://" + ref.getRawAuthority();
+            ShSite site = shSiteRepository.findByName(siteName);
+            Optional<ShSiteForm> config = site == null ? Optional.empty()
+                    : shSiteFormRepository.findFirstBySiteIdOrderByIdAsc(site.getId());
+            boolean trusted = origin != null && refOrigin.equalsIgnoreCase(origin.trim())
+                    && config.isPresent() && originAllowed(config.get(), origin);
+            target = withoutQueryMarker(ref, trusted);
+        }
+        if (target == null || !target.startsWith("/") && !target.startsWith("http")) {
+            ShSite site = shSiteRepository.findByName(siteName);
+            target = site == null ? "/" : ShSiteFrontEnd.of(site).baseUrl();
+        }
+        if (target.startsWith("//")) {
+            target = "/";
+        }
+        return target + (target.contains("?") ? "&" : "?") + RESULT_PARAM + "=" + result;
+    }
+
+    /** The URI as a string, a previous result marker dropped, absolute or path-only. */
+    private static String withoutQueryMarker(URI ref, boolean absolute) {
+        String path = ref.getRawPath() == null || ref.getRawPath().isEmpty() ? "/" : ref.getRawPath();
+        StringBuilder query = new StringBuilder();
+        if (ref.getRawQuery() != null) {
+            for (String pair : ref.getRawQuery().split("&")) {
+                if (!pair.isEmpty() && !pair.startsWith(RESULT_PARAM + "=")) {
+                    query.append(query.isEmpty() ? "" : "&").append(pair);
+                }
+            }
+        }
+        String tail = path + (query.isEmpty() ? "" : "?" + query);
+        return absolute ? ref.getScheme() + "://" + ref.getRawAuthority() + tail : tail;
+    }
+
+    private static URI parse(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return new URI(value.trim());
+        } catch (URISyntaxException e) {
+            return null;
+        }
+    }
+
+    /** What one submission came to, before either caller's answer is shaped from it. */
+    private record Outcome(int status, String title, String fix, String id) {
+        static Outcome refused(int status, String title, String fix) {
+            return new Outcome(status, title, fix, null);
+        }
+    }
+
+    private Outcome accept(String siteName, String origin, ShFormSubmission body) {
         ShSite site = shSiteRepository.findByName(siteName);
         if (site == null) {
-            return refuse(404, "No site named '" + siteName + "'",
+            return Outcome.refused(404, "No site named '" + siteName + "'",
                     "The path segment is the site's name. A form posts to the site it is rendered "
                             + "in, so this is the same name that appears in its preview URL.");
         }
@@ -135,7 +266,7 @@ public class ShFormSubmissionAPI {
         // content it was never issued for, and that is worth refusing twice rather than once.
         Optional<ShApiTokenContext> token = ShApiTokenContext.current();
         if (token.isPresent() && !token.get().allowsSite(site.getId())) {
-            return refuse(403, "This token is not for '" + siteName + "'",
+            return Outcome.refused(403, "This token is not for '" + siteName + "'",
                     "A FORM token names the one site it may submit to. Issue one for this site "
                             + "rather than widening an existing token.");
         }
@@ -144,7 +275,7 @@ public class ShFormSubmissionAPI {
         if (configured.isEmpty() || !configured.get().isEnabled()) {
             // One answer for "never configured" and "configured and switched off", because they are
             // the same fact to a submitter and the difference is the operator's business.
-            return refuse(403, "'" + siteName + "' is not accepting form submissions",
+            return Outcome.refused(403, "'" + siteName + "' is not accepting form submissions",
                     "An operator enables this per site: POST /api/v2/site-form with the folder "
                             + "submissions land in and the post-types it invites, then set enabled.");
         }
@@ -156,7 +287,7 @@ public class ShFormSubmissionAPI {
         ShPostType postType = body.type() == null || body.type().isBlank()
                 ? null : shPostTypeRepository.findByName(body.type());
         if (!ShFormEligibility.isEligible(postType, allowed)) {
-            return refuse(400, "'" + body.type() + "' is not a post-type this site invites",
+            return Outcome.refused(400, "'" + body.type() + "' is not a post-type this site invites",
                     "This site invites: " + String.join(", ", eligible(allowed))
                             + ". A system post-type is never eligible whatever the list says — "
                             + "PageLayout, Region and Theme are templates this instance executes.");
@@ -168,7 +299,7 @@ public class ShFormSubmissionAPI {
         // caller is subject to it, and after the configuration refusals above so an operator whose
         // site is misconfigured is told that rather than this.
         if (!originAllowed(config, origin)) {
-            return refuse(403, "'" + origin + "' is not an origin this site accepts forms from",
+            return Outcome.refused(403, "'" + origin + "' is not an origin this site accepts forms from",
                     "Add it to allowedOrigins on /api/v2/site-form (comma-separated, scheme and "
                             + "host as the browser sends them, e.g. https://www.acme.com). Empty "
                             + "allows no browser origin, which is the safe default rather than an "
@@ -177,7 +308,7 @@ public class ShFormSubmissionAPI {
 
         ShFolder folder = shFormDestination.resolve(site, config.getFolderUrl());
         if (folder == null) {
-            return refuse(500, "This site's form folder does not exist",
+            return Outcome.refused(500, "This site's form folder does not exist",
                     "'" + config.getFolderUrl() + "' is configured on /api/v2/site-form and no "
                             + "folder in '" + siteName + "' has that path. Create it, or correct "
                             + "the configuration. A submission never creates a folder — a public "
@@ -188,7 +319,7 @@ public class ShFormSubmissionAPI {
             // Deliberately indistinguishable from a success: an error naming the field is a free
             // description of how to evade it. Nothing is written and nothing says so.
             log.debug("Form submission to '{}' tripped the honeypot", siteName);
-            return ResponseEntity.ok(Map.of("received", true));
+            return new Outcome(200, null, null, null);
         }
 
         ShPostUnified created = writeService.create(new CreateRequest(
@@ -200,10 +331,7 @@ public class ShFormSubmissionAPI {
 
         log.info("Form submission accepted for site '{}' as {} '{}' by {}",
                 siteName, body.type(), created.getId(), created.getOwner());
-        return ResponseEntity.ok(Map.of(
-                "received", true,
-                "id", created.getId(),
-                "state", ShPostState.DRAFT.name()));
+        return new Outcome(200, null, null, created.getId());
     }
 
     /** The submitted fields, minus the honeypot — a spam artefact is not content. */

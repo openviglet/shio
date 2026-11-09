@@ -425,6 +425,25 @@ Two ordering facts that are easy to get wrong and would both fail closed:
   "should" be allow-listed. It must not be: the page carries the token, and the token is the
   authorization, allow-listing it would turn a scoped write into an anonymous one.
 
+## A form with no script (SH1382)
+
+`POST /api/v2/cda/form/{site}` also takes `application/x-www-form-urlencoded`, so a plain
+`<form method="post">` submits with script off. Three hidden fields steer it and are never stored:
+`shio_type` (the post type), `shio_key` (the token) and the honeypot. The page reads all three names
+from the site frame (`site.formTypeField`, `site.formTokenField`, `site.formHoneypot`), each taken
+from the class that checks it.
+
+- **The body carries a FORM token and nothing else.** `ShApiTokenFilter` reads `shio_key` only on a
+  urlencoded POST to the form path with no `Key` header, and leaves any other scope unauthenticated,
+  so a WRITE key pasted into markup never writes. Header first, field second.
+- **CSRF-exempt for POST on the form path, session or not.** A session grants nothing there (the
+  rule requires `ROLE_FORM`, which no person holds), so the narrowed `ShStatelessRequestMatcher` would
+  only refuse a curator previewing their own contact page.
+- **The answer is a 303, never JSON**: back to the `Referer` with `shio_form=sent|error`. The full
+  `Referer` is followed only when its origin equals `Origin` and the site allows that origin;
+  otherwise only its path, so the endpoint is never an open redirect. No `Referer`: the site's base.
+  The honeypot answers `sent`, as it answers a success on the JSON path.
+
 ## The form endpoint's origins (SH637)
 
 SH633 shipped an endpoint whose whole purpose is to be called from another origin, and it could not

@@ -265,20 +265,21 @@ editors, and then the merge, filed as its own tasks.
 
 The mobile product's first run is a small business: a few photos, a line about the
 place, a way to be contacted. SectionGallery shipped as the first part (see
-docs/agents/renderer.md, "A gallery section"). What is left is the contact half and the
-package.
+docs/agents/renderer.md, "A gallery section"), and SH1382 made the endpoint take a
+script-free form (docs/agents/security.md, "A form with no script"). What is left is the
+contact section and the package.
 
 SectionForm is not a list of fields of its own. `{{#form type=...}}` already renders a
 post-type's declared fields, and a site's form configuration (sh_site_form, SH631 to
 SH637) already owns the folder and the invited types, so the section names the post-type
-a submission is stored as, plus a heading, an intro and a submit label. Applying a
-package never opens the door; the curator enables submissions, as SH632 decided.
+a submission is stored as, plus a heading, an intro and a submit label. Its template
+posts natively: `site.formAction`, then hidden `site.formTypeField`,
+`site.formTokenField` and `site.formHoneypot`, and it reads `shio_form=sent|error` from
+the query to thank or retry.
 
-Decided (the user, 2026-11-09): the form works with no script. `POST
-/api/v2/cda/form/<site>` also accepts `application/x-www-form-urlencoded` and answers
-that caller with a 303 back to the page, a success or error marker in the query; a JSON
-caller keeps today's answer. The FORM token rides in a hidden field of the POST body, a
-credential path beside the header, and is FORM-scoped so it can only submit.
+The token is a field on the section the curator fills when enabling submissions, so
+applying a package never opens the door, as SH632 decided; an empty token renders the
+form disabled with a note to the curator, not a form that fails on submit.
 
 The package, small-business, composes hero, gallery, rich text, form and CTA into home,
 about and contact, with five parameters a phone can ask: name, what it does, where, how
@@ -310,6 +311,29 @@ not the fix: it would relabel genuine server faults as the caller's.
 
 Done when: the three requests answer 404 with a problem detail, a test holds each, and
 the upload's names SH1380.
+
+### XI.112 Adopting GraphiQL 1.0 (SH1383)
+
+The fix for the red suite held `@graphiql/react` at 0.39, `@graphiql/toolkit` at 0.12
+and `graphiql` at 5, because the 1.0 line broke three guards at once when Dependabot
+offered it. Dependabot will offer it again on every run, and each time the group's other
+updates arrive red with it.
+
+What the upgrade has to settle, measured by the guards that went red:
+
+- **Monaco.** `monaco-editor` is pinned at 0.52.2 and `monaco-graphql` at 1.9.0.
+  `@graphiql/react` 1.0 imports `monaco-editor/base/common/uri.js`, which 0.52.2 does not
+  ship, so the pin moves to the version 1.0 was built against, and SH242's two guards
+  (every specifier resolves; one copy) are re-read against it, not loosened.
+- **The explorer's colours.** SH1212 asserts the explorer fills with the console's primary
+  and that every rule reading GraphiQL's variables is covered; 6.0 renamed or moved some,
+  so the override list is rebuilt from what 6.0 emits.
+- **The bundle.** SH1043 had 69 KB of room under its ceiling with 1.0 installed, short of the
+  4% it needs. The explorer is a lazy route, so measure first whether the growth is eager at
+  all; if it is, the import that pulled it eager is the defect, not the ceiling.
+
+Then remove the hold in `shio-react/package.json` and, if Dependabot's group config can
+ignore a major, drop any ignore added in the meantime.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

@@ -93,6 +93,12 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     private static final String FORM_PATH_PREFIX = "/api/v2/cda/form";
 
     /**
+     * The hidden field a script-free form carries its {@code FORM} token in (SH1382). Public so the
+     * render model and the endpoint name the same string the filter reads.
+     */
+    public static final String FORM_TOKEN_FIELD = "shio_key";
+
+    /**
      * The MCP endpoint (SH75) is the same surface again, reached over a different
      * transport. Like GraphQL it reads via {@code POST}, so the SH2 GET-only gate is
      * skipped for it — but unlike GraphQL, MCP <em>can</em> write, so the per-tool
@@ -150,6 +156,14 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // header, so a cookie this instance set can never stand in for one on the delivery API.
         boolean preview = isPreviewPath(request);
         String tokenValue = preview ? shareCookie(request) : request.getHeader(TOKEN_HEADER);
+        // SH1382 — a page with no script sends no header, so on the form path alone the credential
+        // may ride in the urlencoded body as a hidden field. It is honoured only for a FORM token
+        // (checked below), so the field can never carry a key that does more than submit.
+        boolean fromBody = false;
+        if ((tokenValue == null || tokenValue.isBlank()) && isFormBodyPost(request)) {
+            tokenValue = request.getParameter(FORM_TOKEN_FIELD);
+            fromBody = tokenValue != null && !tokenValue.isBlank();
+        }
         boolean presented = tokenValue != null && !tokenValue.isBlank();
 
         // An explicitly presented `Key` wins over an authentication already in the context
@@ -215,6 +229,12 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // or agent key cannot be spent on a draft it was never granted. Left unauthenticated rather
         // than refused, so the request meets the ordinary 401 and tells a prober nothing.
         if ((scope == ShApiTokenScope.SHARE) != preview) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // SH1382 — the body field is a FORM credential and nothing else. A WRITE or AGENT key pasted
+        // into a page's markup is left unauthenticated here, so a leaked field never writes content.
+        if (fromBody && scope != ShApiTokenScope.FORM) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -343,6 +363,14 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
     private static boolean isFormPath(HttpServletRequest request) {
         return relativePath(request).startsWith(FORM_PATH_PREFIX);
+    }
+
+    /** SH1382 — a plain HTML form's POST to the form path, the one place a body carries the key. */
+    private static boolean isFormBodyPost(HttpServletRequest request) {
+        String type = request.getContentType();
+        return "POST".equalsIgnoreCase(request.getMethod()) && isFormPath(request)
+                && type != null && type.toLowerCase(java.util.Locale.ROOT)
+                        .startsWith("application/x-www-form-urlencoded");
     }
 
     private static boolean isAgentPath(HttpServletRequest request) {

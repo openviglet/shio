@@ -146,6 +146,8 @@ class ShRenderListingPageTest {
                             + "<form action=\\\"{{site.formAction}}\\\">"
                             + "{{#form type=\\\"Sh636Form" + tag + "\\\"}}<i>{{name}}</i>{{/form}}"
                             + "<input type=\\\"hidden\\\" name=\\\"{{site.formHoneypot}}\\\">"
+                            + "<input type=\\\"hidden\\\" name=\\\"{{site.formTypeField}}\\\">"
+                            + "<input type=\\\"hidden\\\" name=\\\"{{site.formTokenField}}\\\">"
                             + "</form></body></html>\"}", when);
 
             for (String shape : shapes) {
@@ -290,6 +292,12 @@ class ShRenderListingPageTest {
                 .as("""
                         `site.formHoneypot` names the field the endpoint checks, read from the                         controller rather than spelled a second time: a honeypot whose rendered                         name and checked name drift passes every submission and reports nothing                         (SH636)""")
                 .contains("name=\"shio_hp\"");
+
+        assertThat(html)
+                .as("SH1382: a form with no script posts its type and FORM token in hidden fields the "
+                        + "site names, read from the classes that check them")
+                .contains("name=\"shio_type\"")
+                .contains("name=\"shio_key\"");
 
         assertThat(html)
                 .as("and the declared fields still render inside the block (SH636)")

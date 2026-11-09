@@ -12,12 +12,13 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; the form posts urlencoded with the FORM token in a hidden field, as decided. → §XI.109
+- 🛠 **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; since SH1382 the endpoint takes a script-free form, so the section only names its type and token. → §XI.109
 
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
 - 📋 **SH1380** (deps: —) **A write naming a folder, post type or revision that does not exist answers 500, so a client retries what cannot succeed** — A 500 reads as the instance being down; a 404 problem detail naming the missing id is what every other refusal on the surface gives. → §XI.111
+- 📋 **SH1383** (deps: —) **The console cannot take GraphiQL 1.0: its Monaco imports miss the pinned editor and its explorer escapes the theme** — Dependabot offers the major on every run, and each time the group's other updates arrive red beside it. → §XI.112
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

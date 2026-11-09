@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentChangeCursor;
@@ -409,6 +411,69 @@ class ShFormSubmissionAPITest {
                 .as("SH970: a refused bot must not become a report — the honeypot answers like a"
                         + " success, and the feed is where that pretence has to stop")
                 .noneMatch(change -> change.submission() != null);
+    }
+
+    /** What a browser posts from a plain {@code <form method="post">} with no script. */
+    private MultiValueMap<String, String> formBody(String type, Map<String, String> fields) {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add(ShFormSubmissionAPI.TYPE_FIELD, type);
+        params.add(ShFormSubmissionAPI.HONEYPOT_FIELD, "");
+        params.add("shio_key", "the-token-the-filter-already-read");
+        fields.forEach(params::add);
+        return params;
+    }
+
+    @Test
+    @DisplayName("SH1382: a form with no script submits, and is sent back to its page with sent")
+    void sh1382AScriptFreeFormSubmitsAndIsSentBack() {
+        configure("/enquiries", contactType, true);
+        long before = submissionsInSite();
+
+        ResponseEntity<Void> response = api.submitForm(siteName, "https://www.acme.com",
+                "https://www.acme.com/contact?shio_form=error&lang=en",
+                formBody(contactType, Map.of("TITLE", "Hello", "MESSAGE", "Please call")));
+
+        assertThat(response.getStatusCode().value())
+                .as("SH1382: a browser follows a 303 with a GET, so the visitor lands on a page")
+                .isEqualTo(303);
+        assertThat(response.getHeaders().getLocation()).hasToString(
+                "https://www.acme.com/contact?lang=en&shio_form=sent");
+        assertThat(submissionsInSite()).isEqualTo(before + 1);
+        assertThat(shPostUnifiedRepository.findAll().stream()
+                .filter(post -> post.getShSite() != null && siteId.equals(post.getShSite().getId()))
+                .filter(post -> post.getData() != null && post.getData().contains("Please call")))
+                .as("SH1382: the steering fields are not content")
+                .isNotEmpty()
+                .allSatisfy(post -> assertThat(post.getData())
+                        .doesNotContain(ShFormSubmissionAPI.TYPE_FIELD)
+                        .doesNotContain("shio_key")
+                        .doesNotContain(ShFormSubmissionAPI.HONEYPOT_FIELD));
+    }
+
+    @Test
+    @DisplayName("SH1382: a refusal sends a script-free form back with error, never as JSON")
+    void sh1382ARefusalIsSentBackWithError() {
+        configure("/enquiries", contactType, false);
+
+        ResponseEntity<Void> response = api.submitForm(siteName, "https://www.acme.com",
+                "https://www.acme.com/contact", formBody(contactType, Map.of("TITLE", "Hello")));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(303);
+        assertThat(response.getHeaders().getLocation())
+                .hasToString("https://www.acme.com/contact?shio_form=error");
+    }
+
+    @Test
+    @DisplayName("SH1382: a Referer on an origin the site has not named is followed by path only")
+    void sh1382TheRedirectIsNeverOpen() {
+        configure("/enquiries", contactType, true);
+
+        ResponseEntity<Void> response = api.submitForm(siteName, null,
+                "https://evil.example/landing", formBody(contactType, Map.of("TITLE", "Hello")));
+
+        assertThat(response.getHeaders().getLocation())
+                .as("SH1382: a forged Referer must not turn the endpoint into an open redirect")
+                .hasToString("/landing?shio_form=sent");
     }
 
     @Test

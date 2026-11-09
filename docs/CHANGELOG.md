@@ -420,6 +420,7 @@
 - **SH1303** — The console's site save stores the page type it sends, and a test now fails the build when the site form writes a key ShSiteRequest does not declare (design §XI.69 recorded in `docs/agents/console-ui.md`).
 - **SH1356 (SectionGallery)** — SectionGallery joined the vocabulary: photos with captions whose alt is each asset's own, drawn by the union layout through {{#image}} and by a React Gallery, emitted into every package.
 - **SH1376** — The Quilhara sample pages name Viglet Shio in full in both languages, the tour screenshot is retaken from a clean instance with the package applied from this tree, and the full-names lint reads the package's content.
+- **SH1382** — A plain HTML form submits with script off: urlencoded body, the FORM token in a hidden shio_key field, and a 303 back to the page with shio_form=sent or error, never an open redirect (design §XI.109 recorded in `docs/agents/security.md`).
 
 ## Block M — Token economy, measured (SH74)
 
@@ -2099,6 +2100,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1343** — A post's preview is drawn only on a page the site renders, never on a Menu that lists its URL, and post-edit:MenuItem passes on a clean instance; a test holds the filter (design §XI.104 superseded: the 400 did not reproduce on a fresh instance: the usedOn search found no row for the probed item, so the gate that let the original request through is unproven; the filter closes the one path a non-page could take).
 - **SH1344** — The save-bar probe passes a form whose hero Save is still in view at the bottom, so bento-token-new passes the console check; the form always had Save reachable (design §XI.105 superseded: the form was right and the probe wrong: at the check's viewport the token form scrolls 256 px, its hero Save stays in view, and the bar only appears once the hero's actions leave).
 - **SH1347** — A filtered --record keeps every task it did not run and updates only those it measured, while a full run still drops tasks the runner no longer has; a test holds both.
+- **SH1384** — pnpm test is green again in the console: GraphiQL held at 0.39/0.12/5 while the other 23 updates stay, and the design-system pin read and moved to 2026.3.25 (design §XI.113 recorded in `shio-react/test/design-system-waits.test.mjs`).
 
 ## Block BH — One content model, many languages
 

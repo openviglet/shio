@@ -2082,6 +2082,11 @@ content in the first place. `formHoneypot` reads `ShFormSubmissionAPI.HONEYPOT_F
 spelling it again: a honeypot whose rendered name and checked name drift passes every submission and
 reports nothing anywhere.
 
+SH1382 added **`site.formTypeField` and `site.formTokenField`** for the same reason: the hidden
+fields a form with no script posts its post type and its FORM token in, read from
+`ShFormSubmissionAPI.TYPE_FIELD` and `ShApiTokenFilter.FORM_TOKEN_FIELD`. The endpoint's side of that
+path is in [security.md](security.md#a-form-with-no-script-sh1382).
+
 ## The model's own reachability, as an asserted list (SH524)
 
 `template-unknown-field` catches a template reading a field the type does not declare. **Nothing

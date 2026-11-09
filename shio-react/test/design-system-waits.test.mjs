@@ -113,6 +113,11 @@ import { fileURLToPath } from "node:url"
  * them, SH1314, named them as `VDS<n> in viglet-design-system`, adopted the release and moved this
  * pin in the same commit; the work grammar is a per-route choice of its own, SH1320.
  *
+ * 2026.3.25 arrived in Dependabot's frontend group beside a GraphiQL major (0.39 to 1.0) that left
+ * the Monaco and explorer guards red. SH1384 read it: WAITS was empty and no line carried a
+ * `DS VDS` dep, so no wait could end. The pin moved with GraphiQL held at its old major, and with
+ * GraphiQL held back the console's size budget kept its room.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -139,7 +144,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.24"
+const PINNED = "2026.3.25"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))

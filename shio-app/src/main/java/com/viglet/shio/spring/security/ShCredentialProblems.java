@@ -56,7 +56,8 @@ final class ShCredentialProblems {
         if (uri.startsWith("/api/v2/cda/form")) {
             return new Credential("a FORM-scope API token for this site",
                     "Issue one on /api/v2/api-token with scope FORM and the site named, then send "
-                            + "it as the `Key` header. It may post only here (SH631).");
+                            + "it as the `Key` header, or from a plain HTML form as the hidden field "
+                            + "`shio_key`. It may post only here (SH631, SH1382).");
         }
         if (uri.startsWith("/api/v2/agent") || uri.startsWith("/mcp")) {
             return new Credential("an AGENT-scope API token",

@@ -235,6 +235,53 @@ class ShApiTokenFilterTest {
                         "ROLE_AGENT");
     }
 
+    /** A plain HTML form's POST: no header, the key in a hidden field of the urlencoded body. */
+    private static MockHttpServletRequest formBodyPost(String uri) {
+        MockHttpServletRequest req = new MockHttpServletRequest("POST", uri);
+        req.setRequestURI(uri);
+        req.setContentType("application/x-www-form-urlencoded");
+        req.addParameter(ShApiTokenFilter.FORM_TOKEN_FIELD, "the-key");
+        return req;
+    }
+
+    @Test
+    void sh1382FormTokenInTheBodyAuthenticatesAScriptFreeForm() throws Exception {
+        // SH1382 — a page with no script cannot set a header, so the FORM token rides in the body.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.FORM, Set.of("siteA"))));
+
+        filter().doFilter(formBodyPost("/api/v2/cda/form/siteA"), new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(auth).as("SH1382: a FORM token in a hidden field authenticates a form post").isNotNull();
+        assertThat(auth.getAuthorities()).extracting("authority").containsExactly("ROLE_FORM");
+    }
+
+    @Test
+    void sh1382TheBodyFieldNeverCarriesAKeyThatDoesMoreThanSubmit() throws Exception {
+        // SH1382 — the field is a FORM credential and nothing else: a WRITE key pasted into markup
+        // must not authenticate, or the hidden field becomes a way to write content from a page.
+        when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
+                .thenReturn(Optional.of(token(ShApiTokenScope.WRITE, Set.of("siteA"))));
+
+        filter().doFilter(formBodyPost("/api/v2/cda/form/siteA"), new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .as("SH1382: the hidden field never authenticates a key that is not FORM-scoped").isNull();
+    }
+
+    @Test
+    void sh1382TheBodyFieldIsReadOnlyOnTheFormPath() throws Exception {
+        // Anywhere else under the CDA a body field is not a credential at all, so the repository is
+        // never asked (strict stubs would fail this test if it were).
+        filter().doFilter(formBodyPost("/api/v2/cda/post/abc"), new MockHttpServletResponse(),
+                new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
     @Test
     void formTokenMayPostOnlyOnTheFormPath() throws Exception {
         // The method gate is bounded to the path here rather than left to the authorization rule,

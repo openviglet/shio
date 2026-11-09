@@ -317,6 +317,12 @@ public class ShSecurityConfig {
                 })
                 .ignoringRequestMatchers(
                         mvc.matcher(GRAPHQL_PATH),
+                        // SH1382 — a form submission is cross-site by design: the page posting it is
+                        // a visitor's, the credential is the FORM token in the body or the header, and
+                        // the per-site Origin list bounds who may send one. A session grants nothing
+                        // here (the rule below requires ROLE_FORM, which no person holds), so a
+                        // curator previewing their own contact page must not meet a CSRF refusal.
+                        mvc.matcher(HttpMethod.POST, FORM_PATH),
                         // CDA writes (SH10) are token-authenticated (Key header) and stateless,
                         // so there is no session/XSRF cookie to validate; reads were never
                         // CSRF-checked. Narrowed by SH167 all the same — see the note below.
