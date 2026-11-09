@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "name": "quilhara",
   "title": "Quilhara showcase",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A finished bilingual sample site for a fictional trail magazine and guided-trip outfitter: home, trail, story, guide and trip pages in English and Brazilian Portuguese, with a designed theme, self-hosted fonts and its own photography. Apply it to a new site to see what Viglet Shio renders.",
   "params": {
     "type": "object",
