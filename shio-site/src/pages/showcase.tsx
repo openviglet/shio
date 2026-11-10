@@ -10,6 +10,7 @@ import { CodeBlock } from "@/components/code-block";
 import { CopyCommand } from "@/components/copy-command";
 import { Button } from "@/components/ui/button";
 import {
+  LINKS,
   SHOWCASE_CLI,
   SHOWCASE_CONSOLE_STEPS,
   SHOWCASE_RUN,
@@ -74,7 +75,12 @@ export function ShowcasePage() {
               }
               description="A fresh instance lists the showcase in its marketplace with nothing configured. Start one:"
             />
-            <div className="mb-10 flex justify-center">
+            {/* SH1432: the hosted way first, with no install; the docker line for your own server. */}
+            <div className="mb-10 flex flex-col items-center gap-4">
+              <Button asChild size="lg">
+                <a href={LINKS.hosted}>Start free on viglet.cloud</a>
+              </Button>
+              <p className="text-sm text-muted-foreground">or run it on your server:</p>
               <CopyCommand command={SHOWCASE_RUN} />
             </div>
 

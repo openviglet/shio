@@ -7,6 +7,10 @@ sidebar:
 
 Viglet Shio ([https://www.viglet.org/shio/](https://www.viglet.org/shio/)) is an open-source, agent-ready CMS ([https://github.com/openviglet/shio](https://github.com/openviglet/shio)) that lets you model content, query it via GraphQL, and build websites using JavaScript with native caching and search.
 
+:::tip[No install needed]
+To try Viglet Shio without running anything yourself, [create a free account on viglet.cloud](https://console.viglet.cloud/?register=1&product=shio), which runs it for you. This guide is for running it on your own server.
+:::
+
 ## Installing Java
 
 Viglet Shio requires Java.

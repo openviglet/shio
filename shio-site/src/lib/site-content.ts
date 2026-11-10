@@ -1727,6 +1727,7 @@ export const TOKEN_SCOPES: TokenScope[] = [
 /** SH1371: the job-named destinations come from `destinations.ts`, which the docs area reads too. */
 export const LINKS = {
   docs: withBase(DESTINATIONS.docs.path),
+  hosted: DESTINATIONS.hosted.url,
   install: withBase(DESTINATIONS.install.path),
   download: DESTINATIONS.download.url,
   releaseNotes: DESTINATIONS.releaseNotes.url,

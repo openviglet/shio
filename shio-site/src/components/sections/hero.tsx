@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/brand";
 import { HeroSessions } from "@/components/hero-sessions";
 import { LINKS } from "@/lib/site-content";
-import { withBase } from "@/lib/base";
 
 const PROMISES = [
   "A full console, no agent required",
@@ -29,23 +28,28 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Write the pages yourself in the console, hand the work to Claude Code,
-            keep the content as files in your repository, or read it all through
-            REST and GraphQL. Four ways in, one content engine, and the same
-            drafts, previews and publish button behind every one of them.
+            Agents draft, a person approves. Write the pages yourself in the console,
+            hand the work to Claude Code, keep the content as files in your repository,
+            or read it all through REST and GraphQL, with the same drafts, previews and
+            publish button behind every one of them.
           </p>
 
+          {/*
+            SH1432: two ways to start, the one that needs no install first. A reader who is not a
+            developer used to meet `docker run` as the first step, and the free hosted Viglet Shio
+            on viglet.cloud was not on the page.
+          */}
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <a href="#paths">
-                Find your way in <ArrowRight className="size-4" />
+              <a href={LINKS.hosted}>
+                Start free on viglet.cloud <ArrowRight className="size-4" />
               </a>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <a href={withBase("/console/")}>Use it without an agent</a>
+              <a href={LINKS.install}>Run it on your server</a>
             </Button>
             <Button asChild size="lg" variant="ghost">
-              <a href={LINKS.docs}>Docs</a>
+              <a href="#paths">Find your way in</a>
             </Button>
           </div>
 

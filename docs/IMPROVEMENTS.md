@@ -1256,22 +1256,6 @@ catalogue version they never read is the path. See `docs/agents/blueprints.md`.
 **Done when.** A pt-BR console lists every package in Portuguese, and four finished
 sites install from the Marketplace and render with no errors.
 
-### XCIX.7 The free hosted way first (SH1432)
-
-**Why.** viglet.cloud runs Viglet Shio free for anyone who signs up, with no install.
-shio.viglet.org and the README lead with `docker run`, so a reader who is not a
-developer leaves at the first step, and the free hosted option is not mentioned at the
-top.
-
-**What.** shio.viglet.org's hero and the README's first section offer two ways, the
-hosted one first: "Criar conta grátis no viglet.cloud"
-(`https://console.viglet.cloud/?register=1&product=shio`, cloud C152) and "Rodar no seu
-servidor" (the docker command). The lead line states the product's difference: agents
-draft, a person approves. The Quilhara showcase pages end with the same two calls.
-
-**Done when.** The first screen of shio.viglet.org and of the README shows the
-viglet.cloud sign-up before the docker command, in both languages.
-
 ### XCIX.8 Every string names Viglet Shio (SH1433)
 
 **Seen.** The console's first-site screen (SH1420) says "Traga um site exportado de

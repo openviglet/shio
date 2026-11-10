@@ -67,6 +67,15 @@ capabilities that genuinely live on the CLI.
 order with the console first, a use case that involves no agent, and the console
 page naming its own limits.
 
+**The way to start that needs no install comes first (SH1432).** The hero's primary
+call is the free hosted Viglet Shio on viglet.cloud (`DESTINATIONS.hosted`, the
+cloud console's sign-up with `register=1&product=shio`), and **Run it on your server**
+(the installation guide) is second. The showcase, the installation guide and the
+repository README make the same offer in the same order. A reader who is not a
+developer used to meet `docker run` as the first step and leave there. The site is
+English only, so there is one version of each call. `scripts/hosted-first.test.mjs`
+fails if the install leads again anywhere it checks.
+
 ## Content
 
 **The page copy lives in [`src/lib/site-content.ts`](src/lib/site-content.ts)**:

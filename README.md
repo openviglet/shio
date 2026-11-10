@@ -28,6 +28,20 @@ verifiability, token economy), not intelligence.
 
 Shio (pronounced [strong /ʃiː/ · weak /ʃɪ/ o]).
 
+## Two ways to start
+
+Agents draft, a person approves.
+
+1. **Use it hosted, free:** [create a free account on viglet.cloud](https://console.viglet.cloud/?register=1&product=shio).
+   Nothing to install.
+2. **Run it on your server:**
+
+   ```bash
+   docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me ghcr.io/openviglet/shio:latest
+   ```
+
+   Then open <http://localhost:2710> and sign in as `admin`. The [Quick start](#quick-start) has the rest.
+
 ---
 
 ## Table of contents

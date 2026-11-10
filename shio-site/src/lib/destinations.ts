@@ -16,6 +16,11 @@
 export const DESTINATIONS = {
   /** Read about it: the documentation overview. */
   docs: { path: "/docs/" },
+  /**
+   * SH1432: start without installing anything, Viglet Shio hosted free on viglet.cloud. Offered
+   * before `install`, because a reader who is not a developer leaves at `docker run`.
+   */
+  hosted: { url: "https://console.viglet.cloud/?register=1&product=shio" },
   /** Get started: the supported setup path, with prerequisites and a first-success check. */
   install: { path: "/docs/installation-guide/" },
   /** Try it by hand: the console tour. */

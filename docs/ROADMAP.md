@@ -21,7 +21,6 @@
 
 - ⏳ **SH1430** (deps: a recorded session per non-Claude MCP client on a clean instance) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
 - ⏳ **SH1431** (deps: photography for three more sites) **The Marketplace shows English descriptions on a Portuguese console and only one finished site** — The public catalogue carries no other language yet, and no restaurant, clinic or office site exists. → §XCIX.6
-- 📋 **SH1432** (deps: —) **The site and README lead with docker run and never offer the free hosted Viglet Shio on viglet.cloud** — A reader who is not a developer leaves at the first step. → §XCIX.7
 - 📋 **SH1433** (deps: —) **Console strings still call the product Shio, as in outra instancia do Shio on the first-site screen** — The product is always Viglet Shio on screen, and the lint does not cover the locale files. → §XCIX.8
 
 ## Block F — Market positioning / bold bets
