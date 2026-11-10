@@ -1218,24 +1218,6 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 
 ## XCIX The next level: a demo that sells and a review a curator trusts
 
-### XCIX.1 A person arriving with no session is signed in, not refused (SH1426)
-
-**Seen.** shio.viglet.cloud (Keycloak, multi-tenant), 2026-11-10. A browser signed in to
-the cloud console but not yet to Viglet Shio opens `https://shio.viglet.cloud/` and gets
-raw JSON: `{"type":".../errors/unauthenticated","title":"No usable credential for
-/","status":401, ...}`. `/bento` and `/login` answer `{"error":"Not Found"}`. Only
-`/oauth2/authorization/keycloak` signs the browser in.
-
-**What it should be.** A browser request (Accept: text/html) for a console path with no
-session is a person arriving: in Keycloak mode it is redirected to
-`/oauth2/authorization/keycloak` with the path it asked for kept as the return target;
-with local login it goes to `/login`. The problem+json answer stays for API clients
-(Accept: application/json, or `/api/**`).
-
-**Done when.** On a Keycloak instance, `/`, `/bento` and `/bento/content` opened in a
-fresh browser end on that page signed in; `curl -H 'Accept: application/json' /` still
-gets the 401 document.
-
 ### XCIX.2 First access never exists behind an identity provider (SH1427)
 
 **Seen once.** shio.viglet.cloud (image 2026.3-02c5300, Keycloak, multi-tenant),

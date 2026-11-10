@@ -29,6 +29,10 @@ Identity can come from Viglet Shio's own user store, from OAuth2/OIDC (`shio.key
 Keycloak realm), or from a social provider configured under
 `/api/v2/provider/auth`. Passwords are hashed, never stored recoverably.
 
+On a Keycloak instance, a browser that opens any console page without a session is sent to the
+Keycloak sign-in and comes back to the page it asked for. A program that asks for JSON still gets
+a `401` problem document.
+
 ---
 
 ## Authenticating a program

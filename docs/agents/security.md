@@ -551,6 +551,21 @@ now read bytes. One existing test had to change with it: `ShPreviewChallengeTest
 programmatic one differ in the *header* and nothing else, is now asserted as that comparison
 instead of as a copy of the old bytes.
 
+### A person arriving on a Keycloak instance is signed in, not refused (SH1426)
+
+The Keycloak chain permits no console shell, so a browser with no Shio session that opened `/` got
+the 401 document as a page, and `/bento` got SH459's 404; only `/oauth2/authorization/keycloak` signed
+it in. `ShAuthenticationEntryPoint.signsIn` now answers a **navigation** on that chain with a redirect
+there: a `GET` marked `Sec-Fetch-Mode: navigate`, or, with no fetch metadata, one whose `Accept` names
+`text/html`. It runs before the 404 rule, so `/bento` signs in too. The return target needs no code:
+`ExceptionTranslationFilter` saves the request in the request cache before calling the entry point,
+and `oauth2Login`'s success handler goes back to it.
+
+It is not the `Accept` heuristic this class refuses for `/preview/**`: a console `fetch` is `cors` or
+`same-origin`, never `navigate`, and `/api/**`, `/mcp` and `/graphql` never redirect whatever they
+send. The local-login chain is unchanged, because its console shell is public and sends the person to
+`/login` itself. `ShKeycloakSignInRedirectTest` holds both halves.
+
 ## What an ACL decision is allowed to depend on (SH225)
 
 `ShContentAclService.requireRead`/`requireWrite` carry `@Transactional(readOnly = true)`

@@ -19,7 +19,6 @@
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
-- 📋 **SH1426** (deps: —) **A browser with no session that opens a Keycloak instance gets a JSON 401 page instead of the sign-in** — Every link into a cloud instance looks broken to the person who follows it. → §XCIX.1
 - 📋 **SH1427** (deps: —) **A self-registered account on a Keycloak instance was shown the administrator first-access form** — On a shared instance any new account would be offered the admin password. → §XCIX.2
 - 📋 **SH1428** (deps: —) **Nobody is told when an agent run is waiting for review, so the loop stalls until someone looks** — The product promises a person approves, and the person does not know there is anything to approve. → §XCIX.3
 - 📋 **SH1429** (deps: —) **The review queue shows each page as a code address, so a curator approves pages without seeing them** — The moment the product is judged reads like a developer tool. → §XCIX.4

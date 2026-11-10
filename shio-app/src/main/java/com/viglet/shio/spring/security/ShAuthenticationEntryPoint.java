@@ -11,6 +11,8 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import com.viglet.shio.property.ShAppProperties;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -77,19 +79,32 @@ public class ShAuthenticationEntryPoint implements AuthenticationEntryPoint {
      */
     static final String CHALLENGE = "Basic realm=\"Shio preview\", charset=\"UTF-8\"";
 
+    /** SH1426 — where a person with no session is sent on a Keycloak instance. */
+    static final String KEYCLOAK_SIGN_IN = "/oauth2/authorization/keycloak";
+
     private final ObjectProvider<RequestMappingHandlerMapping> handlerMapping;
+    private final ShAppProperties shAppProperties;
 
     /**
      * Lazily, through a provider: this bean is built by the security chain and the mapping by the MVC
      * one, and injecting it directly is a cycle between the two configurations.
      */
-    public ShAuthenticationEntryPoint(ObjectProvider<RequestMappingHandlerMapping> handlerMapping) {
+    public ShAuthenticationEntryPoint(ObjectProvider<RequestMappingHandlerMapping> handlerMapping,
+                                      ShAppProperties shAppProperties) {
         this.handlerMapping = handlerMapping;
+        this.shAppProperties = shAppProperties;
     }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException authException) throws IOException {
+        if (signsIn(request)) {
+            // SH1426 — a person arriving, not a program refused. ExceptionTranslationFilter has
+            // already saved this request in the request cache, and oauth2Login's success handler
+            // returns to it, so the path asked for is where the sign-in ends.
+            response.sendRedirect(request.getContextPath() + KEYCLOAK_SIGN_IN);
+            return;
+        }
         if (unclaimed(request)) {
             response.setStatus(HttpStatus.NOT_FOUND.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -141,6 +156,40 @@ public class ShAuthenticationEntryPoint implements AuthenticationEntryPoint {
             // degradation is that a refusal stays the refusal it already was.
             return true;
         }
+    }
+
+    /**
+     * Whether this refusal is a person's browser opening a page on a Keycloak instance (SH1426).
+     *
+     * <p>Measured on shio.viglet.cloud: a browser signed in to the cloud console but not to Shio
+     * opened {@code /} and got the 401 problem document as a page, and {@code /bento} answered
+     * {@code {"error":"Not Found"}}; only {@code /oauth2/authorization/keycloak} signed it in. Every
+     * link into a cloud instance read as broken. With local login the console shell is public and
+     * sends the person to {@code /login} itself, so this applies to the Keycloak chain alone.</p>
+     *
+     * <p>A navigation is a {@code GET} the browser marks {@code Sec-Fetch-Mode: navigate}, or, from a
+     * client that sends no fetch metadata, one whose {@code Accept} names {@code text/html}. That is
+     * narrower than the {@code Accept} test the class note refuses for {@code /preview/**}: a console
+     * {@code fetch} is {@code cors} or {@code same-origin}, never {@code navigate}, and a program
+     * asking for JSON keeps the problem document. {@code /api/**} never redirects, whatever it sends.</p>
+     */
+    boolean signsIn(HttpServletRequest request) {
+        if (request == null || shAppProperties == null || !shAppProperties.isKeycloak()
+                || !"GET".equals(request.getMethod())) {
+            return false;
+        }
+        String uri = request.getRequestURI() == null ? "" : request.getRequestURI();
+        String context = request.getContextPath() == null ? "" : request.getContextPath();
+        String path = uri.startsWith(context) ? uri.substring(context.length()) : uri;
+        if (path.startsWith("/api/") || path.startsWith("/mcp") || path.startsWith("/graphql")) {
+            return false;
+        }
+        String mode = request.getHeader("Sec-Fetch-Mode");
+        if (mode != null) {
+            return "navigate".equalsIgnoreCase(mode);
+        }
+        String accept = request.getHeader(HttpHeaders.ACCEPT);
+        return accept != null && accept.contains(MediaType.TEXT_HTML_VALUE);
     }
 
     /** Path-prefix on the request's own URI, which is what the rule above is stated in terms of. */
