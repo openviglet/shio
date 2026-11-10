@@ -3523,11 +3523,23 @@ overrode a check" when the honest answer is both.
 hear about it, and `REVIEW_REQUESTED` when an agent run leaves drafts a person has to release.
 `GATE_FAILED` is **dispatched**, not published as a Spring event: `ShPostLifecycleEvent`'s listener
 runs `AFTER_COMMIT` and there is no commit here, the transaction being the one abandoned, so a notice
-that waited for one is a notice nobody receives. `REVIEW_REQUESTED` does wait, because the drafts have
-to exist before an approver is told to look; it is deduplicated per transaction and site, so a
-forty-page conversion sends one notice rather than forty. Each carries its own facts flat in the
-payload (`gate`, `check`, `severity`, `address` for the first, `session` for the second) so a
+that waited for one is a notice nobody receives. `REVIEW_REQUESTED` waits until the run has finished
+(SH1428, below). Each carries its own facts flat in the
+payload (`gate`, `check`, `severity`, `address` for the first; `session`, `summary`, `pages`,
+`pending`, `reviewUrl` and, when declared, `intent` and `agent` for the second) so a
 receiver routing on the failing check reads it the way it reads `postId`.
+
+**One notice per finished run, not per write (SH1428).** SH998 fired `REVIEW_REQUESTED` from inside
+the write, once per transaction and site. A run is several transactions: the promo run that created
+four pages and fixed two was three `shio_write` calls and three notices, the first counting one
+page. `ShReviewNotifier` replaces it. On the schedule sweep's interval and switches
+(`shio.schedule.*`, per tenant like `ShPostScheduler`) it reads the queue's own listing and
+announces each run that has gone `QUIET` (10 minutes without a write), still has pending pages, and
+is younger than `HORIZON` (24 hours, so an upgrade does not page anybody about last month). It
+announces once per site the run touched, with the queue's sentence in pages ("4 new pages in quilhara wait
+for review") and a `reviewUrl` that opens the run (`/bento/admin/review?session=`).
+`sh_agent_run.review_notified_at` (v2026.3.55) makes it once per run: a run that writes again after
+its notice is announced again. The row is created for a REST run that never introduced itself.
 
 And an **empty `events` set now means every content transition**, not literally every event. Nobody
 chose the old reading for events that did not exist: every existing subscriber, the SH9

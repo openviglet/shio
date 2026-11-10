@@ -114,6 +114,12 @@ by what it did, such as "2 new pages, 1 edited page in quilhara".
 | **Discard all** / **Discard** on a page | Undo what the agent did. A page it created goes to the trash, and a page it edited goes back to the version it had before the run. A dialog says which of those will happen before anything changes, and a page-level discard asks why, so the agent can read the reason |
 | Tick pages | A bar appears with **Publish**, **Discard** and **Leave for later** for the ticked pages. Leave for later records that you read them and are not ready, and changes nothing |
 
+You do not have to keep the queue open to know a run is waiting. When a run has gone ten minutes
+without a write and still has pages to review, every site webhook subscribed to `review_requested`
+receives one notice for that run, such as "4 new pages in quilhara wait for review", with a
+`reviewUrl` that opens the run in the queue. A run that writes again after its notice is announced
+again.
+
 Two design decisions worth knowing. It is a **view over the audit history grouped by
 session**, not a separate proposal table: the draft row *is* the proposal, which is why
 there is nothing to sync and nothing to expire. And it is **console-authenticated and

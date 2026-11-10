@@ -19,7 +19,7 @@
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
-- 📋 **SH1428** (deps: —) **Nobody is told when an agent run is waiting for review, so the loop stalls until someone looks** — The product promises a person approves, and the person does not know there is anything to approve. → §XCIX.3
+- ⏳ **SH1428** (deps: —) **Nobody is told when an agent run is waiting for review, so the loop stalls until someone looks** — Reviewers are not e-mailed when a run waits, and a curator cannot turn the notice off in their profile. → §XCIX.3
 - 📋 **SH1429** (deps: —) **The review queue shows each page as a code address, so a curator approves pages without seeing them** — The moment the product is judged reads like a developer tool. → §XCIX.4
 - 📋 **SH1430** (deps: —) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
 - 📋 **SH1431** (deps: —) **The Marketplace shows English descriptions on a Portuguese console and only one finished site** — A small business owner sees developer material and one trail magazine. → §XCIX.6
@@ -50,6 +50,13 @@
   the site link a hosted instance where the Quilhara showcase renders publicly and a
   guest role can browse, edit drafts and see the review queue but not publish, reset
   from the blueprint on a schedule.
+
+## Done when — SH1428
+
+- **A waiting run e-mails its reviewers once, and a curator can opt out** A run of four
+  new pages sends one e-mail beside the webhook, with the same sentence and reviewUrl; a
+  curator who turns the notice off in their profile receives none. Asserted by a test
+  carrying SH1428.
 
 ## Non-goals (do NOT add as tasks)
 

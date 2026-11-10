@@ -136,6 +136,28 @@ public class ShAgentRunService {
         introduce(session, null, null, REST, actor, intent);
     }
 
+    /**
+     * Record that this run's reviewers were told it waits (SH1428).
+     *
+     * <p>Creates the row for a REST run that never introduced itself, because the session id is
+     * still the run and the notice is still sent once.</p>
+     */
+    @Transactional
+    public void reviewNotified(String session, String actor, Instant at) {
+        if (session == null || session.isBlank() || ShAgentSessionContext.isConsole(session)) {
+            return;
+        }
+        ShAgentRun run = shAgentRunRepository.findById(session).orElseGet(ShAgentRun::new);
+        if (run.getId() == null) {
+            run.setId(session);
+            run.setStartedAt(at);
+            run.setActor(blankToNull(actor));
+            run.setTransport(REST);
+        }
+        run.setReviewNotifiedAt(at);
+        shAgentRunRepository.save(run);
+    }
+
     /** SH1421 — the newest runs that introduced themselves after this instant, five at most. */
     @Transactional(readOnly = true)
     public List<ShAgentRun> since(Instant instant) {

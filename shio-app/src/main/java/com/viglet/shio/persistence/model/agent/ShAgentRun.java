@@ -90,6 +90,13 @@ public class ShAgentRun implements Serializable {
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 
+    /**
+     * When this run's reviewers were last told it waits (SH1428), or {@code null} when nobody was.
+     * A run that writes again after this instant is announced again.
+     */
+    @Column(name = "review_notified_at")
+    private Instant reviewNotifiedAt;
+
     @TenantId
     @Column(name = "tenant_id", updatable = false)
     private String tenantId;

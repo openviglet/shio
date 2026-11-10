@@ -10,22 +10,15 @@ package com.viglet.shio.migration.unified;
 
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
@@ -278,7 +271,7 @@ public class ShPostUnifiedWriteService {
         shObjectReferenceService.reindex(saved);
         shContentAuditService.record(ShContentAction.CREATE, saved.getId(),
                 siteIdOf(saved), saved.getTitle(), req.owner());
-        reviewRequested(saved);
+        // SH1428 — the review notice is ShReviewNotifier's, once a run has finished, not per write.
         return saved;
     }
 
@@ -329,7 +322,6 @@ public class ShPostUnifiedWriteService {
         }
         shContentAuditService.record(ShContentAction.UPDATE, postId,
                 siteIdOf(saved), saved.getTitle(), req.modifier(), changed);
-        reviewRequested(saved);
         return saved;
     }
 
@@ -417,7 +409,6 @@ public class ShPostUnifiedWriteService {
             ShPostUnified first = moved.get(0);
             shContentAuditService.record(ShContentAction.UPDATE, postId,
                     siteIdOf(first), first.getTitle(), actor);
-            reviewRequested(first);
         }
         return moved;
     }
@@ -812,61 +803,6 @@ public class ShPostUnifiedWriteService {
     }
 
     /**
-     * Tell the outbound edge an agent run left work for a person (SH998).
-     *
-     * <h2>Once per run per site, and how that is made true</h2>
-     *
-     * <p>A run is one transaction, so the sites already announced are held as a transaction-scoped
-     * resource and unbound when it completes. Without that, a forty-page conversion would fire forty
-     * identical notices and an operator would filter the event out inside a week — which is the same
-     * failure as not sending it, arrived at more expensively.</p>
-     *
-     * <p>Published, not dispatched: the drafts have to <em>exist</em> before an approver is told to
-     * look at them, so this one waits for the commit. That is the exact opposite of the gate's
-     * refusal, and for the exact same reason — each waits for the thing it is about.</p>
-     */
-    private void reviewRequested(ShPostUnified row) {
-        // Only a draft, and only an agent's: the review queue is what an agent run leaves behind. A
-        // console session sets the same context on a publish (SH996), which is not a draft write.
-        if (row == null || row.getState() != ShPostState.DRAFT) {
-            return;
-        }
-        String session = ShAgentSessionContext.current().orElse(null);
-        if (session == null || !TransactionSynchronizationManager.isSynchronizationActive()) {
-            return;
-        }
-        String siteId = siteIdOf(row);
-        Set<String> announced = announcedInThisRun();
-        if (!announced.add(session + "/" + siteId)) {
-            return;
-        }
-        Map<String, String> facts = new LinkedHashMap<>();
-        facts.put("session", session);
-        eventPublisher.publishEvent(new ShPostLifecycleEvent(ShWebhookEventType.REVIEW_REQUESTED,
-                row.getId(), siteId, normalizeUrl(row.getFurl()), row.getLocale(), Instant.now(),
-                facts));
-    }
-
-    @SuppressWarnings("unchecked")
-    private Set<String> announcedInThisRun() {
-        Set<String> held = (Set<String>) TransactionSynchronizationManager.getResource(ANNOUNCED);
-        if (held != null) {
-            return held;
-        }
-        Set<String> fresh = new LinkedHashSet<>();
-        TransactionSynchronizationManager.bindResource(ANNOUNCED, fresh);
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                // The thread is pooled. A binding left behind would make the next run on it believe
-                // it had already announced itself — the SH639 leak, one layer up.
-                TransactionSynchronizationManager.unbindResourceIfPossible(ANNOUNCED);
-            }
-        });
-        return fresh;
-    }
-
-    /**
      * {@code scheduled by <person>} for a transition the sweep fired, or {@code null} for one a person
      * made directly (SH991). Read off the draft, where the schedule and its requester live.
      */
@@ -1195,9 +1131,6 @@ public class ShPostUnifiedWriteService {
         eventPublisher.publishEvent(event);
         return true;
     }
-
-    /** SH998 — the key the review notice's per-transaction set is bound under. */
-    private static final String ANNOUNCED = ShPostUnifiedWriteService.class.getName() + ".reviewed";
 
     private static String tenantId() {
         String tenant = ShTenantContext.getTenantId();

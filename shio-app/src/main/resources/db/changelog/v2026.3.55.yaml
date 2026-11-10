@@ -1,0 +1,25 @@
+databaseChangeLog:
+  # SH1428 - `sh_agent_run.review_notified_at`: when this run's reviewers were last told it waits.
+  #
+  # A run ends with no message saying so, so the notice is sent once it has been quiet for a while,
+  # and this column is what makes it one notice per run rather than one per sweep. A run that writes
+  # again after it was announced is announced again: its newest write is past this instant.
+  # Nullable with no backfill: a run nobody announced has none. Types DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1428-add-sh-agent-run-review-notified-at
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_agent_run
+                columnName: review_notified_at
+      changes:
+        - addColumn:
+            tableName: sh_agent_run
+            columns:
+              - column:
+                  name: review_notified_at
+                  type: TIMESTAMP

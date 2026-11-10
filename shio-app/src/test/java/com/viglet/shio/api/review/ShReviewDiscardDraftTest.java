@@ -77,6 +77,10 @@ class ShReviewDiscardDraftTest {
     @Autowired
     private ShWidgetRepository shWidgetRepository;
     @Autowired
+    private ShReviewNotifier shReviewNotifier;
+    @Autowired
+    private com.viglet.shio.persistence.repository.agent.ShAgentRunRepository shAgentRunRepository;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -223,6 +227,20 @@ class ShReviewDiscardDraftTest {
         Boolean stillListed = new TransactionTemplate(transactionManager).execute(status ->
                 shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT).isPresent());
         assertThat(stillListed).as("SH1425: the page is in the trash").isFalse();
+    }
+
+    @Test
+    @DisplayName("SH1428: a finished run is announced by one sweep and not by the next")
+    void aFinishedRunIsAnnouncedOnce() {
+        String session = "sess-" + UUID.randomUUID();
+        asAgent(session, () -> draft("Waiting for a person"));
+        Instant later = Instant.now().plus(java.time.Duration.ofMinutes(11));
+
+        assertThat(shReviewNotifier.sweep(later)).as("SH1428: quiet and waiting").contains(session);
+        assertThat(shAgentRunRepository.findById(session).orElseThrow().getReviewNotifiedAt())
+                .as("SH1428: recorded, so the next sweep is silent").isNotNull();
+        assertThat(shReviewNotifier.sweep(later.plusSeconds(60))).as("SH1428: once per run")
+                .doesNotContain(session);
     }
 
     // --- fixtures ---
