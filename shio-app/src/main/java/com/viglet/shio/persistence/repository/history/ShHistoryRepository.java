@@ -181,6 +181,9 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "order by h.date desc, h.id desc")
 	List<ShHistory> findAgentEntries(Pageable pageable);
 
+	/** SH1418 — whether this run has already written to this object. */
+	boolean existsByShObjectAndAgentSessionId(String shObject, String agentSessionId);
+
 	/** One run's entries, oldest first — the order it made them, which is the order to review. */
 	@Query("select h from ShHistory h where h.agentSessionId = :session "
 			+ "order by h.date asc, h.id asc")

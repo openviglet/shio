@@ -150,7 +150,10 @@ Publishing replaces what visitors see, and the version it replaces is not lost: 
 post goes live, Viglet Shio keeps a **revision** of it, numbered in order. A post keeps its
 last fifty; `shio.versions.keep` changes that. Saving a draft is not captured unless
 `shio.versions.capture-on-save=true`, because the question a history answers is usually
-"what was live on Tuesday", not every keystroke.
+"what was live on Tuesday", not every keystroke. One draft is always kept: when an agent run
+first writes over a page that was never published, the draft it replaces becomes a revision,
+credited to whoever last saved it, so discarding the run's change in the review queue can put
+it back.
 
 From a terminal:
 

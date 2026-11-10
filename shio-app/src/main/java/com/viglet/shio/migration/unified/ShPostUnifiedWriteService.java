@@ -292,6 +292,9 @@ public class ShPostUnifiedWriteService {
         // SH989 — an update that sends no document changed no field, and says so with an empty list
         // rather than leaving the row unrecorded.
         List<String> changed = List.of();
+        // SH1418 — before the row changes: a person's never-published draft is what the review
+        // queue's Discard restores, and nothing else would keep it.
+        shPostRevisionService.captureBeforeRun(row);
         if (req.data() != null) {
             // SH956 — every write, not only the create: an edit is how a payload arrives at a post
             // that was clean when it was made.

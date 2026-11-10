@@ -470,7 +470,14 @@ public class ShReviewService {
     @Transactional(readOnly = true)
     public ShReviewDetail detail(String session) {
         List<ShHistory> entries = shHistoryRepository.findByAgentSession(session);
-        List<ShReviewDetail.Entry> rows = entries.stream().map(this::entry).toList();
+        Map<String, Instant> firstTouches = new LinkedHashMap<>();
+        for (ShHistory history : entries) {
+            if (history.getShObject() != null && history.getDate() != null) {
+                firstTouches.putIfAbsent(history.getShObject(), history.getDate());
+            }
+        }
+        List<ShReviewDetail.Entry> rows = entries.stream()
+                .map(history -> entry(history, firstTouches)).toList();
         String actor = entries.isEmpty() ? null : entries.get(0).getOwner();
         return new ShReviewDetail(session, actor, rows, appearanceOf(rows, startedAt(entries)),
                 shReviewDecisionRepository.findBySessionOrderByDecidedAtAsc(session).stream()
@@ -643,11 +650,20 @@ public class ShReviewService {
             case CREATE -> shPostUnifiedWriteService.delete(postId, actor);
             case UPDATE -> {
                 if (!hasPublished) {
-                    // Nothing to restore *to*: the run created the content this update
-                    // refined, and "revert" would mean deleting a post the human may want.
-                    // Reverting the CREATE entry is the honest gesture, and it is in this
-                    // same list.
-                    return Optional.of("never published — revert its creation instead");
+                    // SH1418 — a page that was only ever a draft goes back to the revision this
+                    // run's first write replaced: the person's text, kept by captureBeforeRun.
+                    Optional<Integer> before = shPostRevisionService.revisionBeforeRun(postId,
+                            entry.getAgentSessionId(),
+                            firstTouch(entry.getAgentSessionId(), postId));
+                    if (before.isEmpty()) {
+                        // Nothing to restore *to*: the run created the content this update
+                        // refined, and "revert" would mean deleting a post the human may want.
+                        // Reverting the CREATE entry is the honest gesture, and it is in this
+                        // same list.
+                        return Optional.of("never published — revert its creation instead");
+                    }
+                    shPostUnifiedWriteService.restoreRevision(postId, before.get(), actor);
+                    return Optional.empty();
                 }
                 shPostUnifiedWriteService.restoreDraftFromPublished(postId, actor);
             }
@@ -810,7 +826,20 @@ public class ShReviewService {
         };
     }
 
-    private ShReviewDetail.Entry entry(ShHistory history) {
+    /** When this run first changed this post, the moment "before the run" means for it (SH1418). */
+    private Instant firstTouch(String session, String postId) {
+        if (session == null || postId == null) {
+            return null;
+        }
+        return shHistoryRepository.findByAgentSession(session).stream()
+                .filter(entry -> postId.equals(entry.getShObject()))
+                .map(ShHistory::getDate)
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private ShReviewDetail.Entry entry(ShHistory history, Map<String, Instant> firstTouches) {
         String postId = history.getShObject();
         if (subjectOf(history) == ShContentSubject.FOLDER) {
             return shFolderRepository.findAnyById(postId)
@@ -839,7 +868,14 @@ public class ShReviewService {
                 draft.isPresent(),
                 published.isPresent(),
                 trashed,
-                revertable(action, draft.isPresent(), published.isPresent(), trashed),
+                revertable(action, draft.isPresent(), published.isPresent(), trashed)
+                        // SH1418 — an edit to a page never published is undone from the revision
+                        // the run replaced, when one was kept.
+                        || (action == ShContentAction.UPDATE && draft.isPresent()
+                                && published.isEmpty()
+                                && shPostRevisionService.revisionBeforeRun(postId,
+                                        history.getAgentSessionId(),
+                                        firstTouches.get(postId)).isPresent()),
                 ShChangedFields.decode(history.getChangedFields()));
     }
 

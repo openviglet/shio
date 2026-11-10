@@ -433,6 +433,7 @@
 - **SH1415** — The post editor asks GET /post-unified/{id}/states first and reads only the rows the post has, so a never-published draft opens with no 404 in the browser console.
 - **SH1416** — The review queue titles a run by what it did, says Publish and Discard once per scope, and every discard states what it undoes before it does it (design §XI.130 recorded in `docs/agents/console-ui.md`).
 - **SH1417** — The Universal Editor panel draws a Relator's leaves as one group: its label, an item count, and rows titled "Fact 1" with each leaf under its child label, instead of facts.0.label paths (design §XI.131 recorded in `docs/agents/console-ui.md`).
+- **SH1418** — The review queue discards an agent's edit to a never-published page: the run's first write keeps the person's draft as a revision, and Discard restores it (design §XI.132 superseded: it assumed the revisions already existed, but capture-on-save is off by default, so the draft is now captured before the run's first write) (design §XI.132 recorded in `docs/agents/console-ui.md`).
 
 ## Block M — Token economy, measured (SH74)
 

@@ -24,6 +24,7 @@ import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision.Reason;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository;
 
@@ -62,17 +63,20 @@ public class ShPostRevisionService {
 
     private final ShPostRevisionRepository shPostRevisionRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShHistoryRepository shHistoryRepository;
     private final ObjectMapper objectMapper;
     private final int keep;
     private final boolean captureOnSave;
 
     public ShPostRevisionService(ShPostRevisionRepository shPostRevisionRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
+                                 ShHistoryRepository shHistoryRepository,
                                  ObjectMapper objectMapper,
                                  @Value("${shio.versions.keep:50}") int keep,
                                  @Value("${shio.versions.capture-on-save:false}") boolean captureOnSave) {
         this.shPostRevisionRepository = shPostRevisionRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shHistoryRepository = shHistoryRepository;
         this.objectMapper = objectMapper;
         this.keep = keep;
         this.captureOnSave = captureOnSave;
@@ -107,6 +111,68 @@ public class ShPostRevisionService {
      */
     @Transactional
     public ShPostRevision capture(ShPostUnified post, Reason reason, String actor, String note) {
+        return capture(post, reason, actor, note, ShAgentSessionContext.current().orElse(null));
+    }
+
+    /**
+     * Keep a person's never-published draft before an agent run first writes over it (SH1418).
+     *
+     * <p>A page with a published row can always go back to it, so the review queue's Discard needs
+     * nothing more there. A page that was only ever a draft has no such row, and with
+     * {@code capture-on-save} off (the default) nothing else keeps the text the run replaced. So the
+     * state the run is about to overwrite is captured once, on the run's first write to that post,
+     * attributed to whoever last saved it and to <b>no</b> session: it is the person's version, not
+     * the run's, and the queue picks it by exactly that.</p>
+     *
+     * <p>Not captured when there is no session, when the post has a published row, when this run has
+     * already touched the post (its first write is the one that replaced the person's text, and a run
+     * that created the post has nothing of anyone else's to keep), or when the newest revision already
+     * holds this content.</p>
+     *
+     * @param draft the draft row as it stands, before the update changes it
+     */
+    @Transactional
+    public void captureBeforeRun(ShPostUnified draft) {
+        String session = ShAgentSessionContext.current().orElse(null);
+        if (session == null || draft == null || draft.getId() == null || draft.getData() == null
+                || draft.getState() != ShPostState.DRAFT) {
+            return;
+        }
+        String postId = draft.getId();
+        if (shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED).isPresent()
+                || shHistoryRepository.existsByShObjectAndAgentSessionId(postId, session)) {
+            return;
+        }
+        List<ShPostRevision> held = revisions(postId);
+        if (!held.isEmpty() && draft.getData().equals(held.get(0).getData())) {
+            return;
+        }
+        capture(draft, Reason.SAVE,
+                draft.getModifier() != null ? draft.getModifier() : draft.getOwner(), null, null);
+    }
+
+    /**
+     * The revision a run's first write to a post replaced, for the queue's Discard (SH1418).
+     *
+     * <p>The newest revision no write of this run produced, captured no later than the run's first
+     * change to the post. Empty when there is none, which is the one case the queue still cannot
+     * undo, and says so.</p>
+     */
+    @Transactional(readOnly = true)
+    public Optional<Integer> revisionBeforeRun(String postId, String session, Instant firstTouch) {
+        if (postId == null || firstTouch == null) {
+            return Optional.empty();
+        }
+        return revisions(postId).stream()
+                .filter(revision -> revision.getCapturedAt() != null
+                        && !revision.getCapturedAt().isAfter(firstTouch)
+                        && (session == null || !session.equals(revision.getAgentSessionId())))
+                .map(ShPostRevision::getVersionNo)
+                .findFirst();
+    }
+
+    private ShPostRevision capture(ShPostUnified post, Reason reason, String actor, String note,
+                                   String session) {
         if (post == null || post.getData() == null) {
             return null;
         }
@@ -125,7 +191,7 @@ public class ShPostRevisionService {
         // Bounded to the column, for SH544's reason: the record describes the write and must never
         // be what refuses it. A curator whose reason ran long gets it clipped, not their publish.
         revision.setNote(note != null && note.length() > 510 ? note.substring(0, 510) : note);
-        revision.setAgentSessionId(ShAgentSessionContext.current().orElse(null));
+        revision.setAgentSessionId(session);
         revision.setCapturedAt(Instant.now());
         ShPostRevision saved = shPostRevisionRepository.save(revision);
         prune(post.getId());

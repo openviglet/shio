@@ -111,7 +111,7 @@ by what it did, such as "2 new pages, 1 edited page in quilhara".
 | Open a run | Every page the run touched, each marked new or edited; **Diff** opens what changed under the page itself, including a page the run created |
 | **Publish all** | Publish every draft the run wrote |
 | **Publish** on a page | Publish that page alone |
-| **Discard all** / **Discard** on a page | Undo what the agent did. A page it created goes to the trash, and a page it edited goes back to its published version. A dialog says which of those will happen before anything changes, and a page-level discard asks why, so the agent can read the reason |
+| **Discard all** / **Discard** on a page | Undo what the agent did. A page it created goes to the trash, and a page it edited goes back to the version it had before the run. A dialog says which of those will happen before anything changes, and a page-level discard asks why, so the agent can read the reason |
 | Tick pages | A bar appears with **Publish**, **Discard** and **Leave for later** for the ticked pages. Leave for later records that you read them and are not ready, and changes nothing |
 
 Two design decisions worth knowing. It is a **view over the audit history grouped by
@@ -126,9 +126,11 @@ the run created has no earlier version, so it shows as new, with a summary of wh
 and a preview link. Once an entry is approved there is no draft left to compare, so the entry
 lists the fields the change touched instead.
 
-Discarding reports what it **cannot** honestly undo rather than guessing: an edit to a page
-that was never published has no published version to go back to, so it is left as it is
-and named. If an entry names a deleted folder, discarding it restores the whole section,
+An edit to a page that was never published goes back to the draft the run wrote over: the
+first time a run changes a draft somebody else wrote, Viglet Shio keeps that draft as a revision, so
+the page's version history holds it too. Discarding reports what it **cannot** honestly undo
+rather than guessing: an edit to a page the run itself created has nothing earlier to go back
+to, so it is left as it is and named, and discarding the creation removes the page. If an entry names a deleted folder, discarding it restores the whole section,
 which is what a person means by "undo that". Publishing skips folder entries, because a
 section has no draft to publish.
 

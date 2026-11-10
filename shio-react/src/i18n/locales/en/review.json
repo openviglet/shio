@@ -25,7 +25,7 @@
   "review.discardTitle": "Discard {{count}} change(s) by the agent?",
   "review.discardLead": "This undoes what the agent did:",
   "review.discardCreated": "{{count}} new page(s) go to the trash (you can restore them from there).",
-  "review.discardEdited": "{{count}} edited page(s) go back to their published version. A page that was never published has nothing to go back to and stays as it is.",
+  "review.discardEdited": "{{count}} edited page(s) go back to the version they had before this run: the published one, or, for a page never published, the draft the run wrote over.",
   "review.discardOther": "{{count}} other change(s) are undone.",
   "review.discardReason": "Why discard?",
   "review.discardConfirm": "Discard",

@@ -12,9 +12,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
  * act whose consequences lived only in `ShReviewService.revertOne`: a page the agent created goes to
  * the trash, a page it edited goes back to the version before. A curator who could not predict that
  * either guessed or did not press. This dialog states it per kind of change, from the counts the
- * caller already holds, so nothing is read to open it. An edit goes back to the PUBLISHED row
- * (`revertable` is `UPDATE -> published`), so the sentence says "published version" and names
- * the case with none, which the server skips.</p>
+ * caller already holds, so nothing is read to open it. An edit goes back to the version it had
+ * before the run: the PUBLISHED row, or, for a page never published, the draft the run's first
+ * write replaced, which the server keeps for exactly this (SH1418).</p>
  *
  * <p>`askReason` is the per-change path, where the server refuses a rejection with nothing written
  * down. The whole-run verb records its own reason server-side and takes none.</p>

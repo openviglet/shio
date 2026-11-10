@@ -1910,8 +1910,11 @@ toolbar's Approve side by side. Hold is **Leave for later**.
 
 **Every discard goes through `ReviewDiscardDialog`**, which states the consequence per kind of change
 from counts the caller already holds: a created page goes to the trash, an edited one goes back to
-its *published* version. That is the server's rule (`revertable`: `UPDATE -> published`), so the
-dialog also names the case it skips, an edit of a page never published. The per-change path asks
+the version it had before the run. For a published page that is the published row; for a page never
+published it is the draft the run's first write replaced, which `ShPostRevisionService.captureBeforeRun`
+keeps as a revision attributed to no session, and `revisionBeforeRun` finds again (SH1418). An edit
+to a page the run itself created still has nothing to go back to, and its creation is the entry to
+discard. The per-change path asks
 for the reason the server requires; the whole-run verb records its own and asks for none.
 
 The decision is one request for the whole triage, and the page re-reads the run and the badge after

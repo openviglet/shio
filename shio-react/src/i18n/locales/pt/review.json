@@ -25,7 +25,7 @@
   "review.discardTitle": "Descartar {{count}} alteração(ões) do agente?",
   "review.discardLead": "Isto desfaz o que o agente fez:",
   "review.discardCreated": "{{count}} página(s) nova(s) vão para a lixeira (dá para restaurar de lá).",
-  "review.discardEdited": "{{count}} página(s) editada(s) voltam à versão publicada. Uma página que nunca foi publicada não tem para onde voltar e fica como está.",
+  "review.discardEdited": "{{count}} página(s) editada(s) voltam à versão que tinham antes desta execução: a publicada ou, numa página nunca publicada, o rascunho que a execução sobrescreveu.",
   "review.discardOther": "{{count}} outra(s) alteração(ões) são desfeitas.",
   "review.discardReason": "Por que descartar?",
   "review.discardConfirm": "Descartar",
