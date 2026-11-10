@@ -19,10 +19,6 @@
 
 - ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — Every launch channel lacks a demo that opens without installing, and no production site exists. → §XCV.4
 
-## Block R — End-user documentation for 2026.3 (docs-shio)
-
-- 📋 **SH1412** (deps: —) **shio-docs-write tells a writer a bare Shio is fine after the first mention, and the full-names lint fails the page** — The skill and the gate disagree, so every Block R rewrite that follows the skill lands red on SH1369. → §XCVII.5
-
 ## Priority
 
 ## Done when — SH1245

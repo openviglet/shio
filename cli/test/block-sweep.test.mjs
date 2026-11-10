@@ -361,7 +361,12 @@ const SWEEP = {
       + "SH1365-SH1368 put every batch op, MCP resource, CLI verb and shio.* key on a page and gate "
       + "the code-to-docs direction. docs-shio moved: four pages and COVERAGE's Block R row, with the "
       + "mirror regenerated. README and shio-site are NOT moved: the verb, tool and op counts they "
-      + "state did not change, and neither lists properties or resources",
+      + "state did not change, and neither lists properties or resources. Reopened for how a page is "
+      + "written and re-closed by SH1412: SH1401's style lint, SH1402's shio-docs-write skill, the "
+      + "seven largest pages rewritten one per task (SH1403-SH1409), the wide-screen column "
+      + "(SH1413), and the skill's naming rule matched to the full-names lint (SH1412). docs-shio "
+      + "moved: those pages, COVERAGE's Block R row and the mirror. README and shio-site/src are NOT "
+      + "moved: neither describes how a docs page is written or laid out",
   },
   S: {
     swept: true,

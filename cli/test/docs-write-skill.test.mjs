@@ -54,6 +54,23 @@ test("SH1402: the step that writes a shipped feature's page names the skill", ()
   assert.match(step[0], /`shio-docs-write`/, "step 3 of shio-roadmap-docs must name the shio-docs-write skill");
 });
 
+/**
+ * SH1412 — the skill's product-name rule is the one the site's lint holds.
+ *
+ * The generated skill said a bare Shio was fine after the first mention, while
+ * `full-names.test.mjs` fails any bare product name in a docs page's prose, so a writer following
+ * the skill turned the site suite red three times on one page. Two rules about one thing are two
+ * rules that disagree; this holds the skill to the lint's.
+ */
+test("SH1412: the skill's product-name rule matches the full-names lint", () => {
+  const skill = read(SKILL);
+  assert.ok(existsSync(join(ROOT, "shio-site/scripts/full-names.test.mjs")), "the naming lint the skill defers to is gone");
+  assert.doesNotMatch(skill, /after the first mention[^.\n]*fine/i,
+    "SH1412: the skill allows a bare product name after the first mention, which full-names.test.mjs refuses");
+  assert.match(skill, /every sentence and heading/, "SH1412: the skill no longer states the full-name rule");
+  assert.ok(skill.includes("full-names.test.mjs"), "SH1412: the skill does not name the lint that enforces the rule");
+});
+
 test("SH1402: the agents.md index lists the skill", () => {
   assert.match(read("agents.md"), /\| `shio-docs-write` \|/);
 });

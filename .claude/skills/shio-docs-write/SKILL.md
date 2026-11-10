@@ -35,7 +35,10 @@ Where a feature is documented, and whether it needs a page at all, is decided fi
 
 ## Product name and links
 
-- The product is **Viglet Shio** in prose; **Shio** after the first mention on a page is fine.
+- The product is **Viglet Shio** in every sentence and heading, not only the first: a bare
+  **Shio** is allowed only inside code, commands and link targets, and as the console labels
+  **Shio Native** and **Shio Package**. `scripts/full-names.test.mjs` fails a page otherwise,
+  and it reads line by line, so keep `Viglet Shio` on one line.
 - Internal links are root-absolute `/docs/<slug>/#anchor`, never `https://shio.viglet.org/docs`.
 - Public code links point at `openviglet/shio`.
 

@@ -1498,6 +1498,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1407** — The replication page opens on one Steps walk-through from a source URL to a judged replica (clone, propose, accept, convert, publish, public route, judge), with the stage detail as reference and the stale type count gone.
 - **SH1408** — The CLI page opens on four numbered how-tos (connect, gate a pull request, change one field, hand a site over) and leaves the command reference as tables, every verb and cited anchor kept.
 - **SH1409** — The administration page opens on four operator tasks in numbered steps and states members-only reading, tokens, tenants, sites and per-host serving as tables, every cited anchor kept and the page off the style-lint baseline.
+- **SH1412** — shio-docs-write states the rule full-names.test.mjs holds (Viglet Shio in every sentence and heading, the short name only in code and the two console labels), and docs-setup copies a project's naming lint instead of writing a default.
 
 ## Block S — The public site (shio.viglet.org)
 
