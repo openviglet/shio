@@ -428,6 +428,7 @@
 - **SH1390** — The Universal Editor and the content picker read a post in the state it has, draft first, so an agent's unpublished draft opens with no 404 and no toast; a lint keeps every single-post read naming a state (design §XI.117 recorded in `shio-react/test/post-read-state.test.mjs`).
 - **SH1391** — A browser turned away from a missing or members-only /sites page gets the site's own /404 page in its language, or a plain page linking home; API clients keep the JSON problem, and Quilhara ships one (design §XI.118 recorded in `docs/agents/renderer.md`).
 - **SH1397** — A catalogue entry names the manifest keys it uses in requires, and an instance that cannot read one says the package needs a newer Viglet Shio and refuses before downloading (design §XI.123 superseded: a minimum version cannot tell two 2026.3 instances apart, and a new entry field would make released instances refuse the whole catalogue, so the keys ride in requires) (design §XI.123 recorded in `docs/agents/blueprints.md`).
+- **SH1411** — The fallback not-found page a browser gets carries an inline light/dark stylesheet, names the site, and answers in the address's locale or the site's default from an en/pt message bundle, with lang set to match.
 
 ## Block M — Token economy, measured (SH74)
 

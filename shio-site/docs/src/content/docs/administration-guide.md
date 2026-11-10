@@ -148,7 +148,7 @@ members area needs no second account system.
 
 | Where | A visitor outside the groups gets |
 |---|---|
-| A page under `/sites/...` | The same **404** a missing page gets. A browser receives the site's published `/404` page, in its language when translated, or a plain "Page not found" page with a link home; an API client receives the JSON problem. A member's response is never stored in a shared cache |
+| A page under `/sites/...` | The same **404** a missing page gets. A browser receives the site's published `/404` page, in its language when translated, or the instance's own not-found page, in the visitor's language (the address's locale, else the site's default) with the site's name and a link home; an API client receives the JSON problem. A member's response is never stored in a shared cache |
 | Listings (menus, `{{#query}}`, related content, search) | The gated pages left out, with exact counts |
 | The delivery API | The same rule, applied to the **owner of the token**, in single reads and in every listing |
 | The preview | Gated pages shown to editors, since that is where they are edited. Administrators always read everything |

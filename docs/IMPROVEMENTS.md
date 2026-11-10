@@ -241,27 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.127 Error pages with a minimal style, in the reader's language (SH1411)
-
-Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): a visitor turned away
-from a members-only trail on Quilhara gets SH1391's fallback, `plainNotFound` in
-`shio-app/.../render/ShSitesAPI.java`. It is bare HTML, black serif text on white with
-the browser's default margins, and always English (`lang="en"`, "Page not found", "Go to
-the home page"), even under `/sites/quilhara/default/pt-br/...`. A site with no `/404`
-page of its own shows that to every visitor who meets a missing or closed page.
-
-Give the fallback, and every error page the renderer answers a browser with, a small
-self-contained stylesheet inlined in the page (no request back to the server): a system
-font stack, the message centred in a readable column, the site's name above it, the link
-home as a button, and light and dark from `prefers-color-scheme`. Take the language from
-the address's locale segment, or the site's default, with the strings in the backend's
-message bundle (pt and en at least), and set `lang` to match. Keep it plain otherwise:
-no theme, no script, still `noindex` and never cached, so it stays the honest answer
-when the site's own page cannot be drawn.
-
-Test it in `ShSitesMembersOnlyTest` beside the existing assertion: the pt-br address
-answers in Portuguese with `lang="pt-BR"`, and the page carries its inline style.
-
 ### XI.128 Form drafts in the language of the page that held the form (SH1414)
 
 Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): a visitor sends the

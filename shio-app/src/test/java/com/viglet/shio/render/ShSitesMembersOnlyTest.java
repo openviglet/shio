@@ -170,6 +170,8 @@ class ShSitesMembersOnlyTest {
                                 .as("SH1391: %s answered a visitor with an error written for an agent", path)
                                 .contains("<h1>Page not found</h1>")
                                 .contains("href=\"/sites/" + siteName + "/default/en-us/\"")
+                                // SH1411: styled in the page itself, and naming whose site it is.
+                                .contains("<style>").contains("<p class=\"site\">")
                                 .doesNotContain("render-page-unknown").doesNotContain("/api/v2/agent")
                                 .doesNotContain("members lounge");
                         assertThat(result.getResponse().getHeader("Cache-Control"))

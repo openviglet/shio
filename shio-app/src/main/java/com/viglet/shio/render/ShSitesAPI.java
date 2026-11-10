@@ -262,13 +262,16 @@ public class ShSitesAPI {
         return page;
     }
 
-    static String plainNotFound(Address address) {
-        String home = org.springframework.web.util.HtmlUtils.htmlEscape(address.prefix() + "/");
-        return "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
-                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-                + "<meta name=\"robots\" content=\"noindex\">\n<title>Page not found</title>\n</head>\n<body>\n"
-                + "<main>\n<h1>Page not found</h1>\n<p>There is no page at this address.</p>\n"
-                + "<p><a href=\"" + home + "\">Go to the home page</a></p>\n</main>\n</body>\n</html>\n";
+    /**
+     * SH1411 — the site has no not-found page of its own: the renderer's, styled and in the reader's
+     * language, which is the address's locale or else the site's declared default.
+     */
+    private String plainNotFound(Address address) {
+        Optional<ShPageRenderService.SiteLabel> site = shPageRenderService.siteLabelOf(address.site());
+        String locale = address.selectedLocale() != null ? address.selectedLocale()
+                : site.map(ShPageRenderService.SiteLabel::defaultLocale).orElse(null);
+        return ShErrorPage.notFound(address.prefix() + "/",
+                site.map(ShPageRenderService.SiteLabel::name).orElse(null), locale);
     }
 
     private ResponseEntity<?> deliver(Address address, HttpServletRequest request) {

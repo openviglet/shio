@@ -688,6 +688,21 @@ public class ShPageRenderService {
         return siteIfAny(siteKey).map(ShSite::getId);
     }
 
+    /**
+     * SH1411 — the name and declared default locale of the site a key names, for a page drawn with
+     * no post of the site behind it (the fallback not-found page), which has to say whose site it is
+     * and in which language without a render to read them from.
+     */
+    @Transactional(readOnly = true)
+    public Optional<SiteLabel> siteLabelOf(String siteKey) {
+        return siteIfAny(siteKey).map(site -> new SiteLabel(site.getName(),
+                shSiteLocaleService.declared(site).map(ShSiteLocales::defaultLocale).orElse(null)));
+    }
+
+    /** SH1411 — a site's display name, and the default locale it declared, or null when it declared none. */
+    public record SiteLabel(String name, String defaultLocale) {
+    }
+
     private ShSite siteByKey(String siteKey) {
         return siteIfAny(siteKey).orElseThrow(() -> new UnknownSiteException(siteKey));
     }
