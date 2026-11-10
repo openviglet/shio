@@ -49,4 +49,7 @@ public interface ShAgentRunRepository extends JpaRepository<ShAgentRun, String> 
 
     /** SH1006 — whether any run on this tenant started after the instant. */
     boolean existsByStartedAtAfter(Instant instant);
+
+    /** SH1421 — the newest runs that introduced themselves after the instant, five at most. */
+    List<ShAgentRun> findTop5ByStartedAtAfterOrderByStartedAtDesc(Instant instant);
 }

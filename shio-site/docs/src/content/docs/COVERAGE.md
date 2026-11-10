@@ -181,7 +181,7 @@ The coverage column is the page's verdict and matches the cluster row above that
 | `pathAddressing` | `post:`, `folder:` and `site:` addresses | [agent-surface](./agent-surface.mdx) | ✅ |
 | `batchWrites` | `POST /agent/batch` and its op vocabulary | [agent-surface § Writing](./agent-surface.mdx#writing) | ✅ |
 | `desiredState` | `/agent/plan` and `/agent/apply` | [agent-surface](./agent-surface.mdx) | ✅ |
-| `mcp` | the `POST /mcp` server and its `shio_*` tools | [mcp](./mcp.md) | ✅ |
+| `mcp` | the `POST /mcp` server and its `shio_*` tools; an empty instance's first screen issues an AGENT key, prints the `claude mcp add` command and waits for the first run (SH1421) | [mcp](./mcp.md) · [§ From the console](./mcp.md#from-the-console) | ✅ |
 | `fieldProjection` | `fields=` on a read | [agent-surface § Reading](./agent-surface.mdx#reading) | ✅ |
 | `postMove` | `post.move` | [agent-surface § Writing](./agent-surface.mdx#writing) | ✅ |
 | `folderPrune` | removing what a folder no longer declares | [content-as-files](./content-as-files.md) | 🧩 |

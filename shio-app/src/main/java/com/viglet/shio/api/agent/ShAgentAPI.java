@@ -888,17 +888,28 @@ public class ShAgentAPI {
      * instance has ever seen" is not a question anybody has — and a listing would be a second,
      * unbounded surface over a table the review queue already scopes.</p>
      *
+     * <p>SH1421 — or by {@code since}: the runs that introduced themselves after an instant, newest
+     * first and five at most. That is the question "did the agent I just connected arrive?", which
+     * the console's connect panel asks after issuing a key, and it stays bounded: a time and a
+     * ceiling, never the whole table.</p>
+     *
      * @param sessions comma-separated session ids, as the feed spells them in {@code agent}
+     * @param since    an ISO-8601 instant, instead of {@code session}
      */
     @GetMapping("/runs")
     @Operation(summary = "Who a run was, and what it said it was for")
-    public List<ShAgentRunRow> runs(@RequestParam(name = "session") String sessions) {
+    public List<ShAgentRunRow> runs(
+            @RequestParam(name = "session", required = false) String sessions,
+            @RequestParam(name = "since", required = false) String since) {
+        if (sessions == null || sessions.isBlank()) {
+            return shAgentRunService.since(sinceInstant(since)).stream()
+                    .map(ShAgentAPI::runRow)
+                    .toList();
+        }
         List<String> ids = java.util.Arrays.stream(sessions.split(","))
                 .map(String::trim).filter(id -> !id.isEmpty()).distinct().toList();
         return shAgentRunService.runs(ids).stream()
-                .map(run -> new ShAgentRunRow(run.getId(), run.getClientName(),
-                        run.getClientVersion(), run.getTransport(), run.getActor(),
-                        run.getIntent(), run.getStartedAt()))
+                .map(ShAgentAPI::runRow)
                 // By the order asked for, not the order the database returned: a caller that sent
                 // three ids and rendered three sections would otherwise render them at random (P5).
                 .sorted(java.util.Comparator.comparingInt(row -> ids.indexOf(row.session())))
@@ -1100,6 +1111,38 @@ public class ShAgentAPI {
                         "Use terse for an agent, json for a program. To drop the endpoint index "
                                 + "entirely, ask for `?include=features,limits`.");
             };
+        }
+    }
+
+    private static ShAgentRunRow runRow(com.viglet.shio.persistence.model.agent.ShAgentRun run) {
+        return new ShAgentRunRow(run.getId(), run.getClientName(), run.getClientVersion(),
+                run.getTransport(), run.getActor(), run.getIntent(), run.getStartedAt());
+    }
+
+    /** SH1421 — {@code since}, or the teaching 400 that says which of the two to send. */
+    private static java.time.Instant sinceInstant(String since) {
+        if (since == null || since.isBlank()) {
+            throw new RunsQueryException("Name the runs to read",
+                    "Send session=<id,...> for runs you already know, or since=<ISO-8601 instant> "
+                            + "for the runs that started after it.",
+                    "?since=2026-11-10T12:00:00Z");
+        }
+        try {
+            return java.time.Instant.parse(since.trim());
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new RunsQueryException("'" + since + "' is not an instant",
+                    "since is an ISO-8601 instant in UTC.", "?since=2026-11-10T12:00:00Z");
+        }
+    }
+
+    /** A 400 on {@code /agent/runs} that says what to send (SH1421, P6). */
+    public static class RunsQueryException extends ShTeachingException {
+
+        public RunsQueryException(String title, String fix, String example) {
+            super(ShProblem.badRequest("bad-runs-query", title)
+                    .withAllowed(List.of("session", "since"))
+                    .withFix(fix)
+                    .withExample(example));
         }
     }
 

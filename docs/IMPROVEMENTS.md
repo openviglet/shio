@@ -1174,23 +1174,6 @@ site link it beside `docker run`. If a guest console is too costly to keep safe,
 rendered showcase alone, with a recorded console tour, is the first step. Set aside
 2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
 
-### XCV.8 XCV.8 Connect your agent, from the first screen (SH1421)
-
-Shio is built for a coding agent first, and the first-use screen SH1420 adds offers
-three console paths: a Marketplace package, a blank site, an import. The fourth path,
-and the one the product is designed around, is to let an agent build the site, and the
-console says nothing about it. A newcomer has to find the docs, learn that the endpoint
-is `POST /mcp` on this instance, create an AGENT token in the token list, and assemble
-the `claude mcp add` command (or the plugin install) by hand.
-
-A fourth card on the first-use screen, "Let your coding agent build it", should open a
-short guided panel: it creates an AGENT-scoped token in place (with the same
-confirmation the token list asks for, P7), shows the exact command for Claude Code with
-this instance's URL and the token already filled in, with a copy button, and names the
-plugin install as the alternative. Its last step watches for the first agent call (the
-manifest read shows up in the agent's session list) and says "connected" when it
-arrives, so the newcomer knows it worked without leaving the page.
-
 ### XCV.9 XCV.9 After the first install, the next step (SH1422)
 
 SH1420 sends a newcomer from an empty site list to the Marketplace. What happens there

@@ -3585,7 +3585,14 @@ It is stored on `sh_agent_run` and **never on the change row**. One sentence abo
 carried on the row, is that sentence forty times, and the feed is the surface a session polls, so
 the repetition would be paid on every poll. `GET /agent/runs?session=a,b,c` is the read, asked by
 the ids the feed already names in `agent`, in the order they were asked for. There is no listing:
-"every run this instance has ever seen" is not a question anybody has.
+"every run this instance has ever seen" is not a question anybody has. **SH1421 added the one bounded
+other form**, `GET /agent/runs?since=<instant>`: the runs that introduced themselves after it,
+newest first, five at most. It answers "did the agent I just connected arrive?", which the console's
+first-use connect panel asks every three seconds after issuing an AGENT key (no `mayPublish`), and a
+caller with neither parameter gets the `bad-runs-query` teaching 400 naming both. The panel prints
+`claude mcp add --transport http shio <origin>/mcp --header "Key: <token>"`, not the `shio mcp`
+bridge: the bridge authenticates with `SHIO_USER`/`SHIO_PASSWORD`, so it cannot carry the key the
+panel just issued.
 
 A run that declared none reports **no intent** rather than an empty sentence, and both readers name
 the argument that would have supplied one. An absent premise is a fact about the run, and a blank

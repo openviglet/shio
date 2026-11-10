@@ -136,6 +136,12 @@ public class ShAgentRunService {
         introduce(session, null, null, REST, actor, intent);
     }
 
+    /** SH1421 — the newest runs that introduced themselves after this instant, five at most. */
+    @Transactional(readOnly = true)
+    public List<ShAgentRun> since(Instant instant) {
+        return shAgentRunRepository.findTop5ByStartedAtAfterOrderByStartedAtDesc(instant);
+    }
+
     /** What these runs said they were for, in one query, insertion-ordered for {@link #names}'s reason. */
     @Transactional(readOnly = true)
     public Map<String, String> intents(Collection<String> sessions) {

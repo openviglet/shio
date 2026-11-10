@@ -32,6 +32,21 @@ or point your client at the CLI's stdio bridge with
 
 ## Connecting
 
+### From the console
+
+On an instance with no site yet, the home page's **Start your first site** offers **Let your
+coding agent build it** to an administrator. It issues an `AGENT` key that cannot publish, prints
+the command that registers this instance in Claude Code with the key already in it:
+
+```bash
+claude mcp add --transport http shio https://cms.example.org/mcp --header "Key: <the key>"
+```
+
+and then waits on the page until the agent's first call arrives, so you know it worked without
+leaving the console. The key is listed under **Administration → API tokens** afterwards, where
+you can disable it. The same check is open to any caller: `GET /api/v2/agent/runs?since=<instant>`
+answers the runs that introduced themselves after that instant, newest first, five at most.
+
 ### With the Claude Code plugin (recommended)
 
 ```bash
