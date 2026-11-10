@@ -431,6 +431,7 @@
 - **SH1411** — The fallback not-found page a browser gets carries an inline light/dark stylesheet, names the site, and answers in the address's locale or the site's default from an en/pt message bundle, with lang set to match.
 - **SH1414** — A form submission is written in the language of the page that sent it: the locale segment of its /sites/ Referer when the site has that locale, else the site's declared default, so a pt-br enquiry lands as a pt-br draft.
 - **SH1415** — The post editor asks GET /post-unified/{id}/states first and reads only the rows the post has, so a never-published draft opens with no 404 in the browser console.
+- **SH1416** — The review queue titles a run by what it did, says Publish and Discard once per scope, and every discard states what it undoes before it does it (design §XI.130 recorded in `docs/agents/console-ui.md`).
 
 ## Block M — Token economy, measured (SH74)
 

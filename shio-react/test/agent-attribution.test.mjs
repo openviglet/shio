@@ -64,15 +64,16 @@ test("SH999: both locales name the chip and the three filters", () => {
 test("SH1000: the review queue leads with the premise, and names the flag when there is none", () => {
   const page = read("src", "app", "admin", "review", "review.list.page.tsx")
 
-  assert.match(page, /\{session\.intent \?\? \(/,
+  assert.match(page, /\{session\.intent \?\? /,
     "SH1000: the premise leads, because it is what decides whether the list underneath is the "
       + "right list — a reviewer without it reads the diff to find out why")
-  // SH1197 — with no premise, the run's short id leads and the absence is a muted note; the flag
-  // that would have supplied one is named once under the list rather than in bold on every row.
-  assert.match(page, /t\("review\.noIntentShort"\)/, "SH1197: a run with no intent says so on its row")
+  // SH1416 — with no premise, the run is titled by what it did; the flag that would have supplied
+  // one is named once under the list (SH1197), and the uuid is only the row's tooltip.
+  assert.match(page, /\{session\.intent \?\? runSummary\(session, t\)\}/,
+    "SH1416: a run with no intent is titled by its counts, not by its id")
   assert.match(page, /t\("review\.intentHint"\)/, "SH1197: the --intent instruction is no longer said at all")
-  assert.match(page, /session\.agentName \?\? session\.session/,
-    "SH1000: the name the run gave, falling back to the uuid this task exists to stop leading with")
+  assert.match(page, /session\.agentName && /,
+    "SH1000: the name the run gave, and nothing in its place when it gave none")
 
   for (const locale of ["en", "pt"]) {
     const review = JSON.parse(read("src", "i18n", "locales", locale, "review.json"))
@@ -86,9 +87,9 @@ test("SH1000: the review queue leads with the premise, and names the flag when t
 test("SH1000: the summary is beside the premise, and the look report is behind the open", () => {
   const page = read("src", "app", "admin", "review", "review.list.page.tsx")
 
-  assert.match(page, /Object\.keys\(session\.bySite \?\? \{\}\)\.length > 1/,
-    "SH1000: by site only when a run touched more than one — on a single-site run the badge "
-      + "repeats what the addresses already say, and a badge that is never news stops being read")
+  // SH1416 folded the per-site badges into the run's title, which names every site it touched.
+  assert.match(page, /const sites = Object\.keys\(run\.bySite \?\? \{\}\)/,
+    "SH1000: the sites a run touched are named beside what it did")
   assert.match(page, /detail\.appearance && detail\.appearance\.checked > 0/,
     "SH1000: shown only when something was comparable, because '0 of 0 pages' is a sentence about "
       + "the instrument rather than about the run")

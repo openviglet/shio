@@ -24,14 +24,19 @@ const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
 
 test("SH1001: reject is disabled until there is a reason, and the server refuses it too", () => {
   const triage = read("src", "components", "review-triage.tsx")
+  // SH1416 moved the reason into the discard dialog, which every discard path goes through.
+  const dialog = read("src", "components", "review-discard.dialog.tsx")
 
-  assert.match(triage, /disabled=\{busy \|\| !note\.trim\(\)\}/,
+  assert.match(dialog, /const ready = !askReason \|\| note\.trim\(\)\.length > 0/)
+  assert.match(dialog, /disabled=\{busy \|\| !ready\}/,
     "SH1001: the server refuses a rejection with nothing written down, and the button knows it — a "
       + "curator should not learn the rule from a refusal")
-  assert.match(triage, /decision === "REJECT" && !note\.trim\(\)/,
-    "SH1001: and the keyboard path refuses it too, or the rule is a property of one button")
-  assert.match(triage, /t\("review\.rejectNeedsNote"\)/,
+  assert.match(triage, /if \(posts\.length === 0 \|\| !note\.trim\(\)\) return/,
+    "SH1001: and the reject path refuses it too, or the rule is a property of one button")
+  assert.match(dialog, /t\("review\.rejectNeedsNote"\)/,
     "SH1001: with the reason, not a dead control")
+  assert.match(triage, /<ReviewDiscardDialog[\s\S]*?askReason\s/,
+    "SH1001: a per-change discard asks for the reason the server requires")
 })
 
 test("SH1001: the keyboard never fires while the reason is being typed", () => {
@@ -40,9 +45,9 @@ test("SH1001: the keyboard never fires while the reason is being typed", () => {
   assert.match(triage,
     /event\.target instanceof HTMLInputElement \|\| event\.target instanceof HTMLTextAreaElement/,
     "SH1001: `a` in \"the prices are wrong\" must not approve the page")
-  assert.match(triage, /r: \(\) => noteBox\.current\?\.focus\(\)/,
-    "SH1001: r focuses the box rather than rejecting — the one destructive key on this list must "
-      + "not be a keystroke away from acting")
+  assert.match(triage, /r: \(\) => \{ const posts = subjects\(\); if \(posts\.length > 0\) setDiscarding\(posts\) \}/,
+    "SH1001: r opens the discard dialog rather than discarding — the one destructive key on this "
+      + "list must not be a keystroke away from acting")
 })
 
 test("SH1001: shift-click takes a range, because a run is often one sweep", () => {

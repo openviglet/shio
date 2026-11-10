@@ -3,7 +3,6 @@ import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ROUTES } from "@/app/routes.const"
 import { ReviewTriage } from "@/components/review-triage"
@@ -20,6 +19,8 @@ import { useInvalidate } from "@/hooks/use-catalogue"
 import { useCallback, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
+import { ReviewDiscardDialog } from "@/components/review-discard.dialog"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { headlineOf, problemOf, reportProblem } from "@/lib/problem"
@@ -38,14 +39,32 @@ const service = new ShReviewService()
  */
 const REVIEW_LIST = { q: "", site: "", show: "" }
 
-/** Same action colours the Activity page uses — one action, one colour, wherever it appears. */
-const ACTION_BADGE: Record<string, string> = {
-  CREATE: "border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400",
-  UPDATE: "border-indigo-300 text-indigo-600 dark:border-indigo-700 dark:text-indigo-400",
-  PUBLISH: "border-green-300 text-green-600 dark:border-green-700 dark:text-green-400",
-  UNPUBLISH: "border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400",
-  DELETE: "border-red-300 text-red-600 dark:border-red-700 dark:text-red-400",
-  RESTORE: "border-teal-300 text-teal-600 dark:border-teal-700 dark:text-teal-400",
+/**
+ * SH1416 — a run with no declared intent is titled by what it did ("4 new pages in quilhara").
+ *
+ * The run's short id led the row before this, followed by "no intent declared": eight hex digits a
+ * curator cannot act on, above a note about an absence. The counts the listing already carries say
+ * what the run was, which is the question the title answers; the id survives as the row's tooltip.
+ */
+const SUMMARY_ORDER = ["CREATE", "UPDATE", "MOVE", "PUBLISH", "UNPUBLISH", "DELETE", "RESTORE"]
+const rank = (action: string) => { const at = SUMMARY_ORDER.indexOf(action); return at < 0 ? SUMMARY_ORDER.length : at }
+
+function runSummary(run: ShReviewSession, t: TFunction): string {
+  const parts = Object.entries(run.byAction).sort(([a], [b]) => rank(a) - rank(b)).map(([action, count]) =>
+    t(`review.summary${action.charAt(0)}${action.slice(1).toLowerCase()}`,
+      { count, defaultValue: t("review.summaryOther", { count }) }))
+  const what = parts.length > 0 ? parts.join(", ") : t("review.summaryOther", { count: run.changes })
+  const sites = Object.keys(run.bySite ?? {})
+  return sites.length > 0 ? t("review.summaryIn", { what, sites: sites.join(", ") }) : what
+}
+
+/** The changes a set of runs would discard, by kind — what the discard dialog states (SH1416). */
+function kindsOf(runs: ShReviewSession[]): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const run of runs) {
+    for (const [action, count] of Object.entries(run.byAction)) counts[action] = (counts[action] ?? 0) + count
+  }
+  return counts
 }
 
 /**
@@ -75,6 +94,8 @@ export default function ReviewListPage() {
    * filter no longer lists is left out of the decision (see `ticked` below).
    */
   const [picked, setPicked] = useState<Record<string, true>>({})
+  /** SH1416 — the runs the discard dialog is asking about; null while it is closed. */
+  const [discarding, setDiscarding] = useState<string[] | null>(null)
 
   /*
    * SH1024 — the design system's bar, as on the browser, search and trash. Its value is the URL's
@@ -286,8 +307,8 @@ export default function ReviewListPage() {
           <div className="flex items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-2 text-sm">
             <span className="font-medium">{t("review.selectedRuns", { count: ticked.length })}</span>
             <span className="flex-1" />
-            <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void actMany(ticked, "revert")}>
-              <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.revert")}
+            <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => setDiscarding(ticked)}>
+              <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.discard")}
             </Button>
             <Button size="sm" disabled={busy !== null} onClick={() => void actMany(ticked, "approve")}>
               <Check className="mr-1 h-3.5 w-3.5" /> {t("review.approveSelected")}
@@ -344,9 +365,9 @@ export default function ReviewListPage() {
                 const expanded = session.session in open
                 return (
                   <div key={session.session}>
-                    <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-3 px-4 py-3" title={t("review.runId", { run: session.session })}>
                       <Checkbox
-                        aria-label={t("review.selectRun", { run: session.agentName ?? session.session.slice(0, 8) })}
+                        aria-label={t("review.selectRun", { run: session.intent ?? runSummary(session, t) })}
                         checked={session.session in picked}
                         onCheckedChange={(value: boolean | "indeterminate") => pick(session.session, value === true)}
                       />
@@ -366,59 +387,30 @@ export default function ReviewListPage() {
                             decision, and without it they read the diff to find out why.
                           */}
                           {/*
-                            SH1197 — with no intent, the run's own short id leads and the missing
-                            sentence is a muted note. The bold instruction on every row made the
-                            absence the loudest thing on the page; it is said once, under the list.
+                            SH1416 — with no intent, the run is titled by what it did. The short id
+                            that led here (SH1197) told a curator nothing; it is the row's tooltip.
                           */}
                           <div className="font-medium truncate">
-                            {session.intent ?? (
-                              <>
-                                <code className="font-mono text-[0.95em]">{session.session.slice(0, 8)}</code>
-                                <span className="ml-2 font-normal italic text-muted-foreground">{t("review.noIntentShort")}</span>
-                              </>
-                            )}
+                            {session.intent ?? runSummary(session, t)}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
-                            {t("review.changesBy", {
-                              count: session.changes,
-                              actor: session.actor ?? t("review.unknownActor"),
-                            })}
-                            {` · `}
-                            <code>{session.agentName ?? session.session}</code>
+                            {t("review.byActor", { actor: session.actor ?? t("review.unknownActor") })}
+                            {session.agentName && ` ${t("review.viaAgent", { agent: session.agentName })}`}
                             {session.lastSeen &&
                               ` · ${relativeDate(session.lastSeen, i18n.language)}`}
+                            {session.pending > 0 && ` · ${t("review.pending", { count: session.pending })}`}
                           </div>
                         </div>
                       </button>
-                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                        {Object.entries(session.byAction).map(([action, count]) => (
-                          <Badge
-                            key={action}
-                            variant="outline"
-                            className={`text-[10px] ${ACTION_BADGE[action] ?? ""}`}
-                          >
-                            {t(`activity.action${action.charAt(0)}${action.slice(1).toLowerCase()}`, { defaultValue: action })} {count}
-                          </Badge>
-                        ))}
-                        {/*
-                          SH1000 — by site, and only when a run touched more than one: on a
-                          single-site run the badge repeats what the addresses below already say,
-                          and a badge that is always right and never news is one people stop
-                          reading.
-                        */}
-                        {Object.keys(session.bySite ?? {}).length > 1 &&
-                          Object.entries(session.bySite ?? {}).map(([site, count]) => (
-                            <Badge key={site} variant="outline" className="text-[10px]">
-                              {site} {count}
-                            </Badge>
-                          ))}
-                        {session.pending > 0 && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {t("review.pending", { count: session.pending })}
-                          </Badge>
-                        )}
-                      </div>
                       <div className="flex gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy === session.session}
+                          onClick={() => setDiscarding([session.session])}
+                        >
+                          <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.discardAll")}
+                        </Button>
                         {/* SH1197 — per row a secondary: the page's one primary is the selection bar's. */}
                         <Button
                           size="sm"
@@ -426,15 +418,7 @@ export default function ReviewListPage() {
                           disabled={busy === session.session || session.pending === 0}
                           onClick={() => act(session.session, "approve")}
                         >
-                          <Check className="mr-1 h-3.5 w-3.5" /> {t("review.approve")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={busy === session.session}
-                          onClick={() => act(session.session, "revert")}
-                        >
-                          <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.revert")}
+                          <Check className="mr-1 h-3.5 w-3.5" /> {t("review.publishAll", { count: session.pending })}
                         </Button>
                       </div>
                     </div>
@@ -457,6 +441,22 @@ export default function ReviewListPage() {
           <p className="px-1 text-xs text-muted-foreground">{t("review.intentHint")}</p>
         )}
       </div>
+      {/*
+        SH1416 — the whole-run discard says what it will do before it does it. The server records its
+        own reason for this verb, so the dialog asks for none.
+      */}
+      <ReviewDiscardDialog
+        open={discarding !== null}
+        byAction={kindsOf(sessions.filter((run) => discarding?.includes(run.session)))}
+        askReason={false}
+        busy={busy !== null}
+        onCancel={() => setDiscarding(null)}
+        onConfirm={() => {
+          const runs = discarding ?? []
+          setDiscarding(null)
+          void (runs.length === 1 ? act(runs[0], "revert") : actMany(runs, "revert"))
+        }}
+      />
     </>
   )
 }

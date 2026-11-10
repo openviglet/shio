@@ -103,11 +103,16 @@ requested. Three consequences, all of them the point:
 Every write records who did it and which run it belonged to. The console's **review
 queue** at `/bento/admin/review` turns that into the curator's view:
 
+A run you started with `--intent "<sentence>"` is titled by that sentence; any other run is titled
+by what it did, such as "2 new pages, 1 edited page in quilhara".
+
 | Action | Effect |
 |---|---|
-| Read a session | Every entry the run produced, in order; **Diff** opens what changed under the entry itself, including a page the run created |
-| **Approve** | Publish the run's drafts |
-| **Revert** | Undo it, entry by entry, restoring an earlier version or pulling something back out of the trash |
+| Open a run | Every page the run touched, each marked new or edited; **Diff** opens what changed under the page itself, including a page the run created |
+| **Publish all** | Publish every draft the run wrote |
+| **Publish** on a page | Publish that page alone |
+| **Discard all** / **Discard** on a page | Undo what the agent did. A page it created goes to the trash, and a page it edited goes back to its published version. A dialog says which of those will happen before anything changes, and a page-level discard asks why, so the agent can read the reason |
+| Tick pages | A bar appears with **Publish**, **Discard** and **Leave for later** for the ticked pages. Leave for later records that you read them and are not ready, and changes nothing |
 
 Two design decisions worth knowing. It is a **view over the audit history grouped by
 session**, not a separate proposal table: the draft row *is* the proposal, which is why
@@ -121,10 +126,11 @@ the run created has no earlier version, so it shows as new, with a summary of wh
 and a preview link. Once an entry is approved there is no draft left to compare, so the entry
 lists the fields the change touched instead.
 
-Reverting reports what it **cannot** honestly undo rather than guessing. If an entry
-names a deleted folder, reverting it restores the whole section, which is what a person
-means by "undo that". Approve skips folder entries, because a section has no draft to
-publish.
+Discarding reports what it **cannot** honestly undo rather than guessing: an edit to a page
+that was never published has no published version to go back to, so it is left as it is
+and named. If an entry names a deleted folder, discarding it restores the whole section,
+which is what a person means by "undo that". Publishing skips folder entries, because a
+section has no draft to publish.
 
 ---
 

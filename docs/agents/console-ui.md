@@ -1863,9 +1863,29 @@ keyboard path refuses it too, or the rule would be a property of one button. `HO
 which is what keeps the requirement from taxing the act of parking something.
 
 **Keyboard triage**: `j`/`k` move, `x` selects, `a`/`h` decide the selection, or the row under the
-cursor when nothing is selected. `r` **focuses the reason box rather than rejecting**: the one
-destructive key on this list must not be a keystroke away from acting. None of them fire while the
-reason is being typed, or `a` in "the prices are wrong" would approve the page.
+cursor when nothing is selected. `r` **opens the discard dialog rather than rejecting** (SH1416;
+it focused a reason box before): the one destructive key on this list must not be a keystroke away
+from acting. None of them fire while the reason is being typed, or `a` in "the prices are wrong"
+would approve the page.
+
+## The queue in the curator's words (SH1416)
+
+A curator reported the queue as confusing, and each complaint was a layer that had added controls
+without removing any. **A run with no intent is titled by what it did**, built from `byAction` and
+`bySite` in a fixed order (new, edited, moved, ...), never by its session id, which is only the row's
+tooltip. The per-action and per-site badges went with it, since the title now says both.
+
+**One verb per act, one place per scope.** Approve is **Publish** (that is what it does), and
+Revert and Reject, two words for one server act, are both **Discard**. The run carries Publish all
+and Discard all; each page carries its own Publish and Discard; the toolbar that decides several
+pages appears **only while some are ticked**. Before, an open run showed the run's Approve and the
+toolbar's Approve side by side. Hold is **Leave for later**.
+
+**Every discard goes through `ReviewDiscardDialog`**, which states the consequence per kind of change
+from counts the caller already holds: a created page goes to the trash, an edited one goes back to
+its *published* version. That is the server's rule (`revertable`: `UPDATE -> published`), so the
+dialog also names the case it skips, an edit of a page never published. The per-change path asks
+for the reason the server requires; the whole-run verb records its own and asks for none.
 
 The decision is one request for the whole triage, and the page re-reads the run and the badge after
 it (SH207): a page showing the old answer after an action is the one number a curator learns to

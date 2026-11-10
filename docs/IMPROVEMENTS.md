@@ -241,6 +241,23 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
+### XI.132 Discarding an edit to a page with no published version (SH1418)
+
+Found while checking SH1416 on a clean instance. A person wrote a page and left it as a
+draft; an agent run then rewrote it. The queue lists the edit, but `revertable` is
+`UPDATE -> published`, so the page offers no Discard and Discard all skips it with a
+reason. The curator's text is not lost (the revision history holds it, and
+`post.rollback` restores a revision into the draft), but the one screen meant for
+undoing an agent's work cannot do it, and the curator has to find the version dialog
+instead.
+
+The fix is in `ShReviewService.revertOne` and `revertable`: for an UPDATE with no
+published row, restore the draft to the revision the run's first change to that post
+replaced, the same restore `post.rollback` performs, and report it revertable when such
+a revision exists. The discard dialog's sentence then loses its exception. The assertion
+is a service test that writes a draft as a person, rewrites it in a session, rejects the
+change, and reads the person's text back.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

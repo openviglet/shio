@@ -1,15 +1,33 @@
 import { useCallback, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Check, GitCompare, Pause, Undo2 } from "lucide-react"
+import { Check, Clock, GitCompare, Undo2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import type { ShReviewDecisionInput, ShReviewEntry } from "@/models/review/review.model"
 import { ReviewEntryDiff } from "@/components/review-entry-diff"
+import { ReviewDiscardDialog } from "@/components/review-discard.dialog"
+
+/** SH1416 — what the curator calls each kind of change, rather than the audit row's verb. */
+const KIND: Record<string, string> = {
+  CREATE: "review.kindCreate",
+  UPDATE: "review.kindUpdate",
+  DELETE: "review.kindDelete",
+  PUBLISH: "review.kindPublish",
+  UNPUBLISH: "review.kindUnpublish",
+  MOVE: "review.kindMove",
+  RESTORE: "review.kindRestore",
+}
+
+/** SH1416 — a standing decision, in words: `APPROVE` on a row is a sentence about the API. */
+const DECIDED: Record<string, string> = {
+  APPROVE: "review.decidedApprove",
+  REJECT: "review.decidedReject",
+  HOLD: "review.decidedHold",
+}
 
 /**
- * SH1001 — deciding a run one change at a time.
+ * SH1001 — deciding a run one change at a time; SH1416 — one place per decision.
  *
  * <h2>Why this is a component and not more of the page</h2>
  *
@@ -17,20 +35,21 @@ import { ReviewEntryDiff } from "@/components/review-entry-diff"
  * selection, a keyboard and a refusal of its own. Folding it into the page would put four pieces of
  * state that belong to one expanded row into a component that owns the whole list.</p>
  *
- * <h2>The three affordances, and why each is here</h2>
+ * <h2>Where each decision lives (SH1416)</h2>
  *
- * <p><b>Range select.</b> A run is often a sweep — eleven pages of the same change — and a curator
- * who agrees with all of them should not click eleven times. Shift-click takes the range from the
- * last box they touched, which is the gesture every file list has taught them.</p>
+ * <p>Each page carries its own Publish and Discard, so deciding one page is one press on that page.
+ * The toolbar that decides several exists only while some are ticked: it used to sit above every
+ * expanded run with its own Approve beside the run's Approve, two primaries saying the same word over
+ * different scopes. Discard always goes through {@link ReviewDiscardDialog}, which says what it will
+ * do and takes the reason the server requires.</p>
  *
- * <p><b>A required note on reject.</b> The server refuses a rejection with nothing written down, and
- * the button knows it: a curator should not learn the rule from a refusal. `HOLD` is the decision
- * for "not now" and takes no reason, which is what keeps the requirement from being a tax on
- * parking something.</p>
+ * <h2>The affordances kept from SH1001</h2>
  *
- * <p><b>Keyboard triage.</b> This is a screen somebody lives in during a long run — `j`/`k` to move,
- * `x` to select, `a`/`h` to decide. `r` focuses the note rather than rejecting, because the one
- * destructive key on this list must not be a keystroke away from acting.</p>
+ * <p><b>Range select.</b> Shift-click takes the range from the last box touched. <b>A required
+ * reason on discard.</b> The dialog's confirm stays disabled until there is one, and `reject` refuses
+ * an empty one too, so the rule is not a property of one button. <b>Keyboard triage.</b> `j`/`k`,
+ * `x`, `a`/`h`; `r` opens the dialog rather than discarding, because the one destructive key on this
+ * list must not be a keystroke away from acting.</p>
  */
 export function ReviewTriage({
   entries,
@@ -55,11 +74,11 @@ export function ReviewTriage({
     return next
   })
   const [cursor, setCursor] = useState(0)
-  const [note, setNote] = useState("")
+  /** SH1416 — the posts the discard dialog is asking about; null while it is closed. */
+  const [discarding, setDiscarding] = useState<string[] | null>(null)
   const anchor = useRef<number | null>(null)
-  const noteBox = useRef<HTMLInputElement>(null)
 
-  const ids = entries.map((entry) => entry.postId).filter((id): id is string => !!id)
+  const ids = [...new Set(entries.map((entry) => entry.postId).filter((id): id is string => !!id))]
 
   const toggle = useCallback((index: number, range: boolean) => {
     const id = entries[index]?.postId
@@ -90,18 +109,23 @@ export function ReviewTriage({
   }, [selected, ids, entries, cursor])
 
   const decide = useCallback(
-    async (decision: ShReviewDecisionInput["decision"]) => {
-      const posts = subjects()
+    async (decision: "APPROVE" | "HOLD", posts: string[]) => {
       if (posts.length === 0) return
-      if (decision === "REJECT" && !note.trim()) {
-        noteBox.current?.focus()
-        return
-      }
-      await onDecide(posts.map((postId) => ({ postId, decision, note: note.trim() || undefined })))
+      await onDecide(posts.map((postId) => ({ postId, decision })))
       setSelected(new Set())
-      setNote("")
     },
-    [subjects, note, onDecide],
+    [onDecide],
+  )
+
+  /** The server refuses a rejection with nothing written down, and so does this. */
+  const reject = useCallback(
+    async (posts: string[], note: string) => {
+      if (posts.length === 0 || !note.trim()) return
+      await onDecide(posts.map((postId) => ({ postId, decision: "REJECT", note: note.trim() })))
+      setSelected(new Set())
+      setDiscarding(null)
+    },
+    [onDecide],
   )
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -113,11 +137,11 @@ export function ReviewTriage({
       j: () => setCursor((at) => Math.min(at + 1, entries.length - 1)),
       k: () => setCursor((at) => Math.max(at - 1, 0)),
       x: () => toggle(cursor, false),
-      a: () => void decide("APPROVE"),
-      h: () => void decide("HOLD"),
-      // Focuses the box rather than rejecting: the one destructive key on this list must not be a
+      a: () => void decide("APPROVE", subjects()),
+      h: () => void decide("HOLD", subjects()),
+      // Opens the dialog rather than discarding: the one destructive key on this list must not be a
       // keystroke away from acting.
-      r: () => noteBox.current?.focus(),
+      r: () => { const posts = subjects(); if (posts.length > 0) setDiscarding(posts) },
     }
     const act = keys[event.key.toLowerCase()]
     if (!act) return
@@ -125,93 +149,117 @@ export function ReviewTriage({
     act()
   }
 
-  const count = selected.size > 0 ? selected.size : 1
+  /** One entry per post — a run that wrote a page four times is discarding one page. */
+  const kindsOf = (posts: string[]) => {
+    const counts: Record<string, number> = {}
+    for (const postId of posts) {
+      const entry = entries.find((each) => each.postId === postId)
+      if (entry) counts[entry.action] = (counts[entry.action] ?? 0) + 1
+    }
+    return counts
+  }
+
+  const ticked = ids.filter((id) => selected.has(id))
 
   return (
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex -- a focus region for the triage shortcut keys, not a control; its buttons are the controls (SH1001)
     <div className="space-y-2 py-2" tabIndex={0} onKeyDown={onKeyDown}>
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          ref={noteBox}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          placeholder={t("review.notePlaceholder")}
-          className="h-(--vg-control-dense) max-w-xs"
-        />
-        <Button size="sm" loading={busy} onClick={() => void decide("APPROVE")}>
-          {!busy && <Check className="mr-1 h-3.5 w-3.5" />}
-          {t("review.approveCount", { count })}
-        </Button>
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void decide("HOLD")}>
-          <Pause className="mr-1 h-3.5 w-3.5" /> {t("review.holdCount", { count })}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          // The server refuses a rejection with no reason, and the button knows it: a curator
-          // should not learn the rule from a refusal.
-          disabled={busy || !note.trim()}
-          title={note.trim() ? undefined : t("review.rejectNeedsNote")}
-          onClick={() => void decide("REJECT")}
-        >
-          <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.rejectCount", { count })}
-        </Button>
-        <span className="text-xs text-muted-foreground">{t("review.keys")}</span>
-      </div>
+      {ticked.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+          <span className="font-medium">{t("review.selectedPages", { count: ticked.length })}</span>
+          <span className="hidden text-xs text-muted-foreground md:inline">{t("review.keys")}</span>
+          <span className="flex-1" />
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => void decide("HOLD", ticked)}>
+            <Clock className="mr-1 h-3.5 w-3.5" /> {t("review.holdCount", { count: ticked.length })}
+          </Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => setDiscarding(ticked)}>
+            <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.rejectCount", { count: ticked.length })}
+          </Button>
+          <Button size="sm" loading={busy} onClick={() => void decide("APPROVE", ticked)}>
+            {!busy && <Check className="mr-1 h-3.5 w-3.5" />}
+            {t("review.approveCount", { count: ticked.length })}
+          </Button>
+        </div>
+      )}
       <ul className="divide-y">
-        {entries.map((entry, index) => (
-          <li key={`${entry.postId}-${entry.date}-${index}`} className="py-2 text-sm">
-          <div className={`flex items-center gap-3 ${index === cursor ? "bg-muted/60" : ""}`}>
-            <Checkbox
-              checked={!!entry.postId && selected.has(entry.postId)}
-              onClick={(event) => toggle(index, (event as React.MouseEvent).shiftKey)}
-              aria-label={entry.title ?? entry.postId ?? ""}
-            />
-            <span className="flex-1 min-w-0 truncate">
-              {entry.title || entry.postId}
-              {entry.address && (
-                <code className="ml-2 text-xs text-muted-foreground">{entry.address}</code>
+        {entries.map((entry, index) => {
+          const standing = entry.postId ? decided.get(entry.postId) : undefined
+          const canPublish = !!entry.postId && entry.draft && standing !== "APPROVE"
+          const canDiscard = !!entry.postId && entry.revertable && !entry.trashed && standing !== "REJECT"
+          return (
+            <li key={`${entry.postId}-${entry.date}-${index}`} className="py-2 text-sm">
+              <div className={`flex flex-wrap items-center gap-3 rounded-md px-1 ${index === cursor ? "bg-muted/60" : ""}`}>
+                <Checkbox
+                  checked={!!entry.postId && selected.has(entry.postId)}
+                  onClick={(event) => toggle(index, (event as React.MouseEvent).shiftKey)}
+                  aria-label={entry.title ?? entry.postId ?? ""}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{entry.title || entry.postId}</div>
+                  {entry.address && (
+                    <code className="block truncate text-xs text-muted-foreground">{entry.address}</code>
+                  )}
+                </div>
+                <Badge variant="outline" className="text-[10px]">
+                  {KIND[entry.action] ? t(KIND[entry.action]) : entry.action}
+                </Badge>
+                {entry.trashed && (
+                  <Badge variant="secondary" className="text-[10px]">{t("review.trashed")}</Badge>
+                )}
+                {standing && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {DECIDED[standing] ? t(DECIDED[standing]) : standing}
+                  </Badge>
+                )}
+                <div className="flex shrink-0 items-center gap-1">
+                  {/*
+                    SH988 — a diff for every entry that still exists, not only one with a published twin:
+                    a create, the commonest thing an agent writes, compares against nothing and draws as
+                    additions. An approved entry has no draft left to compare, so it names the fields its
+                    audit row recorded instead (SH989).
+                  */}
+                  {entry.postId && !entry.trashed && (entry.draft || entry.published)
+                    && standing !== "APPROVE" && (
+                    <Button size="sm" variant="ghost" aria-expanded={expanded.has(entry.postId) ? "true" : "false"}
+                      onClick={() => toggleDiff(entry.postId!)}>
+                      <GitCompare className="mr-1 h-3.5 w-3.5" /> {t("review.diff")}
+                    </Button>
+                  )}
+                  {canDiscard && (
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => setDiscarding([entry.postId!])}>
+                      <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.discard")}
+                    </Button>
+                  )}
+                  {canPublish && (
+                    <Button size="sm" variant="outline" disabled={busy}
+                      onClick={() => void decide("APPROVE", [entry.postId!])}>
+                      <Check className="mr-1 h-3.5 w-3.5" /> {t("review.publish")}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {entry.postId && standing === "APPROVE" && entry.fields?.length ? (
+                <p className="mt-1 pl-7 text-xs text-muted-foreground">
+                  {t("review.changedFields", { fields: entry.fields.join(", ") })}
+                </p>
+              ) : null}
+              {entry.postId && expanded.has(entry.postId) && (
+                <div className="mt-2 pl-7">
+                  <ReviewEntryDiff postId={entry.postId} />
+                </div>
               )}
-            </span>
-            {entry.draft && (
-              <Badge variant="secondary" className="text-[10px]">{t("review.draft")}</Badge>
-            )}
-            {entry.published && (
-              <Badge variant="secondary" className="text-[10px]">{t("review.published")}</Badge>
-            )}
-            {entry.trashed && (
-              <Badge variant="secondary" className="text-[10px]">{t("review.trashed")}</Badge>
-            )}
-            {entry.postId && decided.has(entry.postId) && (
-              <span className="text-xs vg-accent-text">{decided.get(entry.postId)}</span>
-            )}
-            {/*
-              SH988 — a diff for every entry that still exists, not only one with a published twin:
-              a create, the commonest thing an agent writes, compares against nothing and draws as
-              additions. An approved entry has no draft left to compare, so it names the fields its
-              audit row recorded instead (SH989).
-            */}
-            {entry.postId && !entry.trashed && (entry.draft || entry.published)
-              && decided.get(entry.postId) !== "APPROVE" && (
-              <Button size="sm" variant="ghost" aria-expanded={expanded.has(entry.postId) ? "true" : "false"}
-                onClick={() => toggleDiff(entry.postId!)}>
-                <GitCompare className="mr-1 h-3.5 w-3.5" /> {t("review.diff")}
-              </Button>
-            )}
-          </div>
-          {entry.postId && decided.get(entry.postId) === "APPROVE" && entry.fields?.length ? (
-            <p className="mt-1 pl-7 text-xs text-muted-foreground">
-              {t("review.changedFields", { fields: entry.fields.join(", ") })}
-            </p>
-          ) : null}
-          {entry.postId && expanded.has(entry.postId) && (
-            <div className="mt-2 pl-7">
-              <ReviewEntryDiff postId={entry.postId} />
-            </div>
-          )}
-          </li>
-        ))}
+            </li>
+          )
+        })}
       </ul>
+      <ReviewDiscardDialog
+        open={discarding !== null}
+        byAction={kindsOf(discarding ?? [])}
+        askReason
+        busy={busy}
+        onCancel={() => setDiscarding(null)}
+        onConfirm={(note) => void reject(discarding ?? [], note)}
+      />
     </div>
   )
 }
