@@ -118,6 +118,21 @@ and `/tenant/quota` returns it as `title`. `name` stays the slug the shared vali
 client sends as `X-Shio-Tenant`. A signup with no `description` stores none rather than repeating
 the slug. `ShTenantMembershipIT` signs up with accents, spaces and an ampersand and reads them back.
 
+### A site name is unique within its tenant (SH1435)
+`ShSite.name` had a unique index on the name alone (the baseline's
+`UK8q73y8bnx7kpktylf71gcco05_INDEX_9`), so with tenancy on a second tenant's `site:Padaria` failed
+with a constraint violation quoting the first tenant's row. **The design's `@UniqueConstraint(tenant_id,
+name)` could not be written as proposed:** the discriminator lives on `ShObject` (joined inheritance)
+and an index cannot span two tables. So `ShSite` carries its own `tenant_id` (`siteTenantId`,
+`@JsonIgnore`, `updatable = false`), stamped in `@PrePersist` from `ShTenantContext` with the same
+default `ShTenantResolver` gives Hibernate, the way `ShPostUnified.deriveUrlKey` derives its own
+uniqueness column. `v2026.3.56` adds the column, backfills it from the parent row (one `update` per
+quoting family, because a `valueComputed` is not quoted and MariaDB reads `"` as a string), drops
+the name-only index and creates `uq_shsite_tenant_name` on (tenant_id, name). Every
+`ShSiteRepository` read by name already ran inside the tenant filter, so lookups needed no change.
+`ShTenantIsolationIT.aSiteNameIsUniqueWithinItsTenant` creates `Padaria` in two tenants, reads each
+from its own, and still refuses a second `Padaria` inside one.
+
 ### Multi-tenancy (SH22: core DB isolation)
 Tenant isolation uses Hibernate's native `@TenantId` (DISCRIMINATOR), gated by
 `shio.multi-tenant` (default `false`). `ShTenantFilter` resolves the tenant from the

@@ -33,6 +33,8 @@ Three consequences worth understanding before you deploy it:
   console, delivery API, agent protocol and renderer all read through the same layer.
 - **The tenant catalogue itself is global.** The table that lists tenants is deliberately
   *not* tenant-scoped, because something has to be able to see all of them.
+- **Names are unique within a tenant, not across the instance.** Two tenants can each have a
+  site called `Padaria`; one tenant cannot have two.
 
 :::caution[For contributors]
 The discriminator column must be lowercase `tenant_id`, and a new column on a populated

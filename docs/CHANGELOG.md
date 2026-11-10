@@ -1425,6 +1425,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1381** — A session-less 403 now names the agent op that does the refused route's job, with an example: a refused revision restore points at post.rollback, and the reachability lint reads the same table (design §VI.14 recorded in `docs/agents/security.md`).
 - **SH1375** — A visitor who signs in from a site host lands back on the site host, signed in there alone: a one-time handoff code bound to the browser's state cookie, exchanged for a host-only MEMBER cookie that opens only that site's delivery (design §VI.11 recorded in `docs/agents/security.md`).
 - **SH1434** — Signup keeps the name the person typed as the tenant's description beside the slug; /mine returns it and /tenant/quota returns it as title, accents and spaces intact (design §VI.15 recorded in `docs/agents/database.md`).
+- **SH1435** — A site name is unique within its tenant: ShSite carries its own tenant_id, backfilled on every database, and the unique index is (tenant_id, name), so two tenants can each have Padaria (design §VI.16 superseded: its @UniqueConstraint(tenant_id, name) could not be declared as written, since tenant_id lives on the parent ShObject table) (design §VI.16 recorded in `docs/agents/database.md`).
 
 ## Block E — Console migration (in flight)
 

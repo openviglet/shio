@@ -1,0 +1,87 @@
+databaseChangeLog:
+  # SH1435 - a site name is unique within its tenant, not across the instance.
+  #
+  # `ShSite.name` carried a unique index on the name alone (the 2026.2 baseline's
+  # UK8q73y8bnx7kpktylf71gcco05_INDEX_9), so with tenancy on a second tenant's `site:Padaria` was
+  # refused with a constraint violation that quoted another tenant's row. The tenant discriminator
+  # lives on `ShObject` (joined inheritance), and an index cannot span two tables, so `ShSite` gets
+  # its own `tenant_id`, stamped from the same resolver Hibernate's @TenantId reads
+  # (`ShSite.stampTenant`), backfilled from the parent row here, and the unique index moves to
+  # (tenant_id, name).
+  #
+  # The backfill is one statement per quoting family: Liquibase does not quote a valueComputed, the
+  # tables were created quoted (QUOTE_ALL_OBJECTS), and MariaDB reads double quotes as strings.
+  # Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1435-shsite-tenant-id
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShSite
+                columnName: tenant_id
+      changes:
+        - addColumn:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+  - changeSet:
+      id: sh1435-shsite-tenant-id-backfill-ansi
+      author: shio
+      dbms: h2,postgresql
+      changes:
+        - update:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: tenant_id
+                  valueComputed: (SELECT o."tenant_id" FROM "ShObject" o WHERE o."id" = "ShSite"."object_id")
+            where: '"tenant_id" IS NULL'
+  - changeSet:
+      id: sh1435-shsite-tenant-id-backfill-mysql
+      author: shio
+      dbms: mysql,mariadb
+      changes:
+        - update:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: tenant_id
+                  valueComputed: (SELECT o.`tenant_id` FROM `ShObject` o WHERE o.`id` = `ShSite`.`object_id`)
+            where: '`tenant_id` IS NULL'
+  - changeSet:
+      id: sh1435-shsite-drop-name-only-unique
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - indexExists:
+            tableName: ShSite
+            indexName: UK8q73y8bnx7kpktylf71gcco05_INDEX_9
+      changes:
+        - dropIndex:
+            tableName: ShSite
+            indexName: UK8q73y8bnx7kpktylf71gcco05_INDEX_9
+  - changeSet:
+      id: sh1435-shsite-unique-per-tenant
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: ShSite
+                indexName: uq_shsite_tenant_name
+      changes:
+        - createIndex:
+            tableName: ShSite
+            indexName: uq_shsite_tenant_name
+            unique: true
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: name

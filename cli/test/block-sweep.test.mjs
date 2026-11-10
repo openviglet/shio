@@ -95,7 +95,10 @@ const SWEEP = {
       + "from a site host comes back to the site host signed in there alone, through a one-time handoff "
       + "code. docs-shio moved: the administration guide's Members-only pages section says where the "
       + "visitor lands and what the site-host sign-in opens, and COVERAGE's row names SH1375 with the "
-      + "mirror regenerated. README and shio-site are NOT moved: neither describes the members sign-in",
+      + "mirror regenerated. README and shio-site are NOT moved: neither describes the members sign-in. "
+      + "Reopened for SH1434 and SH1435 and re-closed with them: signup keeps the name the person typed "
+      + "beside the slug, and a site name is unique within its tenant. The multi-tenancy page says both, "
+      + "and COVERAGE's tenancy row names both ids with the mirror regenerated",
   },
   A: {
     swept: true,

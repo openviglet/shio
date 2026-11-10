@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -224,6 +225,15 @@ class ShLiquibaseEntityConstraintLintTest {
         assertThat(entityUniquesByTable())
                 .as("and the reflective half has to find the entity that carries its twin")
                 .containsKey(fold("sh_post_unified"));
+
+        assertThat(liquibaseUniques())
+                .as("SH1435: the baseline's name-only index on ShSite is dropped by v2026.3.56, and "
+                        + "the per-tenant one replaces it; a parse that stops reading dropIndex "
+                        + "would ask the entity to keep a constraint no database has")
+                .noneMatch(constraint -> constraint.table().equals(fold("ShSite"))
+                        && constraint.columns().equals(Set.of(fold("name"))))
+                .anyMatch(constraint -> constraint.table().equals(fold("ShSite"))
+                        && constraint.columns().equals(Set.of(fold("tenant_id"), fold("name"))));
     }
 
     @Test
@@ -267,11 +277,23 @@ class ShLiquibaseEntityConstraintLintTest {
 
     private static List<Constraint> liquibaseUniques() {
         List<Constraint> found = new ArrayList<>();
+        // SH1435 — a unique index a later changeset drops is not a constraint any database has, and
+        // reading it as one demanded that the entity keep the very index the migration removed. Keyed
+        // by table and index name, the one identity a dropIndex can name.
+        Map<String, Constraint> named = new LinkedHashMap<>();
+        Set<String> dropped = new LinkedHashSet<>();
         forEachChange((file, change) -> {
             Map<String, Object> createIndex = map(change.get("createIndex"));
             if (createIndex != null && Boolean.TRUE.equals(createIndex.get("unique"))) {
-                found.add(new Constraint(fold(String.valueOf(createIndex.get("tableName"))),
-                        columnNames(createIndex.get("columns")), file));
+                Constraint index = new Constraint(fold(String.valueOf(createIndex.get("tableName"))),
+                        columnNames(createIndex.get("columns")), file);
+                found.add(index);
+                named.put(index.table() + "#" + fold(String.valueOf(createIndex.get("indexName"))), index);
+            }
+            Map<String, Object> dropIndex = map(change.get("dropIndex"));
+            if (dropIndex != null) {
+                dropped.add(fold(String.valueOf(dropIndex.get("tableName"))) + "#"
+                        + fold(String.valueOf(dropIndex.get("indexName"))));
             }
             Map<String, Object> unique = map(change.get("addUniqueConstraint"));
             if (unique != null) {
@@ -290,6 +312,12 @@ class ShLiquibaseEntityConstraintLintTest {
                                 normalize(List.of(String.valueOf(definition.get("name")))), file));
                     }
                 }
+            }
+        });
+        dropped.forEach(key -> {
+            Constraint gone = named.get(key);
+            if (gone != null) {
+                found.remove(gone);
             }
         });
         return found;

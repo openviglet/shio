@@ -40,12 +40,35 @@ import com.viglet.shio.persistence.model.object.ShObject;
 @NamedQuery(name = "ShSite.findAll", query = "SELECT s FROM ShSite s")
 @JsonIgnoreProperties({ "shFolders", "shPosts", "shPostAttrRefs", "shGroups", "shWorkflowTasks" })
 @PrimaryKeyJoinColumn(name = "object_id")
+// SH1435 — the suite builds its H2 from this mapping, so the per-tenant unique v2026.3.56 creates is
+// declared here too (SH729).
+@Table(uniqueConstraints = @UniqueConstraint(name = "uq_shsite_tenant_name",
+		columnNames = { "tenant_id", "name" }))
 public class ShSite extends ShObject {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	@Column(unique=true)
+	/** Unique within its tenant, with {@link #siteTenantId}, not across the instance (SH1435). */
 	private String name;
+
+	/**
+	 * SH1435 — the tenant, on this table too, because the per-tenant unique index on the name cannot
+	 * reach {@code ShObject.tenant_id} on the parent table. Stamped by {@link #stampTenant} from the
+	 * same resolver Hibernate's {@code @TenantId} reads, so the two columns never disagree. Not part
+	 * of any response: the tenant is the caller's, and the parent's field already answers it.
+	 */
+	@com.fasterxml.jackson.annotation.JsonIgnore
+	@Column(name = "tenant_id", updatable = false)
+	private String siteTenantId;
+
+	@PrePersist
+	void stampTenant() {
+		if (siteTenantId == null) {
+			String tenant = com.viglet.shio.tenant.ShTenantContext.getTenantId();
+			siteTenantId = tenant != null && !tenant.isBlank() ? tenant
+					: com.viglet.shio.tenant.ShTenantContext.DEFAULT_TENANT;
+		}
+	}
 
 	private String description;
 

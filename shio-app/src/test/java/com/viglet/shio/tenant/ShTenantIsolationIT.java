@@ -145,6 +145,38 @@ class ShTenantIsolationIT {
         });
     }
 
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH1435: two tenants each have a site called Padaria, and each reads only its own")
+    void aSiteNameIsUniqueWithinItsTenant() {
+        String alphaSite = asTenant(ALPHA, () -> saveSite("Padaria").getId());
+        String betaSite = asTenant(BETA, () -> saveSite("Padaria").getId());
+
+        assertThat(betaSite).as("SH1435: the second tenant's Padaria was refused").isNotEqualTo(alphaSite);
+        asTenant(ALPHA, () -> {
+            assertThat(siteRepository.findByName("Padaria").getId())
+                    .as("SH1435: a lookup by name never reaches across tenants").isEqualTo(alphaSite);
+            return null;
+        });
+        asTenant(BETA, () -> {
+            assertThat(siteRepository.findByName("Padaria").getId()).isEqualTo(betaSite);
+            return null;
+        });
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> asTenant(ALPHA, () -> saveSite("Padaria")))
+                .as("SH1435: within one tenant the name is still unique")
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Autowired
+    private com.viglet.shio.persistence.repository.site.ShSiteRepository siteRepository;
+
+    private com.viglet.shio.persistence.model.site.ShSite saveSite(String name) {
+        com.viglet.shio.persistence.model.site.ShSite site = new com.viglet.shio.persistence.model.site.ShSite();
+        site.setName(name);
+        site.setDate(java.time.Instant.parse("2026-01-01T00:00:00Z"));
+        site.setOwner("admin");
+        return siteRepository.saveAndFlush(site);
+    }
+
     private ShPostUnified savePost(String title) {
         ShPostUnified post = new ShPostUnified();
         post.setState(ShPostState.DRAFT);
