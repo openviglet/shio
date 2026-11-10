@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { useEffect } from "react"
-import { setMascotStill, setMutedKinds } from "@/lib/dock-reports"
+import { setMascotStill, setMutedKinds, setReviewEmailMuted } from "@/lib/dock-reports"
 import { isCancelled } from "@/lib/read-options"
 import { ShDockService } from "@/services/dock/dock.service"
 
@@ -26,6 +26,7 @@ export function useDockPreferencesLoad() {
       .then((preferences) => {
         setMutedKinds(preferences.muted)
         setMascotStill(preferences.still === true)
+        setReviewEmailMuted(preferences.muteReviewEmail === true)
       })
       .catch((error: unknown) => {
         if (isCancelled(error)) return

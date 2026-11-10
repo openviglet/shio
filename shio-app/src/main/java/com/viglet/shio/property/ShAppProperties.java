@@ -31,6 +31,25 @@ public class ShAppProperties {
      * configuration reads the same as an absent one. */
     private Admin admin = new Admin();
 
+    /** SH1428 — how a finished agent run tells its reviewers. Never null. */
+    private Review review = new Review();
+
+    /**
+     * SH1428 — the review notice's e-mail half.
+     */
+    @Setter
+    @Getter
+    public static class Review {
+        /**
+         * E-mail the person who started an agent run when it finishes with pages waiting. Off by
+         * default, because the shipped {@code spring.mail.*} points at localhost: an instance sends
+         * mail only once somebody has configured a server. Env: {@code SHIO_REVIEW_EMAIL}.
+         */
+        private boolean email;
+        /** The sender address; blank uses {@code spring.mail.username}. */
+        private String emailFrom;
+    }
+
     /**
      * SH706 — headless bootstrap for the local {@code admin} account.
      */

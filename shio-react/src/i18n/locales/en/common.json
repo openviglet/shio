@@ -79,6 +79,7 @@
   "dock.preferences": "What the dock reports",
   "dock.preferencesHint": "Switch off what you do not need to hear about. Failures always reach the dock, and nothing here hides a record: the activity trail keeps every event.",
   "dock.animateMascot": "Animate the mascot",
+  "dock.reviewEmail": "E-mail me when an agent run I started waits for review",
   "dock.preferencesSaved": "Dock preferences saved",
   "dock.kind.saves": "Your own saves",
   "dock.kind.agent-runs": "Agent runs",

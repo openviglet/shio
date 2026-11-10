@@ -55,14 +55,28 @@ public class ShDockPreferencesService {
      * live-region announcement report exactly as before (SH971). A document written before the
      * field existed has no {@code still} and reads as false, which is what the dock did then.
      */
-    public record ShDockPreferences(List<String> muted, boolean still) {
+    public record ShDockPreferences(List<String> muted, boolean still, boolean muteReviewEmail) {
         public ShDockPreferences {
             muted = muted == null ? List.of() : List.copyOf(muted);
+        }
+
+        public ShDockPreferences(List<String> muted, boolean still) {
+            this(muted, still, false);
         }
 
         public ShDockPreferences(List<String> muted) {
             this(muted, false);
         }
+    }
+
+    /**
+     * SH1428 — whether this person is e-mailed when an agent run they started waits for review.
+     * On unless they turned it off: absent from a document written before the field existed reads
+     * as false, which is "not muted".
+     */
+    @Transactional(readOnly = true)
+    public boolean reviewEmail(String username) {
+        return !of(username).muteReviewEmail();
     }
 
     private final ShUserRepository userRepository;
@@ -94,8 +108,9 @@ public class ShDockPreferencesService {
             }
         }
         // Sorted and deduplicated, so the same choice is always the same bytes (P5).
-        ShDockPreferences stored =
-                new ShDockPreferences(new ArrayList<>(new TreeSet<>(preferences.muted())), preferences.still());
+        ShDockPreferences stored = new ShDockPreferences(
+                new ArrayList<>(new TreeSet<>(preferences.muted())), preferences.still(),
+                preferences.muteReviewEmail());
         user.setDockPreferences(objectMapper.writeValueAsString(stored));
         userRepository.save(user);
         return stored;

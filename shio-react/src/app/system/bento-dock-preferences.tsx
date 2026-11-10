@@ -11,7 +11,9 @@ import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { setMascotStill, setMutedKinds, useMascotStill, useMutedKinds } from "@/lib/dock-reports"
+import {
+  setMascotStill, setMutedKinds, setReviewEmailMuted, useMascotStill, useMutedKinds, useReviewEmailMuted,
+} from "@/lib/dock-reports"
 import { reportProblem } from "@/lib/problem"
 import { DOCK_KINDS, ShDockService, type DockKind, type ShDockPreferences } from "@/services/dock/dock.service"
 
@@ -36,14 +38,17 @@ export function BentoDockPreferences({ open, onOpenChange }: Readonly<{
   const { t } = useTranslation()
   const muted = useMutedKinds()
   const still = useMascotStill()
+  const muteReviewEmail = useReviewEmailMuted()
   const [saving, setSaving] = useState(false)
 
-  const save = async (preferences: ShDockPreferences) => {
+  // SH1428 — every save carries the e-mail choice, so changing a switch above never resets it.
+  const save = async (preferences: Omit<ShDockPreferences, "muteReviewEmail"> & { muteReviewEmail?: boolean }) => {
     setSaving(true)
     try {
-      const saved = await dockService.savePreferences(preferences)
+      const saved = await dockService.savePreferences({ muteReviewEmail, ...preferences })
       setMutedKinds(saved.muted)
       setMascotStill(saved.still === true)
+      setReviewEmailMuted(saved.muteReviewEmail === true)
       toast.success(t("dock.preferencesSaved"))
     } catch (error) {
       reportProblem(error, t("common.error"))
@@ -81,6 +86,17 @@ export function BentoDockPreferences({ open, onOpenChange }: Readonly<{
                 disabled={saving}
                 onCheckedChange={(animates: boolean) => {
                   void save({ muted: DOCK_KINDS.filter((each) => muted.has(each)), still: !animates })
+                }}
+              />
+            </label>
+            {/* SH1428 — the one notice that leaves the console: an e-mail when a run you started waits. */}
+            <label className="flex items-center justify-between gap-4 border-t pt-4">
+              <span className="text-sm">{t("dock.reviewEmail")}</span>
+              <Switch
+                checked={!muteReviewEmail}
+                disabled={saving}
+                onCheckedChange={(emailed: boolean) => {
+                  void save({ muted: DOCK_KINDS.filter((each) => muted.has(each)), still, muteReviewEmail: !emailed })
                 }}
               />
             </label>

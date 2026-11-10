@@ -118,7 +118,8 @@ You do not have to keep the queue open to know a run is waiting. When a run has 
 without a write and still has pages to review, every site webhook subscribed to `review_requested`
 receives one notice for that run, such as "4 new pages in quilhara wait for review", with a
 `reviewUrl` that opens the run in the queue. A run that writes again after its notice is announced
-again.
+again. With `shio.review.email` on, the person who started the run also gets that sentence and link
+by e-mail; turn it off for yourself in the dock's preferences.
 
 Two design decisions worth knowing. It is a **view over the audit history grouped by
 session**, not a separate proposal table: the draft row *is* the proposal, which is why

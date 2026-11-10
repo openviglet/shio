@@ -79,6 +79,22 @@ export function useMascotStill(): boolean {
   return useSyncExternalStore(subscribe, currentStill, currentStill)
 }
 
+/** SH1428 — whether this curator turned off the e-mail a finished agent run sends them. */
+let reviewEmailMuted = false
+
+export function setReviewEmailMuted(next: boolean) {
+  reviewEmailMuted = next
+  for (const listener of listeners) listener()
+}
+
+function currentReviewEmailMuted(): boolean {
+  return reviewEmailMuted
+}
+
+export function useReviewEmailMuted(): boolean {
+  return useSyncExternalStore(subscribe, currentReviewEmailMuted, currentReviewEmailMuted)
+}
+
 /**
  * Whether a dock is on screen. The mascot already says what a toast says, so while one is mounted
  * the toast list is hidden rather than repeated beside it. A count, not a flag: the shell and the

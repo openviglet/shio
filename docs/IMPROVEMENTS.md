@@ -1218,22 +1218,6 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 
 ## XCIX The next level: a demo that sells and a review a curator trusts
 
-### XCIX.3 A finished agent run tells its reviewers (SH1428)
-
-**Why.** The product's promise is "the agent drafts, a person approves", but the person
-only finds out a run is waiting by opening the console. An agent run ends while the
-curator is elsewhere; the loop stalls until somebody happens to look.
-
-**What.** When an agent run ends (its session closes, or no write for N minutes), Viglet
-Shio tells the people who review it: an e-mail and, where configured, a webhook (Slack
-or Teams message format) saying "4 páginas novas em quilhara esperam sua revisão", with
-a link that opens that run in the review queue. One message per run, never per write; a
-curator can turn it off in their profile. The text names the run the way the queue does
-(SH1416, SH1425: pages, not writes).
-
-**Done when.** A run of four new pages sends one e-mail and one webhook post whose link
-opens the run expanded in the queue.
-
 ### XCIX.4 A curator sees the page they approve (SH1429)
 
 **Seen.** In the review queue each page is a title and an address in code type

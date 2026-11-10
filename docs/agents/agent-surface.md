@@ -3541,6 +3541,14 @@ for review") and a `reviewUrl` that opens the run (`/bento/admin/review?session=
 `sh_agent_run.review_notified_at` (v2026.3.55) makes it once per run: a run that writes again after
 its notice is announced again. The row is created for a REST run that never introduced itself.
 
+The e-mail half goes to the run's **actor** (the person whose credential the agent used), not to
+"everyone who may publish": the ACL answers "may this person publish", never "who may", and mailing
+every publisher about one person's run is the notice a team learns to filter. It needs
+`shio.review.email=true` (off by default, because the shipped `spring.mail.*` points at localhost),
+a user row with an address, and `muteReviewEmail` unset in that person's dock preferences
+(`/api/v2/user/current/dock`, the dock's settings dialog). A send that fails is a `WEBHOOK` incident
+on `run:<session>`; the webhook half has already gone out.
+
 And an **empty `events` set now means every content transition**, not literally every event. Nobody
 chose the old reading for events that did not exist: every existing subscriber, the SH9
 `/api/revalidate` receiver included, subscribed to what the enum held at the time, and widening it

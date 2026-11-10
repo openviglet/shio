@@ -17,10 +17,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.api.agent.ShAgentRunService;
+import com.viglet.shio.api.auth.dock.ShDockPreferencesService;
+import com.viglet.shio.persistence.model.auth.ShUser;
+import com.viglet.shio.persistence.repository.auth.ShUserRepository;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.review.dto.ShReviewSession;
@@ -92,12 +99,20 @@ public class ShReviewNotifier {
     private final ShAppProperties shAppProperties;
     private final ShTenantRepository shTenantRepository;
     private final ShAgentIncidentLog incidentLog;
+    private final ObjectProvider<JavaMailSender> mailSender;
+    private final ShUserRepository shUserRepository;
+    private final ShDockPreferencesService shDockPreferencesService;
 
     public ShReviewNotifier(ShReviewService shReviewService, ShAgentRunService shAgentRunService,
                             ShWebhookDispatcher shWebhookDispatcher,
                             ShScheduleProperties scheduleProperties, ShAppProperties shAppProperties,
-                            ShTenantRepository shTenantRepository, ShAgentIncidentLog incidentLog) {
+                            ShTenantRepository shTenantRepository, ShAgentIncidentLog incidentLog,
+                            ObjectProvider<JavaMailSender> mailSender, ShUserRepository shUserRepository,
+                            ShDockPreferencesService shDockPreferencesService) {
         this.incidentLog = incidentLog;
+        this.mailSender = mailSender;
+        this.shUserRepository = shUserRepository;
+        this.shDockPreferencesService = shDockPreferencesService;
         this.shReviewService = shReviewService;
         this.shAgentRunService = shAgentRunService;
         this.shWebhookDispatcher = shWebhookDispatcher;
@@ -178,6 +193,56 @@ public class ShReviewNotifier {
             shWebhookDispatcher.dispatch(new ShPostLifecycleEvent(ShWebhookEventType.REVIEW_REQUESTED,
                     null, siteId, null, null, now, facts));
         }
+        email(run, facts);
+    }
+
+    /**
+     * The e-mail half: to the person whose credential the run used, who is the one who asked for it.
+     *
+     * <p>Not "everyone who may publish": the permission model answers "may this person publish",
+     * never "who may", and mailing a site's every publisher about one person's run is the notice a
+     * team learns to filter. Skipped when mail is off ({@code shio.review.email}), when the person
+     * turned it off in their dock preferences, or when they have no address.</p>
+     */
+    private void email(ShReviewSession run, Map<String, String> facts) {
+        if (!shAppProperties.getReview().isEmail() || run.actor() == null) {
+            return;
+        }
+        JavaMailSender sender = mailSender.getIfAvailable();
+        ShUser person = shUserRepository.findByUsername(run.actor());
+        if (sender == null || person == null || person.getEmail() == null || person.getEmail().isBlank()
+                || !shDockPreferencesService.reviewEmail(run.actor())) {
+            return;
+        }
+        SimpleMailMessage message = message(person.getEmail(), shAppProperties.getReview().getEmailFrom(),
+                facts);
+        try {
+            sender.send(message);
+        } catch (MailException e) {
+            // Recorded, not only logged (SH270): the webhook half went out, and this says which half
+            // did not, so an operator whose curator never got the mail can find out why.
+            incidentLog.record(ShAgentIncidentLog.Kind.WEBHOOK, "run:" + run.session(),
+                    "the review e-mail could not be sent: " + e.getMessage(),
+                    "Check spring.mail.* on this instance. The run is still in the review queue.",
+                    ShAgentIncidentFrames.of(e), null);
+        }
+    }
+
+    /** The e-mail itself: the queue's sentence as the subject, the link in the body. */
+    static SimpleMailMessage message(String to, String from, Map<String, String> facts) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        if (from != null && !from.isBlank()) {
+            message.setFrom(from);
+        }
+        message.setSubject(facts.get("summary"));
+        StringBuilder body = new StringBuilder(facts.get("summary")).append(".\n\n");
+        if (facts.containsKey("intent")) {
+            body.append("The run said it was for: ").append(facts.get("intent")).append("\n\n");
+        }
+        body.append("Open it in the review queue: ").append(facts.get("reviewUrl")).append('\n');
+        message.setText(body.toString());
+        return message;
     }
 
     /** What the notice says, in the order a receiver reads it (P5: insertion-ordered). */

@@ -9,6 +9,8 @@ export interface ShDockPreferences {
   muted: DockKind[]
   /** SH971 — the mascot stays still; the caption and the announcement report as before. */
   still: boolean
+  /** SH1428 — no e-mail when an agent run this person started waits for review. */
+  muteReviewEmail?: boolean
 }
 
 /** SH971 — the signed-in curator's dock preferences, kept on their user record. */
