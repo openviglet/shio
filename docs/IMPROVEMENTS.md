@@ -570,6 +570,24 @@ and reads it back from `/mine` unchanged.
 Until then the app folds the typed name into the slug itself (`spaceSlug`) and shows the
 slug.
 
+### VI.16 A site name is unique within its tenant (SH1435)
+
+Found by Shio Mobile SHM5 on the local instance (2026-11-10, multi-tenant on).
+`ShSite.name` is `@Column(unique=true)`, so H2 and Postgres build a unique index on the
+name alone, not on (tenant, name). With tenancy on, a second tenant's `site.upsert
+site:Padaria` answers 409 "The database refused this write: Unique index ...
+ShSite(name) VALUES ('Padaria')" once any other tenant has a site called Padaria. On a
+free service where every person brings a small business, "Padaria", "Salão" and
+"Oficina" collide on day one, and the refusal names another tenant's data.
+
+Proposed: drop the column-level unique and make it `@Table(uniqueConstraints =
+@UniqueConstraint(columnNames = {"tenant_id", "name"}))`, with the migration that drops
+the old index; check every `findByName` on `ShSiteRepository` already runs inside the
+tenant filter so a lookup by name cannot reach across. Other entities with a name-only
+unique deserve the same look (a quick grep found only this one under
+`persistence/model`). A test signs up two tenants, creates `site:Padaria` in both, and
+reads each back from its own tenant only.
+
 ## VII. Content portability
 
 > ✅ **Fully shipped (SH67 epic: SH68–SH72)** → [CHANGELOG.md](CHANGELOG.md) Block G.

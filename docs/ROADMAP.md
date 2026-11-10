@@ -32,6 +32,7 @@
 ## Block F — Market positioning / bold bets
 
 - 📋 **SH1434** (deps: —) **A tenant made by signup carries only its slug, so the name the person typed never shows anywhere** — The shared signup already takes a display name apart from the slug; Shio's adapter passes the slug twice, so a phone shows padaria-aurora for Padaria Aurora. → §VI.15
+- 📋 **SH1435** (deps: —) **Two tenants cannot both have a site with the same name: the second site.upsert answers 409 from a global unique index** — ShSite.name is unique on its own rather than per tenant, so with tenancy on one tenant's Padaria refuses every other tenant's. → §VI.16
 
 ## Priority
 
