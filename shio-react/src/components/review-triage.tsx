@@ -1,12 +1,14 @@
 import { useCallback, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Check, Clock, GitCompare, Undo2 } from "lucide-react"
+import { Check, Clock, Eye, GitCompare, Undo2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { ShReviewDecisionInput, ShReviewPage } from "@/models/review/review.model"
 import { ReviewEntryDiff } from "@/components/review-entry-diff"
 import { ReviewDiscardDialog } from "@/components/review-discard.dialog"
+import { ReviewPageThumbnail } from "@/components/review-page-thumbnail"
+import { draftPreviewUrl } from "@/lib/draft-preview-url"
 
 /** SH1416 — what the curator calls each kind of change, rather than the audit row's verb. */
 const KIND: Record<string, string> = {
@@ -187,6 +189,7 @@ export function ReviewTriage({
           const standing = entry.postId ? decided.get(entry.postId) : undefined
           const canPublish = !!entry.postId && entry.draft && standing !== "APPROVE"
           const canDiscard = !!entry.postId && entry.revertable && !entry.trashed && standing !== "REJECT"
+          const preview = entry.trashed ? null : draftPreviewUrl(entry.address)
           return (
             <li key={`${entry.postId}-${entry.date}-${index}`} className="py-2 text-sm">
               <div className={`flex flex-wrap items-center gap-3 rounded-md px-1 ${index === cursor ? "bg-muted/60" : ""}`}>
@@ -195,12 +198,18 @@ export function ReviewTriage({
                   onClick={(event) => toggle(index, (event as React.MouseEvent).shiftKey)}
                   aria-label={entry.title ?? entry.postId ?? ""}
                 />
+                {/*
+                  SH1429 — the page as it will look, before its name: a curator decides on what they
+                  see, and an address in code type is a developer's handle on it. The address stays
+                  reachable as the title's tooltip.
+                */}
+                {preview && <ReviewPageThumbnail url={preview} title={entry.title || entry.postId || ""} />}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{entry.title || entry.postId}</div>
-                  {entry.address && (
-                    <code className="block truncate text-xs text-muted-foreground">{entry.address}</code>
-                  )}
+                  <div className="truncate font-medium" title={entry.address}>{entry.title || entry.postId}</div>
                 </div>
+                {entry.locale && (
+                  <Badge variant="secondary" className="text-[10px] uppercase">{entry.locale}</Badge>
+                )}
                 <Badge variant="outline" className="text-[10px]">
                   {KIND[entry.action] ? t(KIND[entry.action]) : entry.action}
                 </Badge>
@@ -213,6 +222,13 @@ export function ReviewTriage({
                   </Badge>
                 )}
                 <div className="flex shrink-0 items-center gap-1">
+                  {preview && (
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href={preview} target="_blank" rel="noopener noreferrer">
+                        <Eye className="mr-1 h-3.5 w-3.5" /> {t("review.preview")}
+                      </a>
+                    </Button>
+                  )}
                   {/*
                     SH988 — a diff for every entry that still exists, not only one with a published twin:
                     a create, the commonest thing an agent writes, compares against nothing and draws as

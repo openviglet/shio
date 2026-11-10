@@ -108,7 +108,7 @@ by what it did, such as "2 new pages, 1 edited page in quilhara".
 
 | Action | Effect |
 |---|---|
-| Open a run | Every page the run touched, once, marked new or edited. A page the run created and then fixed is one new page, with its writes listed under it. **Diff** opens what changed under the page itself, including a page the run created |
+| Open a run | Every page the run touched, once, marked new or edited, with a small picture of the draft and its language. A page the run created and then fixed is one new page, with its writes listed under it. **Preview** opens the draft in a new tab; **Diff** opens what changed under the page itself, including a page the run created |
 | **Publish all** | Publish every draft the run wrote |
 | **Publish** on a page | Publish that page alone |
 | **Discard all** / **Discard** on a page | Undo what the agent did. A page it created goes to the trash, and a page it edited goes back to the version it had before the run. A dialog says which of those will happen before anything changes, and a page-level discard asks why, so the agent can read the reason |

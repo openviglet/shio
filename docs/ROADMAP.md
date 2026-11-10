@@ -19,7 +19,6 @@
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
-- 📋 **SH1429** (deps: —) **The review queue shows each page as a code address, so a curator approves pages without seeing them** — The moment the product is judged reads like a developer tool. → §XCIX.4
 - 📋 **SH1430** (deps: —) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
 - 📋 **SH1431** (deps: —) **The Marketplace shows English descriptions on a Portuguese console and only one finished site** — A small business owner sees developer material and one trail magazine. → §XCIX.6
 - 📋 **SH1432** (deps: —) **The site and README lead with docker run and never offer the free hosted Viglet Shio on viglet.cloud** — A reader who is not a developer leaves at the first step. → §XCIX.7

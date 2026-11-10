@@ -48,6 +48,7 @@ public record ShReviewDetail(String session, String actor, List<Entry> entries,
      *                  the run created, trashing it
      * @param fields    every field any of its changes recorded, in first-seen order
      * @param date      its last change
+     * @param locale    SH1429 — the page's locale, so a run in two languages reads as two of each
      */
     @JsonInclude(Include.NON_NULL)
     public record Page(
@@ -62,7 +63,8 @@ public record ShReviewDetail(String session, String actor, List<Entry> entries,
             boolean trashed,
             boolean revertable,
             List<String> fields,
-            List<String> steps) {
+            List<String> steps,
+            String locale) {
     }
 
     /**

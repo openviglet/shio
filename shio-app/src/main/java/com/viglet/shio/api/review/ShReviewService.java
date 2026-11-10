@@ -519,7 +519,23 @@ public class ShReviewService {
                         .map(row -> new ShReviewDetail.Decided(row.getPostId(), row.getDecision(),
                                 row.getNote(), row.getActor(), row.getDecidedAt()))
                         .toList(),
-                pagesOf(rows));
+                pagesOf(rows, localesOf(rows)));
+    }
+
+    /** SH1429 — each page's locale, one read per page rather than per row. */
+    private Map<String, String> localesOf(List<ShReviewDetail.Entry> rows) {
+        Map<String, String> locales = new LinkedHashMap<>();
+        for (ShReviewDetail.Entry row : rows) {
+            String postId = row.postId();
+            if (postId == null || locales.containsKey(postId) || row.address() == null
+                    || !row.address().startsWith("post:")) {
+                continue;
+            }
+            locales.put(postId, state(postId, ShPostState.DRAFT)
+                    .or(() -> state(postId, ShPostState.PUBLISHED))
+                    .map(ShPostUnified::getLocale).orElse(null));
+        }
+        return locales;
     }
 
     /**
@@ -533,7 +549,7 @@ public class ShReviewService {
      * one of its entries already reports; its undo is the one {@link #newestPerPost} picks for it, so
      * the button and the rejection agree about what Discard does.</p>
      */
-    static List<ShReviewDetail.Page> pagesOf(List<ShReviewDetail.Entry> rows) {
+    static List<ShReviewDetail.Page> pagesOf(List<ShReviewDetail.Entry> rows, Map<String, String> locales) {
         Map<Object, List<ShReviewDetail.Entry>> byPost = new LinkedHashMap<>();
         for (ShReviewDetail.Entry row : rows) {
             Object key = row.postId() != null ? row.postId() : new Object();
@@ -555,7 +571,8 @@ public class ShReviewService {
             });
             pages.add(new ShReviewDetail.Page(kind, last.postId(), last.address(), last.title(),
                     last.siteId(), last.date(), last.draft(), last.published(), last.trashed(),
-                    undo.revertable(), fields.isEmpty() ? null : List.copyOf(fields), steps));
+                    undo.revertable(), fields.isEmpty() ? null : List.copyOf(fields), steps,
+                    last.postId() == null ? null : locales.get(last.postId())));
         }
         return List.copyOf(pages);
     }

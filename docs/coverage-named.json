@@ -1,8 +1,8 @@
 {
   "note": "SH758 — generated from shio-site/docs/src/content/docs/COVERAGE.md by `pnpm run coverage:mirror`. Never edited by hand: docs-coverage.conformance.mjs asserts it still agrees with the matrix, so an edit here that the matrix does not carry fails the gate that reads the real file.",
-  "at": "000ae15e68ef5f122e5986e8ffdc47b69f9bb34d",
+  "at": "136905efe61092bf50fb0ef09fe6716c1bf3a86e",
   "matrix": {
-    "at": "000ae15e68ef5f122e5986e8ffdc47b69f9bb34d",
+    "at": "136905efe61092bf50fb0ef09fe6716c1bf3a86e",
     "clean": true,
     "provisional": [],
     "sameRepository": true
@@ -887,6 +887,7 @@
     "SH1426",
     "SH1427",
     "SH1428",
+    "SH1429",
     "SH9000"
   ]
 }

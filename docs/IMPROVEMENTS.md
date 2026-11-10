@@ -1218,22 +1218,6 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 
 ## XCIX The next level: a demo that sells and a review a curator trusts
 
-### XCIX.4 A curator sees the page they approve (SH1429)
-
-**Seen.** In the review queue each page is a title and an address in code type
-(`post:quilhara/historias/pedra-do-vigia-na-mare-baixa`); seeing what the page looks
-like takes Comparar (a field diff) or opening it elsewhere. Filming the Viglet Shio
-promo, the review was the moment the product is judged, and it read like a developer
-tool.
-
-**What.** Each page row shows what a curator decides on: a small rendered thumbnail of
-the draft (the same render shio_digest uses), its locale flag, and a "Ver prévia" action
-that opens the draft preview (preview token) in a side panel or new tab. The address
-stays as a tooltip. The field diff stays behind Comparar for whoever wants it.
-
-**Done when.** A curator can approve a run of four pages having seen each page rendered,
-without leaving the queue and without reading an address.
-
 ### XCIX.5 Each MCP client that is proved, with its setup (SH1430)
 
 **Why.** The promo says "Viglet Shio talks to AI agents, use whichever you like", and

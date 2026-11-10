@@ -1954,6 +1954,19 @@ The row's Discard and the server's REJECT agree because both resolve to one entr
 is not refused as "never published". The diff was already per page (published against draft), so
 a folded row draws the whole new page. `shio review show` prints the same rows.
 
+## A curator sees the page they approve (SH1429)
+
+Each row leads with `ReviewPageThumbnail`: the draft preview of the row's address
+(`/preview/{site}/{path}`, draft by default since SH183, reached by the console session so no token
+is minted per row), in an iframe laid out at 1280×800 and scaled to 0.15. It is drawn by the
+curator's browser, because the instance runs no browser and stores no screenshot (a binding
+non-goal), and it is `loading="lazy"` and `sandbox="allow-same-origin"` (no scripts), so a long run
+costs only the rows on screen and a thumbnail cannot run a page's code or take focus. Clicking it, or
+the row's **Preview**, opens the full draft in a new tab. The address moved from a second line in
+code type to the title's tooltip. The page row carries its `locale` (`ShReviewService.localesOf`, one
+read per page) as a badge, so a run in two languages reads as two of each. The field diff stays behind
+**Diff**.
+
 The decision is one request for the whole triage, and the page re-reads the run and the badge after
 it (SH207): a page showing the old answer after an action is the one number a curator learns to
 distrust. `review.service.ts` also stopped importing bare `axios`, it worked only because

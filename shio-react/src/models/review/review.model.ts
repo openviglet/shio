@@ -73,6 +73,8 @@ export interface ShReviewEntry {
  */
 export interface ShReviewPage extends ShReviewEntry {
   steps?: string[]
+  /** SH1429 — the page's locale, shown beside it. */
+  locale?: string
 }
 
 /**
