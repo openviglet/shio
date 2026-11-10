@@ -457,6 +457,24 @@ public class ShPostUnifiedAPI {
     }
 
     /**
+     * SH1415 — which rows this post has, {@code DRAFT}, {@code PUBLISHED} or both, with no bodies.
+     *
+     * <p>The post editor needs both rows of a page and whether the live one exists (Unpublish depends
+     * on it). Asking for each state blind answered a never-published draft's live read with a 404,
+     * so every draft-only post opened with an error in the browser console. Asked first, this lets a
+     * reader request only the rows the post has; an id nobody can read is refused as a read is.</p>
+     */
+    @GetMapping("/{id}/states")
+    public List<ShPostState> states(@PathVariable String id) {
+        shContentAclService.requireRead(id);
+        List<ShPostState> states = shConsolePostReadService.statesOf(id);
+        if (states.isEmpty()) {
+            throw ShPostStateNotFoundException.noSuchPost(id);
+        }
+        return states;
+    }
+
+    /**
      * The two rows this post has — draft and live (SH14).
      *
      * <p>Left exactly as it was by SH987, which is the point: this answers "what are the two states

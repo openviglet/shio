@@ -129,9 +129,11 @@ export default function PostUnifiedEditPage() {
    * SH1158 — the heaviest form in the product, read through the query layer and cancelled when the
    * curator leaves. Three reads, and each keeps the reason it had:
    *
-   * Both rows in one round trip. Which one is editable decides `state`, and whether the PUBLISHED row
+   * Both rows, read together. Which one is editable decides `state`, and whether the PUBLISHED row
    * exists is the separate fact Unpublish needs (SH654) — the old sequential try/catch could not
-   * report it when a draft was found, which is why this is `allSettled` and not `all`.
+   * report it when a draft was found, which is why this is `allSettled` and not `all`. SH1415: the
+   * post's states are asked first and only the rows it has are read, so a draft nobody published
+   * opens with no 404 in the console for the live row it never had.
    *
    * The permission read is its own query rather than a call inside this one, because it answers a
    * different question and a failure means something different: a permission read that fails leaves
@@ -141,9 +143,10 @@ export default function PostUnifiedEditPage() {
   const loaded = useQuery({
     queryKey: addressKey(`id:${postId}`),
     queryFn: async ({ signal }) => {
+      const states = await unifiedService.states(postId, { signal })
       const [draft, published] = await Promise.allSettled([
-        unifiedService.get(postId, "DRAFT", { signal }),
-        unifiedService.get(postId, "PUBLISHED", { signal }),
+        states.includes("DRAFT") ? unifiedService.get(postId, "DRAFT", { signal }) : Promise.resolve(null),
+        states.includes("PUBLISHED") ? unifiedService.get(postId, "PUBLISHED", { signal }) : Promise.resolve(null),
       ])
       const editable = draft.status === "fulfilled" ? draft.value : null
       const live = published.status === "fulfilled" ? published.value : null

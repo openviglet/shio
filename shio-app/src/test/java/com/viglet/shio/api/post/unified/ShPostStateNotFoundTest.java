@@ -184,6 +184,20 @@ class ShPostStateNotFoundTest {
     }
 
     @Test
+    void theStatesReadNamesOnlyTheRowsThePostHas() throws Exception {
+        // SH1415: the post editor asks this before reading rows, so a post with one row opens with
+        // no 404 for the row it never had. Here that row is the draft; the editor's case is the
+        // mirror image, a draft never published, and the read is the same.
+        mockMvc.perform(get("/api/v2/post-unified/" + publishedOnlyId + "/states").principal(principal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0]").value("PUBLISHED"));
+        mockMvc.perform(get("/api/v2/post-unified/" + UUID.randomUUID() + "/states").principal(principal))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("https://shio.viglet.com/errors/no-such-post"));
+    }
+
+    @Test
     void anIdNobodyHasHeardOfIsADifferentAnswer() throws Exception {
         // The other half. If both cases produced the same slug, the caller would be exactly as
         // stuck as before — the body would be longer and say nothing more.

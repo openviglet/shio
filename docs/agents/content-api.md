@@ -53,6 +53,9 @@
 Content posts live in `sh_post_unified` (NOT the legacy split `ShPost`/`ShPostDraft`,
 deleted in the nuclear refactor). All post CRUD is the unified API:
 - `GET /api/v2/post-unified/{id}?state=DRAFT|PUBLISHED`, `/folder/{folderId}`, `/{id}/versions`
+- `GET /api/v2/post-unified/{id}/states`: which rows the post has, no bodies. A reader that needs
+  both rows asks this first and reads only those, so a draft-only post costs no 404 (SH1415; the
+  post editor does this).
 - `POST /api/v2/post-unified` (body `{ folderId, postTypeId, data, state }`)
 - `PUT /api/v2/post-unified/{id}`, `POST .../publish|unpublish|restore|schedule`
 - `DELETE /api/v2/post-unified/{id}`

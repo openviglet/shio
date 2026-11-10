@@ -241,25 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.129 The post editor reads a draft-only post with no 4xx (SH1415)
-
-Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): opening a draft that
-was never published (a visitor's enquiry) in the post editor logs `Failed to load
-resource: 404` in the browser console, for `GET
-/api/v2/post-unified/<id>?state=PUBLISHED`. `post.edit.page.tsx` reads both rows with
-`allSettled` on purpose (SH1158, SH654): whether a published row exists decides
-Unpublish. The page works, but every draft-only post opens with an error in the console,
-which reads as a defect to anyone watching it, and the promo's scene had to list it as
-expected.
-
-Answer the question without an error: either a read that returns both rows at once (the
-draft, the published one or null), or a `HEAD`/states summary the editor asks first, so
-a draft-only post loads with no 4xx at all. The Universal Editor already reads by state
-(SH1390); this is the same discipline for the post editor.
-
-Test with the console check the suites already run: open a draft-only post in the post
-editor and assert no 4xx response and no console error.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

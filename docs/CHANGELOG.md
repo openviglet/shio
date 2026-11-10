@@ -430,6 +430,7 @@
 - **SH1397** — A catalogue entry names the manifest keys it uses in requires, and an instance that cannot read one says the package needs a newer Viglet Shio and refuses before downloading (design §XI.123 superseded: a minimum version cannot tell two 2026.3 instances apart, and a new entry field would make released instances refuse the whole catalogue, so the keys ride in requires) (design §XI.123 recorded in `docs/agents/blueprints.md`).
 - **SH1411** — The fallback not-found page a browser gets carries an inline light/dark stylesheet, names the site, and answers in the address's locale or the site's default from an en/pt message bundle, with lang set to match.
 - **SH1414** — A form submission is written in the language of the page that sent it: the locale segment of its /sites/ Referer when the site has that locale, else the site's declared default, so a pt-br enquiry lands as a pt-br draft.
+- **SH1415** — The post editor asks GET /post-unified/{id}/states first and reads only the rows the post has, so a never-published draft opens with no 404 in the browser console.
 
 ## Block M — Token economy, measured (SH74)
 

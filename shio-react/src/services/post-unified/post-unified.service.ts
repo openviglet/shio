@@ -177,6 +177,15 @@ export class ShPostUnifiedService {
     }
   }
 
+  /**
+   * SH1415 — which rows the post has, so a reader asks only for those and a draft-only post opens
+   * with no 404 for the live row it never had.
+   */
+  async states(id: string, read: ShRead = {}): Promise<ShPostState[]> {
+    const response = await axios.get<ShPostState[]>(`/v2/post-unified/${id}/states`, { signal: read.signal })
+    return response.data
+  }
+
   async versions(id: string): Promise<ShPostUnified[]> {
     const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/versions`)
     return response.data
