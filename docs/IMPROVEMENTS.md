@@ -241,6 +241,30 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
+### XI.133 A run is reviewed page by page (SH1425)
+
+**Where it showed.** The Viglet Shio promo (marketing/shio/promo, chapters 7 and 8),
+image 7a897a3, 2026-11-10. Ana asks the agent for one trail and one story in two
+languages: four new pages. The agent wrote them in one `shio_write` (ops=4, all create),
+`shio_verify` found `required-field-empty` (headline) on one story, and two more
+`shio_write` calls (ops=2 each) fixed the two stories.
+
+**What the queue shows.** The run is titled "4 página(s) nova(s), 4 página(s) editada(s)
+em quilhara" and lists **eight rows**: the four pages as "nova", then the two stories
+twice more as "editada", each row with its own Comparar, Descartar and Publicar. Ana
+reviews four pages and sees eight; "Publicar tudo (8)" reads as eight things to approve.
+`runSummary` and `byAction` count audit rows, and `ReviewTriage` renders one row per
+entry (only the discard dialog counts one per post).
+
+**What it should be.** The queue decides pages, so a run's changes are folded per post:
+one row per page, its kind the page's net change in the run (created then edited is
+"nova"; edited twice is one "editada"), its diff the page before the run against the
+page now. The run's title and its Publish all count pages ("4 páginas novas em
+quilhara", "Publicar tudo (4)"). The audit rows stay reachable from the row.
+
+**Done when.** A run that creates four posts and updates two of them twice shows four
+rows, titled "4 new pages", Publish all (4), with each row's diff the whole new page.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
