@@ -449,6 +449,13 @@ cannot double as an identity.
   Anything interpolated is disqualified by the `{` in the span, which is why the hundreds of
   correct `t(...)` call sites cost no whitelist. It found twelve on its first run, the HTML
   editor's whole toolbar among them, all now routed through `content.editor*`.
+- **Every string names the product Viglet Shio (SH1433).** The site's `full-names.test.mjs` never
+  read the console's locale files, so "outra instância do Shio" shipped on the first-site screen.
+  `shio-react/test/console-full-names.test.mjs` reads every string value in every locale file,
+  nested objects included (the first hand inventory missed `emailConfig`'s four for exactly that
+  reason), with the site's pattern: a bare `Shio`, `Turing` or `Dumont` not after `Viglet ` and not
+  part of a path, package or file name. Keys are identifiers and are not read. The server's own
+  strings are SH1437's.
 
 ## A first site starts at the Marketplace (SH1420)
 

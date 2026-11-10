@@ -1256,18 +1256,32 @@ catalogue version they never read is the path. See `docs/agents/blueprints.md`.
 **Done when.** A pt-BR console lists every package in Portuguese, and four finished
 sites install from the Marketplace and render with no errors.
 
-### XCIX.8 Every string names Viglet Shio (SH1433)
+### XCIX.9 Server strings name Viglet Shio, by an agreed list (SH1437)
 
-**Seen.** The console's first-site screen (SH1420) says "Traga um site exportado de
-outra instância do Shio" (pt) and the same short name in English. The owner's rule
-(2026-11-09): always "Viglet Shio", on screen and in voice. The header was fixed
-(11b3d095f); the locale files were not swept.
+**Seen.** SH1433 put the console's locale files under a full-names lint
+(`shio-react/test/console-full-names.test.mjs`) and fixed twelve strings. The server was
+left: a case-sensitive scan of string literals in `shio-app/src/main/java` finds 34 bare
+`Shio` mentions, and they are not one population.
 
-**What.** Every user-facing string in shio-react's locales, the Marketplace catalogue
-and the server's problem documents says "Viglet Shio" where it names the product. The
-full-names lint (SH1412) covers the locale JSON files, so a short name fails the build.
+**The four kinds, and what each wants.**
 
-**Done when.** The lint runs over every locale file and finds none.
+- Problem documents and teaching text a person reads: `ShBlueprintRegistry` ("Upgrade Shio"),
+  `ShSiteFurlConflictException` ("Shio derives a free one"), `ShDataIntegrityProblem`,
+  `ShAgentErrorRecordingFilter`, the preview banner (`ShPreviewBanner`). These become Viglet Shio.
+- Agent-facing titles and prompts (`ShMcpResources` names, `ShMcpPrompts`, `ShContextTool`,
+  `ShAgentAgentsMd`): every one is resent on `tools/list` or a resource read, so the rename is a
+  token cost. Measure it against `token-budgets.properties` first and decide per string (P3).
+- Seeded labels the console shows (`Shio Native`, `Shio Package`, the admin's first name): the docs
+  lint already exempts them as labels, and renaming them is a data migration on every instance.
+- Protocol strings (`Basic realm="Shio preview"`, `Bearer realm="Shio"`): a browser shows the first
+  in its dialog, so it is on screen; the second is not.
+
+**What.** A Java source lint, like the console's, that lists every bare mention in a
+string literal and holds the agreed exceptions by name with a reason, then the fixes it
+argues for.
+
+**Done when.** The lint runs over `shio-app/src/main/java`, its exception list is short
+and reasoned, and every problem document a person reads says Viglet Shio.
 
 ## C Actuator endpoints are an operator's, not a user's (SH1436)
 

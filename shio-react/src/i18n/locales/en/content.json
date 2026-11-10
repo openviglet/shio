@@ -234,7 +234,7 @@
   "content.startBlankTitle": "Start blank",
   "content.startBlankDesc": "An empty site you build page by page, or let your coding agent build.",
   "content.startImportTitle": "Import a site",
-  "content.startImportDesc": "Bring in a site exported from another Shio instance.",
+  "content.startImportDesc": "Bring in a site exported from another Viglet Shio instance.",
   "content.startGo": "Start",
   "content.startAgentTitle": "Let your coding agent build it",
   "content.startAgentDesc": "Connect Claude Code or another MCP client. It builds the site as drafts, and you publish what you approve.",

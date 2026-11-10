@@ -1,14 +1,14 @@
 {
   "emailConfig": {
     "title": "E-mail",
-    "description": "Configure o servidor SMTP usado para enviar e-mails a partir do Shio.",
+    "description": "Configure o servidor SMTP usado para enviar e-mails a partir do Viglet Shio.",
     "server": "Servidor",
     "serverDesc": "Dados de conexão do servidor de e-mail de saída (SMTP).",
     "host": "Host",
     "port": "Porta",
     "username": "Usuário",
     "password": "Senha",
-    "enabledHint": "Ative para permitir que o Shio envie e-mails por este servidor.",
+    "enabledHint": "Ative para permitir que o Viglet Shio envie e-mails por este servidor.",
     "testConnection": "Testar Conexão",
     "testConnectionHint": "Verificar a conexão com o servidor de e-mail ao salvar.",
     "smtp": "SMTP",

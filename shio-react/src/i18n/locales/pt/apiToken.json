@@ -46,7 +46,7 @@
   "apiToken.mayPublish": "Pode publicar",
   "apiToken.mayPublishHint": "Desligado por padrão. Um token de agente sem isso escreve rascunhos que um humano aprova na Revisão do Agente.",
   "device.title": "Meus dispositivos",
-  "device.description": "Tokens de dispositivo permitem que o app do Shio aja como você sem guardar sua senha. Revogue um e esse dispositivo é desconectado na próxima chamada.",
+  "device.description": "Tokens de dispositivo permitem que o app do Viglet Shio aja como você sem guardar sua senha. Revogue um e esse dispositivo é desconectado na próxima chamada.",
   "device.add": "Adicionar dispositivo",
   "device.addHint": "Dê um nome ao dispositivo para reconhecê-lo aqui. O token é exibido uma única vez.",
   "device.name": "Nome do dispositivo",
@@ -66,6 +66,6 @@
   "device.lastUsed": "Último uso",
   "device.neverUsed": "Nunca",
   "device.blankTitle": "Nenhum dispositivo ainda",
-  "device.blankDescription": "Adicione um dispositivo para entrar no app do Shio como você, inclusive quando usa login único.",
+  "device.blankDescription": "Adicione um dispositivo para entrar no app do Viglet Shio como você, inclusive quando usa login único.",
   "device.minted": "Token do dispositivo criado"
 }

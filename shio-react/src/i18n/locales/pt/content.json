@@ -234,7 +234,7 @@
   "content.startBlankTitle": "Começar do zero",
   "content.startBlankDesc": "Um site vazio, para montar página a página ou deixar seu agente de código montar.",
   "content.startImportTitle": "Importar um site",
-  "content.startImportDesc": "Traga um site exportado de outra instância do Shio.",
+  "content.startImportDesc": "Traga um site exportado de outra instância do Viglet Shio.",
   "content.startGo": "Começar",
   "content.startAgentTitle": "Deixe seu agente de código construir",
   "content.startAgentDesc": "Conecte o Claude Code ou outro cliente MCP. Ele constrói o site como rascunhos, e você publica o que aprovar.",

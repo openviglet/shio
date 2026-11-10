@@ -46,7 +46,7 @@
   "apiToken.mayPublish": "May publish",
   "apiToken.mayPublishHint": "Off by default. An agent token without this writes drafts a human then approves in Agent Review.",
   "device.title": "My devices",
-  "device.description": "Device tokens let the Shio app act as you without storing your password. Revoke one and that device is signed out on its next call.",
+  "device.description": "Device tokens let the Viglet Shio app act as you without storing your password. Revoke one and that device is signed out on its next call.",
   "device.add": "Add device",
   "device.addHint": "Name the device so you can recognise it here. Its token is shown once.",
   "device.name": "Device name",
@@ -66,6 +66,6 @@
   "device.lastUsed": "Last used",
   "device.neverUsed": "Never",
   "device.blankTitle": "No devices yet",
-  "device.blankDescription": "Add a device to sign the Shio app in as you, including when you sign in with single sign-on.",
+  "device.blankDescription": "Add a device to sign the Viglet Shio app in as you, including when you sign in with single sign-on.",
   "device.minted": "Device token created"
 }

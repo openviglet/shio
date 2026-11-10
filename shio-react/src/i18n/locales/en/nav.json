@@ -33,5 +33,5 @@
   "nav.desc.activity": "Who changed what, and when.",
   "nav.desc.review": "What an agent did while you were away.",
   "nav.desc.graphql": "Query the delivery API and read its schema.",
-  "nav.desc.devices": "Tokens that sign the Shio app in as you, and where to revoke them."
+  "nav.desc.devices": "Tokens that sign the Viglet Shio app in as you, and where to revoke them."
 }
