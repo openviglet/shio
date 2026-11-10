@@ -4,6 +4,7 @@
   "title": "Marketing site",
   "version": "1.0.0",
   "description": "A three-page marketing site built from the @viglet/shio-sections vocabulary: home, pricing and about, each composed of known sections (hero, feature grid, logo wall, testimonials, FAQ, call to action). The React components that render these sections ship in @viglet/shio-sections, so the front end is a dependency rather than a rewrite.",
+  "i18n": { "pt-BR": {"title":"Site institucional","description":"Um site institucional de três páginas: início, preços e sobre, cada uma feita de seções conhecidas (destaque, grade de recursos, logotipos de clientes, depoimentos, perguntas frequentes, chamada para ação). Os componentes React que desenham essas seções vêm em @viglet/shio-sections."} },
   "params": {
     "type": "object",
     "required": [

@@ -276,6 +276,19 @@ make every released instance read the whole catalogue as unreachable; and the on
 `v2026.3` while 2026.3 keeps gaining keys, so a version cannot tell two 2026.3 instances apart. An
 instance released before this reads `requires` as text, which still names the key for a person.
 
+**A package names itself in more than one language (SH1431).** The manifest's `i18n` is
+`{"pt-BR": {"title": ..., "description": ...}}`, sorted by locale on read (P5); `title` and
+`description` stay the default for every other reader. It rides `ShBlueprint.Summary` and
+`ShMarketplaceItem.i18n` to the console, whose `localizedItem` picks the exact locale, then any entry
+of the same language, and falls back per field, before the cards, the dialog or the search read a
+word. Every first-party package carries `pt-BR`, and `ShMarketplaceCatalogTest` fails for one that
+does not. **The published catalogue does not carry it, deliberately:** `marketplace.mjs` deletes
+`i18n` before it builds the entry and the zip. As a catalogue key it would make every released
+instance read the catalogue as unreachable (the SH1397 reason), and as a manifest key it would
+derive `manifest:i18n` and every released instance would refuse every package. So the translation
+reaches what the instance itself reads (the packages in the jar, and `shio.blueprint.path`), and
+delivering it through the public catalogue waits for a catalogue version released instances never read.
+
 ## The three packages that carry an index page (SH216)
 
 SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`

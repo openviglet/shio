@@ -1248,6 +1248,11 @@ theme, real photography, bilingual pt-BR/en, forms): a restaurant (menu, booking
 enquiry), a health clinic (services, team, appointment enquiry), a professional office
 (services, cases, contact). Each one passes the showcase matrix the way Quilhara does.
 
+**Landed and left (2026-11-10).** Manifest `i18n` reaches the console for built-in
+packages. The catalogue cannot carry it: released instances refuse an unknown entry key,
+and `manifest:i18n` would refuse every install, so `marketplace.mjs` strips it. A
+catalogue version they never read is the path. See `docs/agents/blueprints.md`.
+
 **Done when.** A pt-BR console lists every package in Portuguese, and four finished
 sites install from the Marketplace and render with no errors.
 

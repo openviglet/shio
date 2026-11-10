@@ -198,7 +198,12 @@ export function build({ write = true } = {}) {
   const shots = {};
 
   for (const { name, dir } of packages) {
+    // SH1431 — `i18n` stays out of what is published. A released instance refuses a manifest key it
+    // does not read, and `manifest:i18n` in `requires` would make it refuse every package here: the
+    // other languages are for the instance that ships or loads the package itself, until a catalogue
+    // version that released instances never read can carry them.
     const manifest = JSON.parse(readFileSync(join(dir, "blueprint.json"), "utf8"));
+    delete manifest.i18n;
     const id = PREFIX + name;
 
     // The manifest the package is published WITH names the package as the catalogue does, or the

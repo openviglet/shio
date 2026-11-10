@@ -9,6 +9,7 @@
 package com.viglet.shio.blueprint.dto;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -102,7 +103,8 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
                                   List<String> postTypes, List<String> content,
                                   List<FileRef> files, Verify verify,
                                   @JsonInclude(Include.NON_EMPTY) List<AssetRef> assets,
-                                  Forms forms) {
+                                  Forms forms,
+                                  @JsonInclude(Include.NON_EMPTY) Map<String, Localized> i18n) {
 
     /** The only format revision that exists. */
     public static final int FORMAT_VERSION = 1;
@@ -113,7 +115,7 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
     /** Every key the manifest may carry — anything else is a typo, and typos are 400s. */
     public static final List<String> KEYS = List.of("formatVersion", "name", "title",
             "description", "version", "params", "postTypes", "content", "files", "verify",
-            "assets", "forms");
+            "assets", "forms", "i18n");
 
     /** SH1252 — the directory every asset path lives under, which is also what it loses in the site. */
     public static final String ASSETS_DIRECTORY = "assets/";
@@ -124,6 +126,8 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
         content = content == null ? List.of() : List.copyOf(content);
         files = files == null ? List.of() : List.copyOf(files);
         assets = assets == null ? List.of() : List.copyOf(assets);
+        // SH1431 — sorted by locale, so a manifest serializes the same bytes however it was read (P5).
+        i18n = i18n == null ? Map.of() : java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(i18n));
     }
 
     /** The pre-SH1252 form: a package that carries no assets. */
@@ -141,6 +145,25 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
                                List<AssetRef> assets) {
         this(formatVersion, name, title, description, version, params, postTypes, content, files,
                 verify, assets, null);
+    }
+
+    /** The pre-SH1431 form: a package that names itself in one language. */
+    public ShBlueprintManifest(int formatVersion, String name, String title, String description,
+                               String version, JsonNode params, List<String> postTypes,
+                               List<String> content, List<FileRef> files, Verify verify,
+                               List<AssetRef> assets, Forms forms) {
+        this(formatVersion, name, title, description, version, params, postTypes, content, files,
+                verify, assets, forms, Map.of());
+    }
+
+    /**
+     * SH1431 — a package's title and description in one more language, keyed by locale
+     * ({@code pt-BR}). {@code title} and {@code description} above stay the default, which is what a
+     * reader in any other language sees; a console picks the reader's entry, an exact locale first
+     * and then its language.
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Localized(String title, String description) {
     }
 
     /**

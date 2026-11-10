@@ -31,6 +31,29 @@ export interface ShMarketplaceItem {
    * read them all. Installing it is refused before the download, so the dialog says why instead.
    */
   unreadable?: string[]
+  /** SH1431 — the title and description in other locales (`pt-BR`); absent when there are none. */
+  i18n?: Record<string, { title?: string | null; description?: string | null }>
+}
+
+/**
+ * SH1431 — the entry in the reader's language: an exact locale first (`pt-BR`), then any entry of
+ * the same language (`pt`), then the package's default. A missing field falls back alone, so a
+ * package that translated only its description keeps its title.
+ */
+export function localizedItem(item: ShMarketplaceItem, language: string): ShMarketplaceItem {
+  const entries = item.i18n ? Object.entries(item.i18n) : []
+  if (entries.length === 0 || !language) return item
+  const wanted = language.toLowerCase()
+  const base = wanted.split("-")[0]
+  const match = entries.find(([locale]) => locale.toLowerCase() === wanted)
+    ?? entries.find(([locale]) => locale.toLowerCase().split("-")[0] === base)
+  if (!match) return item
+  const [, localized] = match
+  return {
+    ...item,
+    title: localized.title || item.title,
+    description: localized.description || item.description,
+  }
 }
 
 /** Only the parts of the package's JSON Schema the install form reads. */

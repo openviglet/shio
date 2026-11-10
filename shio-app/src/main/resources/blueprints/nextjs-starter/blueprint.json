@@ -4,6 +4,7 @@
   "title": "Next.js starter",
   "version": "1.0.0",
   "description": "The first-party starter, whole: a Page model, two published pages, and the Next.js App Router project that renders them — catch-all routing, ISR, draft preview, signed revalidation. Same tree as `npm create shio-app`, with the content.",
+  "i18n": { "pt-BR": {"title":"Projeto inicial Next.js","description":"O projeto inicial oficial, completo: um modelo de Página, duas páginas publicadas e o projeto Next.js (App Router) que as desenha, com rotas, ISR, prévia de rascunho e revalidação assinada. A mesma árvore de `npm create shio-app`, já com o conteúdo."} },
   "params": {
     "type": "object",
     "properties": {

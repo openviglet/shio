@@ -4,6 +4,7 @@
   "title": "Documentation",
   "version": "1.0.0",
   "description": "A documentation tree: a DocPage post-type, /docs with guides and reference sections, and four pages wired together — an index, two guides and one reference page.",
+  "i18n": { "pt-BR": {"title":"Documentação","description":"Uma árvore de documentação: um tipo de post DocPage, /docs com seções de guias e de referência, e quatro páginas ligadas entre si: um índice, dois guias e uma página de referência."} },
   "params": {
     "type": "object",
     "required": [

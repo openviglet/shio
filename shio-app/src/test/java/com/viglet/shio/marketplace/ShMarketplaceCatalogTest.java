@@ -190,6 +190,19 @@ class ShMarketplaceCatalogTest {
     }
 
     @Test
+    @DisplayName("SH1431: every built-in package names itself in Portuguese as well, and the listing carries it")
+    void theBuiltInPackagesCarryTheirPortuguese() {
+        assertThat(catalog.catalogue().items()).filteredOn(ShMarketplaceItem::builtIn).isNotEmpty()
+                .allSatisfy(item -> {
+                    assertThat(item.i18n()).as("SH1431: %s", item.id()).containsKey("pt-BR");
+                    assertThat(item.i18n().get("pt-BR").description())
+                            .as("SH1431: a pt-BR console shows %s in Portuguese", item.id())
+                            .isNotBlank()
+                            .isNotEqualTo(item.description());
+                });
+    }
+
+    @Test
     @DisplayName("SH646: the built-in entries are derived from the registry, never restated")
     void theBuiltInEntriesAreDerivedFromTheRegistry() {
         List<String> listed = catalog.catalogue().items().stream()

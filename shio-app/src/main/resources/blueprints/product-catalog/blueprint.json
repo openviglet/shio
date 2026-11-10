@@ -4,6 +4,7 @@
   "title": "Product catalogue",
   "version": "1.0.0",
   "description": "A Product post-type with SKU, price and a repeatable spec list, plus /products with an accessories subsection and three sample products.",
+  "i18n": { "pt-BR": {"title":"Catálogo de produtos","description":"Um tipo de post Produto com SKU, preço e uma lista de especificações, mais /products com uma subseção de acessórios e três produtos de exemplo."} },
   "params": {
     "type": "object",
     "properties": {

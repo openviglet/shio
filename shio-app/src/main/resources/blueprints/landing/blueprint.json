@@ -4,6 +4,7 @@
   "title": "Landing page",
   "version": "1.0.0",
   "description": "One campaign page at /get-started, composed of a hero, a feature grid, an FAQ and a call to action from the @viglet/shio-sections vocabulary. The smallest useful blueprint: apply it, edit four sections, ship.",
+  "i18n": { "pt-BR": {"title":"Página de campanha","description":"Uma página de campanha em /get-started, feita de um destaque, uma grade de recursos, perguntas frequentes e uma chamada para ação. O menor modelo útil: aplique, edite quatro seções e publique."} },
   "params": {
     "type": "object",
     "required": [

@@ -72,7 +72,9 @@ public record ShMarketplaceItem(String id, String title, String description, Str
                                 String author, String category, List<String> tags, String icon,
                                 String downloadUrl, String readmeUrl, JsonNode params,
                                 List<String> requires, boolean builtIn, boolean installed,
-                                @JsonInclude(Include.NON_EMPTY) List<String> screenshots) {
+                                @JsonInclude(Include.NON_EMPTY) List<String> screenshots,
+                                @JsonInclude(Include.NON_EMPTY)
+                                java.util.Map<String, com.viglet.shio.blueprint.dto.ShBlueprintManifest.Localized> i18n) {
 
     /** The category the first-party packages are listed under. */
     public static final String FIRST_PARTY = "first-party";
@@ -86,13 +88,26 @@ public record ShMarketplaceItem(String id, String title, String description, Str
     /** Every key a catalogue file may carry — anything else is a typo, and typos are refusals. */
     public static final List<String> KEYS = List.of("id", "title", "description", "version",
             "author", "category", "tags", "icon", "downloadUrl", "readmeUrl", "params", "requires",
-            "screenshots");
+            "screenshots", "i18n");
 
     public ShMarketplaceItem {
         tags = tags == null ? List.of() : List.copyOf(tags);
         requires = requires == null ? List.of() : List.copyOf(requires);
         screenshots = screenshots == null ? List.of()
                 : List.copyOf(screenshots.subList(0, Math.min(screenshots.size(), MAX_SCREENSHOTS)));
+        // SH1431 — sorted by locale for P5, like the manifest's.
+        i18n = i18n == null ? java.util.Map.of()
+                : java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(i18n));
+    }
+
+    /** Before SH1431 carried an entry's other languages. */
+    public ShMarketplaceItem(String id, String title, String description, String version,
+                             String author, String category, List<String> tags, String icon,
+                             String downloadUrl, String readmeUrl, JsonNode params,
+                             List<String> requires, boolean builtIn, boolean installed,
+                             List<String> screenshots) {
+        this(id, title, description, version, author, category, tags, icon, downloadUrl, readmeUrl,
+                params, requires, builtIn, installed, screenshots, java.util.Map.of());
     }
 
     /** The pre-SH1253 form: an entry with no screenshots. */
@@ -126,6 +141,6 @@ public record ShMarketplaceItem(String id, String title, String description, Str
     /** The same entry, with this instance's answer to "do I already have it?" stamped on. */
     public ShMarketplaceItem asInstalled(boolean present) {
         return new ShMarketplaceItem(id, title, description, version, author, category, tags,
-                icon, downloadUrl, readmeUrl, params, requires, builtIn, present, screenshots);
+                icon, downloadUrl, readmeUrl, params, requires, builtIn, present, screenshots, i18n);
     }
 }

@@ -17,6 +17,7 @@ import { ShMarketplaceService } from "@/services/marketplace/marketplace.service
 import {
   MARKETPLACE_BUILTIN_ONLY,
   MARKETPLACE_UNREACHABLE,
+  localizedItem,
   type ShMarketplaceCatalogue,
   type ShMarketplaceItem,
 } from "@/models/marketplace/marketplace.model"
@@ -52,7 +53,7 @@ const service = new ShMarketplaceService()
  * dry run runs first, so the dialog reports what *would* happen before anything is written.
  */
 export default function MarketplaceListPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const [catalogue, setCatalogue] = useState<ShMarketplaceCatalogue | null>(null)
   const [loading, setLoading] = useState(true)
@@ -100,14 +101,16 @@ export default function MarketplaceListPage() {
 
   const items = useMemo(() => {
     const needle = term.trim().toLowerCase()
-    return (catalogue?.items ?? []).filter((item) => {
+    // SH1431 — every package in the reader's language before anything reads its words, so the
+    // card, the dialog and the search all speak the same one.
+    return (catalogue?.items ?? []).map((item) => localizedItem(item, i18n.language)).filter((item) => {
       if (category && item.category !== category) return false
       if (!needle) return true
       return `${item.id} ${item.title ?? ""} ${item.description ?? ""} ${item.tags.join(" ")}`
         .toLowerCase()
         .includes(needle)
     })
-  }, [catalogue, term, category])
+  }, [catalogue, term, category, i18n.language])
 
   /** Open the detail, and fetch the README through the instance rather than from the browser. */
   const open = useCallback((item: ShMarketplaceItem) => {

@@ -202,3 +202,15 @@ test("SH1397: an entry names the manifest keys it uses beyond the first ten, and
   assert.deepEqual(declared.slice(0, BASE_MANIFEST_KEYS.length), BASE_MANIFEST_KEYS,
     "SH1397: BASE_MANIFEST_KEYS must be the keys every released instance reads, in the manifest's own order");
 });
+
+test("SH1431: a package's other languages never reach the published catalogue or its zip", () => {
+  const source = JSON.parse(readFileSync(join(HERE, "..", "..", "marketplace", "quilhara", "blueprint.json"), "utf8"));
+  assert.ok(source.i18n?.["pt-BR"]?.description, "SH1431: the showcase names itself in Portuguese at the source");
+  const { items } = build({ write: false });
+  for (const item of items) {
+    assert.equal(item.i18n, undefined,
+      `SH1431: ${item.id} carries i18n, a catalogue key every released instance refuses`);
+    assert.ok(!item.requires.includes("manifest:i18n"),
+      `SH1431: ${item.id} requires manifest:i18n, so every released instance would refuse to install it`);
+  }
+});

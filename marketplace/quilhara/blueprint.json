@@ -4,6 +4,7 @@
   "title": "Quilhara showcase",
   "version": "1.0.1",
   "description": "A finished bilingual sample site for a fictional trail magazine and guided-trip outfitter: home, trail, story, guide and trip pages in English and Brazilian Portuguese, with a designed theme, self-hosted fonts and its own photography. Apply it to a new site to see what Viglet Shio renders.",
+  "i18n": { "pt-BR": {"title":"Vitrine Quilhara","description":"Um site de exemplo pronto e bilíngue para uma revista de trilhas e uma agência de viagens guiadas fictícias: páginas de início, trilha, história, guia e viagem em português e inglês, com tema desenhado, fontes próprias e fotografia original. Aplique em um site novo para ver o que o Viglet Shio desenha."} },
   "params": {
     "type": "object",
     "properties": {}

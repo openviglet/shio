@@ -140,7 +140,17 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
      * pages, not what is in them.
      */
     public record Summary(String name, String title, String description, String version,
-                          int postTypes, int posts, int files, JsonNode params, String origin) {
+                          int postTypes, int posts, int files, JsonNode params, String origin,
+                          @com.fasterxml.jackson.annotation.JsonInclude(
+                                  com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
+                          java.util.Map<String, ShBlueprintManifest.Localized> i18n) {
+
+        /** Before SH1431 carried a package's other languages. */
+        public Summary(String name, String title, String description, String version,
+                       int postTypes, int posts, int files, JsonNode params, String origin) {
+            this(name, title, description, version, postTypes, posts, files, params, origin,
+                    java.util.Map.of());
+        }
     }
 
     /**
@@ -174,7 +184,7 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
     public Summary summary() {
         return new Summary(manifest.name(), manifest.title(), manifest.description(),
                 manifest.version(), postTypes.size(), declaredPosts(), files.size(),
-                manifest.params(), isLocal() ? origin : null);
+                manifest.params(), isLocal() ? origin : null, manifest.i18n());
     }
 
     /** How many posts the content documents declare, across all of them. */

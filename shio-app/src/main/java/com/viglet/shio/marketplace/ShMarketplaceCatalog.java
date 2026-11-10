@@ -274,7 +274,7 @@ public class ShMarketplaceCatalog {
                     summary.version(), firstParty ? ShMarketplaceItem.VIGLET : null,
                     firstParty ? ShMarketplaceItem.FIRST_PARTY : null,
                     List.of(), summary.name(), null, null, summary.params(), List.of(),
-                    firstParty, true));
+                    firstParty, true, List.of(), summary.i18n()));
         }
         return items;
     }
@@ -319,7 +319,25 @@ public class ShMarketplaceCatalog {
                 text(entry, "version"), text(entry, "author"), text(entry, "category"),
                 strings(entry, "tags"), text(entry, "icon"), text(entry, "downloadUrl"),
                 text(entry, "readmeUrl"), entry.get("params"), strings(entry, "requires"),
-                false, false, strings(entry, "screenshots"));
+                false, false, strings(entry, "screenshots"), localized(entry.get("i18n")));
+    }
+
+    /** SH1431 — {@code {"pt-BR": {"title": ..., "description": ...}}}, or empty. */
+    private static java.util.Map<String, com.viglet.shio.blueprint.dto.ShBlueprintManifest.Localized> localized(
+            JsonNode i18n) {
+        java.util.Map<String, com.viglet.shio.blueprint.dto.ShBlueprintManifest.Localized> out =
+                new java.util.TreeMap<>();
+        if (i18n == null || !i18n.isObject()) {
+            return out;
+        }
+        for (String locale : i18n.propertyNames()) {
+            JsonNode each = i18n.get(locale);
+            if (each != null && each.isObject()) {
+                out.put(locale, new com.viglet.shio.blueprint.dto.ShBlueprintManifest.Localized(
+                        text(each, "title"), text(each, "description")));
+            }
+        }
+        return out;
     }
 
     private static String text(JsonNode entry, String key) {

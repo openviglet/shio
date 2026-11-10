@@ -4,6 +4,7 @@
   "title": "Small business",
   "version": "1.0.0",
   "description": "Home with a photo gallery, about, and a contact form that posts with no script, closed until enabled.",
+  "i18n": { "pt-BR": {"title":"Pequena empresa","description":"Início com galeria de fotos, uma página sobre e um formulário de contato que funciona sem script, fechado até ser habilitado."} },
   "params": {
     "type": "object",
     "required": [
