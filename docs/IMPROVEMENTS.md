@@ -1201,3 +1201,138 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 ## XCVII End-user documentation for 2026.3 (docs-shio)
 
 ## XCVIII Releases, scheduling and the publish gate
+
+## XCIX The next level: a demo that sells and a review a curator trusts
+
+### XCIX.1 A person arriving with no session is signed in, not refused (SH1426)
+
+**Seen.** shio.viglet.cloud (Keycloak, multi-tenant), 2026-11-10. A browser signed in to
+the cloud console but not yet to Viglet Shio opens `https://shio.viglet.cloud/` and gets
+raw JSON: `{"type":".../errors/unauthenticated","title":"No usable credential for
+/","status":401, ...}`. `/bento` and `/login` answer `{"error":"Not Found"}`. Only
+`/oauth2/authorization/keycloak` signs the browser in.
+
+**What it should be.** A browser request (Accept: text/html) for a console path with no
+session is a person arriving: in Keycloak mode it is redirected to
+`/oauth2/authorization/keycloak` with the path it asked for kept as the return target;
+with local login it goes to `/login`. The problem+json answer stays for API clients
+(Accept: application/json, or `/api/**`).
+
+**Done when.** On a Keycloak instance, `/`, `/bento` and `/bento/content` opened in a
+fresh browser end on that page signed in; `curl -H 'Accept: application/json' /` still
+gets the 401 document.
+
+### XCIX.2 First access never exists behind an identity provider (SH1427)
+
+**Seen once.** shio.viglet.cloud (image 2026.3-02c5300, Keycloak, multi-tenant),
+2026-11-10. A brand-new cloud account, not an administrator (`/api/v2/user/current` says
+`admin: false`), went through `/oauth2/authorization/keycloak` and the console opened on
+`/setup`: "Configure a senha do administrador para começar", with the Nova Senha /
+Confirmar Senha form. A second visit a minute later opened `/bento`. Nothing was
+submitted, so whether the server would accept it is unknown.
+
+**Why it matters.** On a shared instance any self-registered account would be offered
+the instance's administrator password. Even if the server refuses, the screen tells a
+new user the product is not set up.
+
+**What it should be.** The first-access screen exists only for local login on an
+instance whose admin has no password. In Keycloak mode the console never routes to
+`/setup`, and the endpoint that sets the first password refuses (403) whenever an
+identity provider is configured or a password already exists, whoever asks.
+
+**Done when.** A test on a Keycloak instance: a non-admin account's console never shows
+`/setup`, and the set-first-password call is refused with a problem document.
+
+### XCIX.3 A finished agent run tells its reviewers (SH1428)
+
+**Why.** The product's promise is "the agent drafts, a person approves", but the person
+only finds out a run is waiting by opening the console. An agent run ends while the
+curator is elsewhere; the loop stalls until somebody happens to look.
+
+**What.** When an agent run ends (its session closes, or no write for N minutes), Viglet
+Shio tells the people who review it: an e-mail and, where configured, a webhook (Slack
+or Teams message format) saying "4 páginas novas em quilhara esperam sua revisão", with
+a link that opens that run in the review queue. One message per run, never per write; a
+curator can turn it off in their profile. The text names the run the way the queue does
+(SH1416, SH1425: pages, not writes).
+
+**Done when.** A run of four new pages sends one e-mail and one webhook post whose link
+opens the run expanded in the queue.
+
+### XCIX.4 A curator sees the page they approve (SH1429)
+
+**Seen.** In the review queue each page is a title and an address in code type
+(`post:quilhara/historias/pedra-do-vigia-na-mare-baixa`); seeing what the page looks
+like takes Comparar (a field diff) or opening it elsewhere. Filming the Viglet Shio
+promo, the review was the moment the product is judged, and it read like a developer
+tool.
+
+**What.** Each page row shows what a curator decides on: a small rendered thumbnail of
+the draft (the same render shio_digest uses), its locale flag, and a "Ver prévia" action
+that opens the draft preview (preview token) in a side panel or new tab. The address
+stays as a tooltip. The field diff stays behind Comparar for whoever wants it.
+
+**Done when.** A curator can approve a run of four pages having seen each page rendered,
+without leaving the queue and without reading an address.
+
+### XCIX.5 Each MCP client that is proved, with its setup (SH1430)
+
+**Why.** The promo says "Viglet Shio talks to AI agents, use whichever you like", and
+the connect dialog (SH1421) prints a Claude Code command. Nothing shows a Cursor, Codex,
+VS Code or Windsurf user that it works for them too, and those are the people searching
+for "MCP CMS".
+
+**What.** A docs page and a choice in the connect dialog: one tab per tested MCP client
+(Claude Code, Cursor, VS Code with Copilot, OpenAI Codex CLI, Windsurf), each with the
+exact config or command filled with the instance URL and the issued AGENT key, and the
+version it was last checked against. A client is listed only after a recorded session
+against a clean instance proves it (the same proof the promo's agent session is).
+
+**Done when.** The dialog offers at least three clients, each with a copy-paste setup,
+and the docs page states when each was last proved.
+
+### XCIX.6 A catalogue in the reader's language, with finished sites for common businesses (SH1431)
+
+**Seen.** The Marketplace on a Portuguese console lists its packages in English ("A
+finished bilingual sample site for a fictional trail magazine..."), and besides Quilhara
+the catalogue reads as developer material: Blog, Documentation, Landing page, Product
+catalogue, Next.js starter. A small business owner sees one finished site, and it is a
+trail magazine.
+
+**What.** The catalogue carries each package's title and description per locale and the
+console shows the reader's. Three more finished sites in the Quilhara standard (designed
+theme, real photography, bilingual pt-BR/en, forms): a restaurant (menu, booking
+enquiry), a health clinic (services, team, appointment enquiry), a professional office
+(services, cases, contact). Each one passes the showcase matrix the way Quilhara does.
+
+**Done when.** A pt-BR console lists every package in Portuguese, and four finished
+sites install from the Marketplace and render with no errors.
+
+### XCIX.7 The free hosted way first (SH1432)
+
+**Why.** viglet.cloud runs Viglet Shio free for anyone who signs up, with no install.
+shio.viglet.org and the README lead with `docker run`, so a reader who is not a
+developer leaves at the first step, and the free hosted option is not mentioned at the
+top.
+
+**What.** shio.viglet.org's hero and the README's first section offer two ways, the
+hosted one first: "Criar conta grátis no viglet.cloud"
+(`https://console.viglet.cloud/?register=1&product=shio`, cloud C152) and "Rodar no seu
+servidor" (the docker command). The lead line states the product's difference: agents
+draft, a person approves. The Quilhara showcase pages end with the same two calls.
+
+**Done when.** The first screen of shio.viglet.org and of the README shows the
+viglet.cloud sign-up before the docker command, in both languages.
+
+### XCIX.8 Every string names Viglet Shio (SH1433)
+
+**Seen.** The console's first-site screen (SH1420) says "Traga um site exportado de
+outra instância do Shio" (pt) and the same short name in English. The owner's rule
+(2026-11-09): always "Viglet Shio", on screen and in voice. The header was fixed
+(11b3d095f); the locale files were not swept.
+
+**What.** Every user-facing string in shio-react's locales, the Marketplace catalogue
+and the server's problem documents says "Viglet Shio" where it names the product. The
+full-names lint (SH1412) covers the locale JSON files, so a short name fails the build.
+
+**Done when.** The lint runs over every locale file and finds none.
