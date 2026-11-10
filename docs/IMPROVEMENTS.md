@@ -1374,3 +1374,25 @@ and the server's problem documents says "Viglet Shio" where it names the product
 full-names lint (SH1412) covers the locale JSON files, so a short name fails the build.
 
 **Done when.** The lint runs over every locale file and finds none.
+
+## C Actuator endpoints are an operator's, not a user's (SH1436)
+
+**Seen.** 2026-11-10, reading the code while validating viglet.cloud's backlog.
+`application.properties` sets `management.endpoints.web.exposure.include=*`, and
+`spring-boot-starter-actuator` is a compile dependency, so every actuator endpoint is
+mapped. An anonymous caller gets 404, because `ShAuthenticationEntryPoint.unclaimed`
+does not count the actuator's handler mapping as a route. Past sign-in nothing narrows
+it: `anyRequest().authenticated()` lets any principal reach `/actuator/heapdump` (the
+whole JVM memory, with every secret it holds) and `POST /actuator/loggers`. Boot masks
+`/env` values; it masks nothing in a heap dump. Not tried against a running instance.
+
+**Why it matters.** On a shared hosted instance every free sign-up is a principal.
+Turing measured the same setting as a leak and closed it in T649.
+
+**Do.** Expose `health,info` only (plus `prometheus` once Micrometer is added, which
+viglet.cloud C086 waits on), as Turing does. Anything more is opt-in through
+configuration and needs an admin role, not `authenticated()`.
+
+**Done when.** A signed-in non-admin gets 404 from `/actuator/heapdump`, `/actuator/env`
+and `/actuator/loggers`; `/actuator/health` still answers; a test pins the exposure
+list.

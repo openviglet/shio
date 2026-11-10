@@ -34,6 +34,10 @@
 - 📋 **SH1434** (deps: —) **A tenant made by signup carries only its slug, so the name the person typed never shows anywhere** — The shared signup already takes a display name apart from the slug; Shio's adapter passes the slug twice, so a phone shows padaria-aurora for Padaria Aurora. → §VI.15
 - 📋 **SH1435** (deps: —) **Two tenants cannot both have a site with the same name: the second site.upsert answers 409 from a global unique index** — ShSite.name is unique on its own rather than per tenant, so with tenancy on one tenant's Padaria refuses every other tenant's. → §VI.16
 
+## Block BG — The console as an application: cost, resilience and access
+
+- 📋 **SH1436** (deps: —) **Any signed-in account can download a heap dump of the instance and change its log levels** — The actuator exposes every endpoint behind authenticated() alone, so on a hosted instance a free sign-up reaches every secret the JVM holds. → §C
+
 ## Priority
 
 ## Done when — SH1245
