@@ -11,7 +11,7 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
-- ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
+- ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The MCP Registry entry is live; the Claude Code plugin and MCP lists and a More tools line still await the owner. → §XI.28
 - 📋 **SH1425** (deps: —) **The review queue lists a page the run created and then fixed as several rows, so 4 new pages read as 8 changes** — A curator approving an agent run counts writes instead of pages, and Publish all (8) overstates what is decided. → §XI.133
 
 ## Block BJ — What a visitor finds first: release, links and a demo
