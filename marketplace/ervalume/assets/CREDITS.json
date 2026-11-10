@@ -1,0 +1,74 @@
+{
+  "images/chef-portrait.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Head and shoulders portrait, framed from the chest up, of a Brazilian chef in her fifties wearing a plain linen apron over a dark shirt, hands out of frame, copper pans softly blurred on the wall behind her, calm warm expression, shallow depth of field. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 479901345,
+    "producedAt": "2026-11-10T23:41:05Z",
+    "original": "assets/source/chef-portrait.png (sha256 b8b7bda96c1156c72c1a3dd459afe413b524d75674f8190901e089a11f60063c)"
+  },
+  "images/dessert.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A dessert of roasted banana with cinnamon, a scoop of coconut ice cream and burnt sugar caramel on a handmade ceramic plate, a spoon beside it, on a wooden table. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 2078503849,
+    "producedAt": "2026-11-10T23:35:36Z",
+    "original": "assets/source/dessert.png (sha256 028b56c2a434cd75e5089b2eb7242442b80162b37d2aa0a89810f005da6f381d)"
+  },
+  "images/dish-fish.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A whole grilled fish with charred skin on a dark ceramic plate, green herb butter melting on it, a lime half and roasted cassava beside it, on a wooden restaurant table, seen from slightly above. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1205470508,
+    "producedAt": "2026-11-10T23:34:17Z",
+    "original": "assets/source/dish-fish.png (sha256 c5a59cf9a2987d050a4757a66b9090f9e7eaad8c8f41ef5810dfac9a7bc593a6)"
+  },
+  "images/home-dining-room.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A small neighbourhood restaurant dining room in Brazil at early evening just before service, wooden tables set with linen napkins and glasses, terracotta floor tiles, potted herbs on the window sills, warm pendant lamps, an open kitchen with a wood oven glowing at the back, empty, no people. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 198675798,
+    "producedAt": "2026-11-10T23:43:18Z",
+    "original": "assets/source/home-dining-room.png (sha256 1c22b5aedbca3db51388a607134564afe55d20d5ac1d9ea1a445e8c5bef729d4)"
+  },
+  "images/kitchen-fire.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A wood-fired grill in an open restaurant kitchen, glowing embers under a whole fish, peppers and courgettes on the grate, cast iron pans stacked beside it, bunches of herbs hanging from a rail above, a little smoke, no people. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 838221170,
+    "producedAt": "2026-11-10T23:43:00Z",
+    "original": "assets/source/kitchen-fire.png (sha256 42c5246b6910efc06b34901cb1c2824e6e7218ac25d6dbdedf1eb214f7219287)"
+  },
+  "images/market-herbs.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Close view of wooden crates on a street market stall in Brazil, piled with fresh coriander, basil, chives, red chillies, cassava roots and limes, no people, no signs, no labels, no price tags, soft morning light. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 209544510,
+    "producedAt": "2026-11-10T23:41:22Z",
+    "original": "assets/source/market-herbs.png (sha256 94e010653247dea36507e938cb1c666d8f3c34a3166dbf9ee9f210abd2bca8bd)"
+  },
+  "images/street-front.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "The street front of a small corner restaurant in an old Brazilian neighbourhood, whitewashed walls, green wooden double doors standing open, a plain unpainted wooden board above the door, potted basil and rosemary on the pavement, two small empty metal tables with chairs, cobbled street, no people, no animals, late afternoon. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 616161882,
+    "producedAt": "2026-11-10T23:41:40Z",
+    "original": "assets/source/street-front.png (sha256 d2a67e983acb5c9fa75c3ada4e32579e2eaed1c579dc79d22814f581215ce7d5)"
+  },
+  "images/table-set.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A round restaurant table for four by a tall window, set with a linen tablecloth, plates, folded napkins, simple glasses, a carafe of water and a small jar of fresh herbs, wooden chairs, empty room, no people, no newspapers, no printed matter, soft daylight. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 463925029,
+    "producedAt": "2026-11-10T23:41:59Z",
+    "original": "assets/source/table-set.png (sha256 daa28b3ba5131a11c4903f61c5dfbf750966b4bb037b567cb991fbbd39515f0f)"
+  },
+  "fonts/fraunces-600.woff2": {
+    "source": "Fraunces, latin subset, from the @fontsource/fraunces package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-fraunces.txt"
+  },
+  "fonts/plus-jakarta-sans-wght.woff2": {
+    "source": "Plus Jakarta Sans variable (weights 200 to 800), latin subset, from the @fontsource-variable/plus-jakarta-sans package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-plus-jakarta-sans.txt"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 5886017,
+    "path": "assets/source/studio-model.png",
+    "sha256": "2767d1a64e2570122bdfd0e468e1015ae32253f8bf77d3fc376f17df3342e4c0"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"Shot on iPhone, a quiet architecture studio desk in late morning with a small two-storey architectural model mid-build, surrounded by drafting tools on a green cutting mat under cool north-facing window light.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A pale oak grain drafting desk surface fills the frame, photographed from an eye-level three-quarter angle looking down at roughly thirty degrees. Cool north-facing window light rakes across the scene from camera-left, casting long soft shadows of the model and ruler across the mat. Neutral cool white balance with true-to-life color rendering \u2014 white card reads as clean paper-white, balsa as warm honey-tan, sage-green cutting mat muted. The far edge of the desk falls gently out of focus toward the upper background.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus drafting lamp arm slicing into the upper-left foreground edge of the frame, a thin dark articulated metal arm blurred against the cool ambient light, partially cropped by the frame.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Muted sage-green self-healing cutting mat lying flat beneath the model and tools, occupying most of the central frame. Faint pale grid lines printed across its surface, a few thin balsa offcuts scattered loosely across it in warm honey-tan slivers.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two-storey architectural model built from white card and pale balsa wood, anchored slightly left of center on the mat. Pitched roof with exposed honey-tan balsa rafters visible along the ridgeline. Cutaway section on one side reveals interior floor plates stacked vertically and a slim staircase between them. Crisp clean edges, fine natural texture across the card surfaces.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Stainless steel ruler laid diagonally across the cutting mat to the right of the model, polished silver edge catching a thin highlight from the window light at camera-left, faint engraved tick marks along its length.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"X-Acto scalpel with a bright red plastic handle resting parallel to the ruler on the cutting mat, slim silver blade partially retracted into the handle, oriented along the same diagonal as the ruler.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Folded sheet of translucent trace paper beside the model toward the upper area of the mat, showing faint pencil linework of an elevation drawing \u2014 thin graphite lines tracing a building profile. Soft crease down the middle where it was folded.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Edge of a second drawing sheet curling up at the lower-right foreground corner of the desk, pale cream paper with a soft curl lifting away from the oak surface, slightly out of focus.\"\n      }\n    ]\n  }\n}",
+    "seed": 161860915,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5886017,
+    "sha256": "2767d1a64e2570122bdfd0e468e1015ae32253f8bf77d3fc376f17df3342e4c0"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:32:38Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Close documentary architectural photograph of a white card and balsa architectural model of a small two-storey house on a drafting desk, a cutting mat, a steel ruler, a scalpel and trace paper beside it, side light from a window. Natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:70iaJ70BR8iGwn6grgFnkQ"
+}

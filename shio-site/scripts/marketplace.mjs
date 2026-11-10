@@ -2,7 +2,10 @@
 //
 // ## What this writes
 //
-//   public/marketplace/marketplace.json          the catalogue `shio.marketplace.url` defaults to
+//   public/marketplace/marketplace.json          the catalogue every released instance reads
+//   public/marketplace/v2/marketplace.json       SH1431: the same, with each package's `i18n`, the
+//                                                default from the release that reads it
+//   public/marketplace/v2/<id>/<id>.zip          that package, its manifest carrying `i18n`
 //   public/marketplace/<id>/<id>.zip             one installable package
 //   public/marketplace/<id>/README.md            its long-form description
 //
@@ -68,9 +71,10 @@ const EXTRA_SOURCE = resolve(process.cwd(), "..", "marketplace");
 /**
  * What a package directory may hold that is not the package: the polyweave project that bought
  * its photography (config, ledger, and the full-size originals the shipped WebP files are cut
- * from). An install has no use for any of it.
+ * from). An install has no use for any of it. SH1431: nor for the provenance record polyweave
+ * writes beside each shipped copy (`*.prov.json`), which describes the file and is not part of it.
  */
-const NOT_PACKAGED = /^(\.gitignore|polyweave\.[^/]+|assets\/source\/.*)$/;
+const NOT_PACKAGED = /^(\.gitignore|polyweave\.[^/]+|assets\/source\/.*|.*\.prov\.json|web\.copies\.toml)$/;
 
 /** Where the site serves them from. */
 const OUT = resolve(process.cwd(), "public", "marketplace");
@@ -91,6 +95,13 @@ const SCREENSHOT_INDEX = resolve(process.cwd(), "src", "lib", "marketplace-scree
  * this the published catalogue can only ever be exercised in production.
  */
 const BASE = process.env.SHIO_MARKETPLACE_BASE ?? "https://shio.viglet.org/marketplace";
+
+/**
+ * SH1431 — the second catalogue's directory. `ShMarketplaceProperties.DEFAULT_URL` names
+ * `v2/marketplace.json` from the release that reads `i18n`; every instance released before keeps
+ * reading `marketplace.json`, whose bytes do not change.
+ */
+const V2 = "v2";
 
 /** The prefix SH643 reserved for a distributable package. */
 const PREFIX = "shio-blueprint-";
@@ -194,15 +205,18 @@ export function build({ write = true } = {}) {
   }
 
   const items = [];
+  // SH1431 — the second catalogue, `v2/marketplace.json`, which no released instance reads.
+  const itemsV2 = [];
   const digests = new Map();
   const shots = {};
 
   for (const { name, dir } of packages) {
-    // SH1431 — `i18n` stays out of what is published. A released instance refuses a manifest key it
-    // does not read, and `manifest:i18n` in `requires` would make it refuse every package here: the
-    // other languages are for the instance that ships or loads the package itself, until a catalogue
-    // version that released instances never read can carry them.
-    const manifest = JSON.parse(readFileSync(join(dir, "blueprint.json"), "utf8"));
+    // SH1431 — `i18n` stays out of the first catalogue. A released instance refuses a manifest key
+    // it does not read, and `manifest:i18n` in `requires` would make it refuse every package here.
+    // The other languages ride the v2 catalogue instead, whose entries and zips carry them, and
+    // which only an instance that reads `i18n` is pointed at.
+    const full = JSON.parse(readFileSync(join(dir, "blueprint.json"), "utf8"));
+    const manifest = { ...full };
     delete manifest.i18n;
     const id = PREFIX + name;
 
@@ -248,6 +262,19 @@ export function build({ write = true } = {}) {
     }
     items.push(item);
 
+    // SH1431 — the v2 entry: the same package, its other languages carried in the entry and in the
+    // manifest inside its own zip, so a package installed from it keeps them. The README and the
+    // screenshots are the first catalogue's, not a second copy.
+    let archiveV2 = null;
+    if (full.i18n) {
+      archiveV2 = zip([{ name: `${id}/blueprint.json`, body: JSON.stringify({ ...full, name: id }, null, 2) },
+        ...entries.slice(1)]);
+      itemsV2.push({ ...item, downloadUrl: `${BASE}/${V2}/${id}/${id}.zip`,
+        requires: manifestRequires(full), i18n: full.i18n });
+    } else {
+      itemsV2.push(item);
+    }
+
     if (write) {
       mkdirSync(join(OUT, id), { recursive: true });
       writeFileSync(join(OUT, id, `${id}.zip`), archive);
@@ -255,14 +282,19 @@ export function build({ write = true } = {}) {
       for (const file of screenshots) {
         writeFileSync(join(OUT, id, file.slice(SCREENSHOTS.length)), readFileSync(join(dir, file)));
       }
+      if (archiveV2) {
+        mkdirSync(join(OUT, V2, id), { recursive: true });
+        writeFileSync(join(OUT, V2, id, `${id}.zip`), archiveV2);
+      }
     }
   }
 
   if (write) {
     writeFileSync(join(OUT, "marketplace.json"), `${JSON.stringify(items, null, 2)}\n`, "utf8");
+    writeFileSync(join(OUT, V2, "marketplace.json"), `${JSON.stringify(itemsV2, null, 2)}\n`, "utf8");
     writeFileSync(SCREENSHOT_INDEX, `${JSON.stringify(shots, null, 2)}\n`, "utf8");
   }
-  return { items, digests, shots };
+  return { items, itemsV2, digests, shots };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`.replace(/\\/g, "/")

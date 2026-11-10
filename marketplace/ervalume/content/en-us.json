@@ -1,0 +1,456 @@
+{
+  "posts": [
+    {
+      "url": "/en/dishes/palm-hearts",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Hearts of palm over embers",
+        "description": "Fresh pupunha palm grilled in its husk, with lime and chilli butter.",
+        "price": "R$ 38",
+        "notes": "Vegetarian"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/cassava-croquettes",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Cassava croquettes",
+        "description": "Crisp outside, soft inside, with coriander mayonnaise for dipping.",
+        "price": "R$ 32",
+        "notes": "Vegetarian"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/tomato-cashew-salad",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Tomato and cashew fruit salad",
+        "description": "Ripe tomatoes, fresh cashew fruit, red onion and torn basil.",
+        "price": "R$ 34",
+        "notes": "Vegan"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/whole-fish",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Whole fish over embers",
+        "description": "The day's catch grilled whole over wood, with green herb sauce, lime and roasted cassava.",
+        "price": "R$ 92",
+        "notes": "Takes about 25 minutes",
+        "image": "asset:/images/dish-fish.webp",
+        "imageAlt": "A whole grilled fish with charred skin on a dark plate, beside a small bowl of green herb sauce, half a lime and roasted cassava."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/pork-shoulder",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Slow-roasted pork shoulder",
+        "description": "Eight hours in the wood oven, with black beans, collard greens and toasted cassava flour.",
+        "price": "R$ 78"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/pumpkin-stew",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Pumpkin and coconut stew",
+        "description": "Pumpkin, palm oil, coconut milk and coriander, served with brown rice.",
+        "price": "R$ 64",
+        "notes": "Vegan"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/roasted-banana",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Roasted banana with coconut ice cream",
+        "description": "Banana roasted in its skin, burnt sugar caramel and a scoop of coconut ice cream.",
+        "price": "R$ 29",
+        "image": "asset:/images/dessert.webp",
+        "imageAlt": "A roasted banana with cinnamon sticks, a scoop of coconut ice cream and dark caramel on a pale ceramic plate, a spoon beside it."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/guava-tart",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Guava and cheese tart",
+        "description": "Short pastry, guava paste cooked down in the kitchen and a layer of fresh cheese.",
+        "price": "R$ 27",
+        "notes": "Vegetarian"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/dishes/lime-mousse",
+      "type": "Dish",
+      "folder": "/en/dishes",
+      "data": {
+        "name": "Lime mousse with toasted coconut",
+        "description": "Light, sharp and cold, with coconut toasted over the last of the embers.",
+        "price": "R$ 24",
+        "notes": "Vegetarian"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/people/lucia-taveira",
+      "type": "Person",
+      "folder": "/en/people",
+      "data": {
+        "name": "Lúcia Taveira",
+        "role": "Chef and owner",
+        "bio": "Lúcia cooked in hotel kitchens for twenty years before opening Ervalume in her grandmother's old shop. She writes the menu every afternoon from what the market had that morning.",
+        "image": "asset:/images/chef-portrait.webp",
+        "imageAlt": "Portrait from the chest up of a chef in a linen apron in her kitchen, copper pans hanging behind her, smiling."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/people/caio-brandao",
+      "type": "Person",
+      "folder": "/en/people",
+      "data": {
+        "name": "Caio Brandão",
+        "role": "Dining room and drinks",
+        "bio": "Caio runs the dining room, keeps the book of tables and makes the drinks, most of them with fruit and herbs from the same stalls as the kitchen."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/kitchen",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "The kitchen",
+        "body": "<p>Everything at Ervalume is cooked over wood: a grill for fish and vegetables, and a brick oven that is lit at six in the morning and still warm at midnight. Gas is used for one thing, the coffee.</p><p>Lúcia buys at the street market twice a week and from two farms on the edge of the city on the other days. The menu changes when the market does, so a dish on this page may be gone by the time you visit, and something better may have taken its place.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/sample",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "A restaurant made up to show a real product",
+        "body": "<p>Ervalume is invented. The restaurant, its address, its people and its dishes do not exist, and no table here can be booked. It is a sample site for <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, the open-source CMS, installed from one marketplace package.</p><p>The photographs were generated for the package and are free to redistribute with it. The fonts are Fraunces and Plus Jakarta Sans, both under the SIL Open Font Licence and served from the site itself.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/booking",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How booking works",
+        "body": "<p>The dining room has eleven tables, and we keep four of them for people who walk in. Tell us the day, the time and how many of you are coming, and Caio answers by email within a day to confirm the table or offer the nearest time we have.</p><p>We hold a booked table for fifteen minutes. For a group of more than eight, or to take the whole room, write to <a href=\"mailto:mesa@ervalume.example\">mesa@ervalume.example</a>.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/booking-form",
+      "type": "SectionForm",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Ask for a table",
+        "intro": "We answer within a day. A request is not a booking until we write back to confirm it.",
+        "formType": "TableBooking",
+        "submitLabel": "Send request",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Find us",
+        "body": "<p>Ervalume is on the corner of Rua das Laranjeiras and the Largo do Alecrim, two blocks from the street market. Look for the green doors and the pots of herbs on the pavement.</p><dl><dt>Address</dt><dd>Rua das Laranjeiras, 48, Largo do Alecrim</dd><dt>Tuesday to Saturday</dt><dd>12:00 to 15:00 and 19:00 to 23:00</dd><dt>Sunday</dt><dd>12:00 to 16:00</dd><dt>Monday</dt><dd>Closed</dd><dt>Email</dt><dd><a href=\"mailto:ola@ervalume.example\">ola@ervalume.example</a></dd></dl><p>The street is closed to cars on Sundays. The nearest bus stop is on the square, and there is a bicycle rack by the door.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/not-found",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "This page is not on the menu",
+        "body": "<p>The page you asked for is not here. Start again from the <a href=\"/\">home page</a>, or read the <a href=\"/menu\">menu</a>.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/strings",
+      "type": "StringTable",
+      "folder": "/en/sections",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Skip to content\nnav = Main navigation\nlangs = Other languages\nfooter = A fictional restaurant, made to show what Viglet Shio builds.\naddress = Rua das Laranjeiras, 48, Largo do Alecrim\nname = Your name\nemail = Email\ndate = Date\ntime = Time\nguests = Number of guests\nmessage = Anything we should know\nsend = Send\nhoneypot = Leave this field empty"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/",
+      "type": "RestaurantHome",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Cooking over wood",
+        "description": "Ervalume is a small neighbourhood restaurant that cooks everything over wood, with herbs and produce from the street market two blocks away.",
+        "heading": "Cooked over wood, seasoned from the market",
+        "intro": "A small dining room on the Largo do Alecrim, a wood fire and a menu written every afternoon from what the market had that morning.",
+        "image": "asset:/images/home-dining-room.webp",
+        "imageAlt": "An empty dining room set for the evening, a row of wooden tables under brass lamps, pots of rosemary and basil on the window sill and a wood oven glowing at the back.",
+        "ctaLabel": "Book a table",
+        "ctaHref": "/book",
+        "secondaryLabel": "See the menu",
+        "secondaryHref": "/menu",
+        "dishesHeading": "From tonight's menu",
+        "dishes": [
+          "/en/dishes/whole-fish",
+          "/en/dishes/roasted-banana"
+        ],
+        "storyHeading": "Every morning at the market",
+        "storyText": "Lúcia is at the stalls by seven. Coriander, chillies, cassava and whatever fish came in overnight decide what the fire cooks that evening.",
+        "storyImage": "asset:/images/market-herbs.webp",
+        "storyImageAlt": "A market stall with a wooden crate of coriander and basil, bundles of chives, a basket of red chillies, cassava roots and limes.",
+        "storyLinkLabel": "Meet the kitchen",
+        "storyLinkHref": "/about",
+        "hoursHeading": "Opening hours",
+        "hours": [
+          {
+            "label": "Tuesday to Saturday",
+            "value": "12:00 to 15:00 and 19:00 to 23:00"
+          },
+          {
+            "label": "Sunday",
+            "value": "12:00 to 16:00"
+          },
+          {
+            "label": "Monday",
+            "value": "Closed"
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu",
+      "type": "FoodMenu",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Menu",
+        "description": "Starters, mains and desserts cooked over wood at Ervalume, with prices.",
+        "intro": "Written this afternoon from what the market had this morning. Prices include service.",
+        "startersHeading": "Starters",
+        "starters": [
+          "/en/dishes/palm-hearts",
+          "/en/dishes/cassava-croquettes",
+          "/en/dishes/tomato-cashew-salad"
+        ],
+        "mainsHeading": "Mains",
+        "mains": [
+          "/en/dishes/whole-fish",
+          "/en/dishes/pork-shoulder",
+          "/en/dishes/pumpkin-stew"
+        ],
+        "dessertsHeading": "Desserts",
+        "desserts": [
+          "/en/dishes/roasted-banana",
+          "/en/dishes/guava-tart",
+          "/en/dishes/lime-mousse"
+        ],
+        "note": "Tell us about any allergy when you sit down. Most dishes can be made without nuts, dairy or gluten if we know in time."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/about",
+      "type": "AboutPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "About Ervalume",
+        "description": "The kitchen and the people behind Ervalume, a fictional restaurant made to show what Viglet Shio can build.",
+        "image": "asset:/images/kitchen-fire.webp",
+        "imageAlt": "A brick wood-fired grill with a whole fish, red peppers and courgettes over glowing embers, herbs hanging from a rail above and cast iron pans stacked beside it.",
+        "sections": [
+          "/en/sections/kitchen",
+          "/en/sections/sample"
+        ],
+        "peopleHeading": "The people",
+        "people": [
+          "/en/people/lucia-taveira",
+          "/en/people/caio-brandao"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/book",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Book a table",
+        "description": "Ask for a table at Ervalume: tell us the day, the time and how many of you are coming.",
+        "image": "asset:/images/table-set.webp",
+        "imageAlt": "A round table for four in front of a tall window, set with a linen cloth, plates, folded napkins, glasses, a carafe of water and a small jar of fresh herbs.",
+        "sections": [
+          "/en/sections/booking",
+          "/en/sections/booking-form"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/contact",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Contact and hours",
+        "description": "Where Ervalume is, when it is open and how to reach us.",
+        "image": "asset:/images/street-front.webp",
+        "imageAlt": "The front of a small restaurant on a cobbled street, whitewashed walls, open green wooden doors, potted herbs and two small tables with chairs on the pavement.",
+        "sections": [
+          "/en/sections/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/404",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Page not found",
+        "description": "The page you asked for is not on the Ervalume site.",
+        "sections": [
+          "/en/sections/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/navigation/en-us/home",
+      "type": "MenuItem",
+      "folder": "/navigation/en-us",
+      "data": {
+        "label": "Home",
+        "target": [
+          "/"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/navigation/en-us/menu",
+      "type": "MenuItem",
+      "folder": "/navigation/en-us",
+      "data": {
+        "label": "Menu",
+        "target": [
+          "/menu"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/navigation/en-us/about",
+      "type": "MenuItem",
+      "folder": "/navigation/en-us",
+      "data": {
+        "label": "About",
+        "target": [
+          "/about"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/navigation/en-us/book",
+      "type": "MenuItem",
+      "folder": "/navigation/en-us",
+      "data": {
+        "label": "Book a table",
+        "target": [
+          "/book"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/navigation/en-us/contact",
+      "type": "MenuItem",
+      "folder": "/navigation/en-us",
+      "data": {
+        "label": "Contact",
+        "target": [
+          "/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/navigation/en-us",
+      "type": "Menu",
+      "folder": "/navigation/en-us",
+      "data": {
+        "title": "Main",
+        "items": [
+          "/navigation/en-us/home",
+          "/navigation/en-us/menu",
+          "/navigation/en-us/about",
+          "/navigation/en-us/book",
+          "/navigation/en-us/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 7007731,
+    "path": "assets/source/street-front.png",
+    "sha256": "d2a67e983acb5c9fa75c3ada4e32579e2eaed1c579dc79d22814f581215ce7d5"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary photograph of a quiet corner restaurant front in an old Brazilian neighbourhood on a slow late-afternoon weekday, with green wooden double doors standing open in a whitewashed stucco facade, terracotta pots of herbs along the threshold, and bistro tables set on the cobblestone sidewalk.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A quiet corner restaurant front in an old Brazilian neighbourhood on a slow late-afternoon weekday. Whitewashed stucco facade reads as cool chalky white, with hairline cracks and faint water staining near the base, slight lime-green paint chipping at the corners. Adjacent whitewashed wall continues around the corner to the right, carrying a small iron lantern bracket. A tangle of overhead utility wires crosses the upper frame against a pale late-afternoon sky. Late-afternoon natural daylight rakes across the facade from the left, casting long soft shadows of the open doors and chairs across the cobbles. Cobblestone street slopes gently away to the right into the lower-right of the frame, individual stones worn smooth and slightly damp from earlier rain, receding diagonally. Deep depth of field with everything in focus, eye-level framing slightly off-centre with the doorway anchored just left of centre, ordinary casual framing with mild imperfection, fine Kodak Portra grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Green wooden double doors standing fully open inward, anchored just left of centre as the focal architectural element. Muted forest green weathered paint with darker green patches where it has been repainted unevenly. Brass hinges visible along the inner edges. Doors swung open at roughly ninety degrees, revealing a dim interior beyond.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Plain unpainted wooden board mounted horizontally above the door frame, raw timber grain visible, no lettering or signage. Light tan wood, simple rectangular plank.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Terracotta pots lined along the pavement just outside the threshold, holding basil and rosemary plants. Warm earth-tone clay pots, leaves slightly dusty from the air. Basil shows broad green leaves, rosemary shows narrow needle-like foliage.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two small round metal bistro tables with matching bentwood chairs on the cobbled sidewalk to the right of the doorway. Dark metal frames, light wood seats. The nearer table is set with a folded white cloth napkin and a single small ceramic salt cellar.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single fallen jacaranda leaf resting on the cobblestones near the foreground edge, lower-right area. Small, palmate shape, faded purple-brown from drying.\"\n      }\n    ]\n  }\n}",
+    "seed": 616161882,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 7007731,
+    "sha256": "d2a67e983acb5c9fa75c3ada4e32579e2eaed1c579dc79d22814f581215ce7d5"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:41:40Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "The street front of a small corner restaurant in an old Brazilian neighbourhood, whitewashed walls, green wooden double doors standing open, a plain unpainted wooden board above the door, potted basil and rosemary on the pavement, two small empty metal tables with chairs, cobbled street, no people, no animals, late afternoon. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:0mRY_fvESwqxRNYHIRgxNg"
+}

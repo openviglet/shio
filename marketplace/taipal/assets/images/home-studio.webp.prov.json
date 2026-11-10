@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 225046,
+    "path": "assets/images/home-studio.webp",
+    "sha256": "c2fd953932286c10c1d33883de913dc061220f1117cc047f85a2e378977ea04a"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/home-studio.png",
+      "role": "picture",
+      "sha256": "03f7bb52462c27461143bf4d4a6a779d86c94f4a90123f992cbc6bf39e542407"
+    },
+    {
+      "path": "assets/source/web.copies.toml",
+      "role": "table",
+      "sha256": "30d99510c437853b3273d3d0be4abffece047864e979d2f6b9ffbcbbb2287ccf"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:44:26Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

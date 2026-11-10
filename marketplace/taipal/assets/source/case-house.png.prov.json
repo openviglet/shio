@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6938629,
+    "path": "assets/source/case-house.png",
+    "sha256": "8b3a21c487968f8efff4b39de5e0ba3d3c8867d5ae64adeff1eca958f083f32e"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary architectural photograph of a small single-storey family house with board-formed concrete walls and a timber slatted screen, set on a hillside in southern Brazil in late afternoon, surrounded by native garden plantings with the Serra Ga\u00facha hills receding behind.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Late afternoon sky over southern Brazil, soft pale blue with thin high cloud streaks. Distant rolling hills of Serra Ga\u00facha recede into atmospheric haze along the horizon, layered ridges fading from mid-green to pale blue-grey. The hillside ground slopes gently upward from left to right, covered in native grasses and low scrub catching warm raking light on its western face and falling into cool shade on its eastern side.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Mature arauc\u00e1ria tree silhouetted on the upper-right slope, distinctive umbrella-shaped crown with tiered horizontal branches and dense needled foliage, dark green against the pale sky.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single-storey family house anchored slightly right of center, occupying the right two-thirds of the frame. Board-formed exposed concrete walls showing vertical plank imprint and subtle form-tie marks in honest neutral grey. Deep flat roof overhang projects roughly two meters past the walls, casting a clean horizontal shadow band across the upper facade. Western face catches warm raking late-afternoon sun; eastern face falls into cool shade.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Timber slatted screen wrapping the front elevation of the house, narrow vertical cedar battens with even shadow gaps between them, partially screening a glazed entry door visible through the slats. Low sun casts long vertical batten shadows onto the concrete wall behind.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Native Brazilian hillside garden in the foreground and flanking the house \u2014 arauc\u00e1ria seedlings with spiky needled foliage scattered across the slope, clusters of bromeliads with rosette leaves at the foundation, ferns unfurling near the path edges, native grasses catching low warm sun with golden tips.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Stepped concrete path leading from the lower-left foreground up to the entry of the house, three or four shallow steps with rounded edges softened by creeping groundcover spilling over the seams. Pale grey concrete matching the house facade, partially shaded.\"\n      }\n    ]\n  }\n}",
+    "seed": 620382871,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6938629,
+    "sha256": "8b3a21c487968f8efff4b39de5e0ba3d3c8867d5ae64adeff1eca958f083f32e"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:32:55Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary architectural photograph of a finished small family house with exposed concrete walls, a timber slatted screen and a deep roof overhang, set in a garden of native plants on a hillside in southern Brazil, late afternoon. Natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:PFjhFP2FRN-OI8AYtfQKvg"
+}

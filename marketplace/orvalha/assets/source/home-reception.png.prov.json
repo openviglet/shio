@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 4513732,
+    "path": "assets/source/home-reception.png",
+    "sha256": "f033baab040500c9220f51c41ba64a078ac9844823b2cbdcdd0123baca867288"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2560x1440",
+    "aspect_ratio": "16x9",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2560x1440",
+    "returned_prompt": "{\n  \"high_level_description\": \"A casual iPhone snapshot of a Brazilian receptionist and a female visitor in conversation at the light oak counter of a small outpatient clinic, with tall windows and sheer curtains behind them on a quiet weekday morning.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A bright, calm reception area of a small outpatient clinic in Brazil. The back wall is pale sage green meeting white side walls, with floor-to-ceiling windows running along it, sheer white curtains half-drawn and soft cool morning daylight filtering through. Wide-plank pale wood floor extends across the lower portion of the frame. Ambient natural daylight is the dominant source, evenly lit with no dramatic shadows. Neutral cool-leaning white balance, accurate skin tones, clean true colours.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tall potted areca palm in a cream ceramic planter, positioned to the left of the counter at midground depth. Slender arching fronds catch soft window light from behind, leaves rendered in muted sage-green tones.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Smaller potted pothos trailing from a shelf mounted above the counter on the right side. Heart-shaped green leaves cascade downward along thin vines against the white side wall.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Light oak reception counter running horizontally across the lower-middle of the frame, clean uncluttered surface. On top sits a slim black desktop monitor angled toward the receptionist at left-center, a small ceramic cup holding pens near center, and a single manila folder flat on the surface.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two simple wooden waiting chairs with woven cane backs at the right edge of the frame, partially cropped, slightly out of focus. Light oak frames matching the counter.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Brazilian receptionist in her early thirties behind the counter, occupying the central frame area, body angled three-quarters toward the visitor at right. Warm medium-brown skin tone, dark hair pulled back, plain soft-cream short-sleeved blouse. Leaning slightly forward with both hands resting on the counter edge, weight settled on her right leg. Warm friendly half-smile, mouth slightly open showing teeth, eyes catching the window light, gaze directed at the visitor.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Female visitor in her late forties standing in front of the counter at right-center, body angled three-quarters toward the receptionist. Light skin tone, shoulder-length brown hair, light blue cotton blouse and beige trousers. Small canvas tote slung over her right shoulder, holding a folded paper form in her left hand at chest height. Head tilted slightly toward the receptionist mid-conversation, mouth slightly parted, gaze directed at the receptionist.\"\n      }\n    ]\n  }\n}",
+    "seed": 454050160,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 4513732,
+    "sha256": "f033baab040500c9220f51c41ba64a078ac9844823b2cbdcdd0123baca867288"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:34:32Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A bright, calm reception area of a small outpatient clinic in Brazil, light wood counter, a receptionist in a plain blouse greeting a visitor, potted plants, large windows with soft morning light, pale green and white walls. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:7QNga_hUQPyGxe7GY4KV6w"
+}

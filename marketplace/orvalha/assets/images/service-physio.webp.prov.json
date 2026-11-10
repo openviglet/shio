@@ -1,0 +1,37 @@
+{
+  "artefact": {
+    "bytes": 82732,
+    "path": "assets/images/service-physio.webp",
+    "sha256": "a7b3ffd3325ab3f78c4a9930711b09d6ed9a24323ccd6bacf02b5f1fad6e3d30"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/service-physio.png",
+      "role": "picture",
+      "sha256": "5bedff91ce136d0e563fc3311d25f2ec47c424f273129a460d7947fa0ff2eb29"
+    },
+    {
+      "path": "polyweave.copies.toml",
+      "role": "table",
+      "sha256": "b6fd12809230ff057281bd24e86ee182689011633ee17f5a61027cd84d7a72b7"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:42:29Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "folders": [
+    {
+      "path": "/theme",
+      "acl": [
+        {
+          "group": "Administrator",
+          "permission": "WRITE"
+        }
+      ]
+    },
+    {
+      "path": "/menu"
+    },
+    {
+      "path": "/menu/en-us"
+    },
+    {
+      "path": "/menu/pt-br"
+    },
+    {
+      "path": "/en"
+    },
+    {
+      "path": "/pt"
+    },
+    {
+      "path": "/en/pages"
+    },
+    {
+      "path": "/en/sections"
+    },
+    {
+      "path": "/en/specialties"
+    },
+    {
+      "path": "/en/team"
+    },
+    {
+      "path": "/pt/paginas"
+    },
+    {
+      "path": "/pt/secoes"
+    },
+    {
+      "path": "/pt/especialidades"
+    },
+    {
+      "path": "/pt/equipe"
+    },
+    {
+      "path": "/enquiries"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/theme/orvalha",
+      "type": "Theme",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Orvalha theme",
+        "CSS": "@font-face { font-family:\"Plus Jakarta Sans\"; font-weight:200 800; font-display:swap; src:url(\"/fonts/plus-jakarta-sans-variable.woff2\") format(\"woff2\"); }\n@font-face { font-family:\"Inter\"; font-weight:400; font-display:swap; src:url(\"/fonts/inter-400.woff2\") format(\"woff2\"); }\n@font-face { font-family:\"Inter\"; font-weight:600; font-display:swap; src:url(\"/fonts/inter-600.woff2\") format(\"woff2\"); }\n:root { --pine:#1E4D4A; --pine-deep:#163A38; --sage:#E3EDE7; --mist:#F6F9F7; --amber:#D9A24B; --ink:#1B2A2A; --muted:#475857; --rule:#D3DFD9;\n  --display:\"Plus Jakarta Sans\", system-ui, sans-serif; --body:\"Inter\", system-ui, sans-serif; }\n* { box-sizing:border-box; }\nbody { margin:0; background:var(--mist); color:var(--ink); font:17px/1.65 var(--body); }\nimg { display:block; max-width:100%; height:auto; }\na { color:var(--pine); text-decoration-color:var(--amber); text-underline-offset:.2em; }\na:hover { text-decoration-thickness:2px; }\nh1, h2, h3 { font-family:var(--display); font-weight:700; color:var(--pine); line-height:1.2; letter-spacing:-.01em; margin:0 0 .5em; }\nh1 { font-size:clamp(2rem, 3.6vw, 2.9rem); }\nh2 { font-size:clamp(1.4rem, 2.4vw, 1.85rem); }\nh3 { font-size:1.2rem; }\n.o-wrap { max-width:70rem; margin:0 auto; padding:0 1.25rem; }\n.o-narrow { max-width:44rem; }\n.o-skip { position:absolute; left:1rem; top:-3rem; z-index:10; background:var(--pine); color:#fff; padding:.5rem 1rem; border-radius:.4rem; font-weight:600; }\n.o-skip:focus { top:1rem; }\n.o-header { background:#fff; border-bottom:1px solid var(--rule); }\n.o-header .o-wrap { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem 2rem; padding-top:1rem; padding-bottom:1rem; }\n.o-brand { display:flex; align-items:center; gap:.6rem; font-family:var(--display); font-weight:700; font-size:1.4rem; color:var(--pine); text-decoration:none; }\n.o-brand::before { content:\"\"; width:.9rem; height:.9rem; border-radius:50% 50% 50% 0; background:var(--amber); transform:rotate(-45deg); }\n.o-nav ul, .o-langs { display:flex; flex-wrap:wrap; gap:.25rem 1.4rem; list-style:none; margin:0; padding:0; }\n.o-nav a { color:var(--ink); text-decoration:none; font-weight:600; }\n.o-nav a:hover, .o-nav a[aria-current=page] { color:var(--pine); text-decoration:underline; text-decoration-color:var(--amber); text-decoration-thickness:2px; text-underline-offset:.45em; }\n.o-nav a.is-ancestor { color:var(--pine); }\n.o-langs { margin-left:auto; font-size:.85rem; }\n.o-langs a { color:var(--pine); text-decoration:none; text-transform:uppercase; letter-spacing:.06em; font-weight:600; border:1px solid var(--rule); border-radius:999px; padding:.15rem .65rem; }\n.o-langs a:hover { border-color:var(--pine); }\n.o-hero { background:var(--sage); }\n.o-hero .o-wrap { display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 6fr); gap:2.5rem; align-items:center; padding-top:3.5rem; padding-bottom:3.5rem; }\n.o-hero img { width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:1.25rem; }\n.o-hero p { font-size:1.15rem; color:var(--muted); margin:0 0 1.5rem; max-width:34rem; }\n.o-button { display:inline-block; background:var(--pine); color:#fff; font-weight:600; text-decoration:none; padding:.8rem 1.6rem; border-radius:999px; }\n.o-button:hover { background:var(--pine-deep); }\nbutton.o-button { border:0; cursor:pointer; font:inherit; font-weight:600; }\n.o-more { font-weight:600; }\n.o-section { padding:3.5rem 0; }\n.o-band { background:#fff; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); }\n.o-lead { font-size:1.15rem; color:var(--muted); max-width:44rem; }\n.o-cards { display:grid; gap:1.5rem; grid-template-columns:repeat(auto-fill, minmax(15rem, 1fr)); list-style:none; margin:2rem 0; padding:0; }\n.o-card { background:#fff; border:1px solid var(--rule); border-radius:.9rem; overflow:hidden; display:flex; flex-direction:column; }\n.o-band .o-card { background:var(--mist); }\n.o-card img { width:100%; aspect-ratio:3/2; object-fit:cover; object-position:center 25%; }\n.o-card-body { padding:1.1rem 1.25rem 1.4rem; }\n.o-card h2, .o-card h3 { font-size:1.2rem; margin-bottom:.25rem; }\n.o-card p { margin:0; color:var(--muted); }\n.o-card .o-role { color:var(--pine); font-weight:600; font-size:.95rem; margin-bottom:.4rem; }\n.o-split { display:grid; gap:2.5rem; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); align-items:center; }\n.o-split img { border-radius:1rem; width:100%; aspect-ratio:3/2; object-fit:cover; }\n.o-figure { margin:0 0 2rem; }\n.o-figure img { border-radius:1rem; width:100%; }\n.o-prose p, .o-prose ul { margin:0 0 1.1rem; }\n.o-prose li { margin-bottom:.35rem; }\n.o-page section { margin-bottom:2.5rem; }\n.o-page section + section { padding-top:2rem; border-top:1px solid var(--rule); }\n.o-form { display:grid; gap:1rem; max-width:34rem; margin-top:1.5rem; padding:1.5rem; background:#fff; border:1px solid var(--rule); border-radius:.9rem; }\n.o-field { margin:0; }\n.o-field label { display:block; font-weight:600; margin-bottom:.3rem; }\n.o-field input, .o-field textarea { width:100%; padding:.65rem .8rem; font:inherit; color:var(--ink); background:var(--mist); border:1px solid var(--rule); border-radius:.5rem; }\n.o-field input:focus, .o-field textarea:focus { outline:2px solid var(--pine); outline-offset:1px; }\n.o-field textarea { min-height:6rem; }\n.o-footer { background:var(--pine-deep); color:var(--sage); padding:2.5rem 0; margin-top:3rem; font-size:.95rem; }\n.o-footer a { color:#fff; }\n.o-footer .o-wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; }\n.o-footer strong { font-family:var(--display); color:#fff; }\n@media (max-width: 48rem) { .o-hero .o-wrap, .o-split { grid-template-columns:1fr; } .o-hero .o-wrap { padding-top:2rem; padding-bottom:2.5rem; } .o-langs { margin-left:0; } }\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-home",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Orvalha home",
+        "THEME": "Orvalha theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Orvalha</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"o-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"o-header\"><div class=\"o-wrap\">\n<a class=\"o-brand\" href=\"{{t 'homeHref'}}\">Orvalha</a>\n<nav class=\"o-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"o-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<div class=\"o-hero\"><div class=\"o-wrap\">\n<div>\n<h1 sh-field=\"heading\">{{heading}}</h1>\n{{#if intro}}<p sh-field=\"intro\">{{intro}}</p>{{/if}}\n{{#if ctaLabel}}<a class=\"o-button\" sh-field=\"ctaLabel\" sh-field-attr=\"ctaHref:href\" href=\"{{ctaHref}}\">{{ctaLabel}}</a>{{/if}}\n</div>\n{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 55vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}{{/if}}\n</div></div>\n<section class=\"o-section\"><div class=\"o-wrap\">\n<h2 sh-field=\"servicesHeading\">{{servicesHeading}}</h2>\n<ul class=\"o-cards\">{{#getRelation services}}<li class=\"o-card\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div class=\"o-card-body\"><h3>{{title}}</h3>{{#if role}}<p class=\"o-role\">{{role}}</p>{{/if}}{{#if summary}}<p>{{summary}}</p>{{/if}}</div></li>{{/getRelation}}</ul>\n{{#if servicesLinkLabel}}<p><a class=\"o-more\" sh-field=\"servicesLinkLabel\" sh-field-attr=\"servicesLinkHref:href\" href=\"{{servicesLinkHref}}\">{{servicesLinkLabel}}</a></p>{{/if}}\n</div></section>\n<section class=\"o-section o-band\"><div class=\"o-wrap\">\n<h2 sh-field=\"teamHeading\">{{teamHeading}}</h2>\n<ul class=\"o-cards\">{{#getRelation team}}<li class=\"o-card\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div class=\"o-card-body\"><h3>{{title}}</h3>{{#if role}}<p class=\"o-role\">{{role}}</p>{{/if}}{{#if summary}}<p>{{summary}}</p>{{/if}}</div></li>{{/getRelation}}</ul>\n{{#if teamLinkLabel}}<p><a class=\"o-more\" sh-field=\"teamLinkLabel\" sh-field-attr=\"teamLinkHref:href\" href=\"{{teamLinkHref}}\">{{teamLinkLabel}}</a></p>{{/if}}\n</div></section>\n<section class=\"o-section\"><div class=\"o-wrap o-split\">\n<div>\n<h2 sh-field=\"visitHeading\">{{visitHeading}}</h2>\n<div class=\"o-prose\" sh-field=\"visitBody\">{{{visitBody}}}</div>\n</div>\n{{#if visitImage}}{{#image visitImage}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 50vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../visitImageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}\n</div></section>\n</main>\n<footer class=\"o-footer\"><div class=\"o-wrap\">\n<p><strong>Orvalha</strong></p>\n<p>{{t \"hours\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-listing",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Orvalha listing",
+        "THEME": "Orvalha theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Orvalha</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"o-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"o-header\"><div class=\"o-wrap\">\n<a class=\"o-brand\" href=\"{{t 'homeHref'}}\">Orvalha</a>\n<nav class=\"o-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"o-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<section class=\"o-section\"><div class=\"o-wrap\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if intro}}<p class=\"o-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n{{#if image}}<figure class=\"o-figure\">{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 70rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}</figure>{{/if}}\n<ul class=\"o-cards\">{{#query folder=listFolder type=listType sort=\"title\" limit=\"24\"}}<li class=\"o-card\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div class=\"o-card-body\"><h2>{{title}}</h2>{{#if role}}<p class=\"o-role\">{{role}}</p>{{/if}}{{#if summary}}<p>{{summary}}</p>{{/if}}</div></li>{{/query}}</ul>\n</div></section>\n</main>\n<footer class=\"o-footer\"><div class=\"o-wrap\">\n<p><strong>Orvalha</strong></p>\n<p>{{t \"hours\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-page",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Orvalha page",
+        "THEME": "Orvalha theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Orvalha</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"o-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"o-header\"><div class=\"o-wrap\">\n<a class=\"o-brand\" href=\"{{t 'homeHref'}}\">Orvalha</a>\n<nav class=\"o-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"o-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<article class=\"o-section\"><div class=\"o-wrap o-narrow o-page\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if image}}<figure class=\"o-figure\">{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 44rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}</figure>{{/if}}\n{{#getRelation sections}}<section sh-post=\"{{id}}\" data-shio-section=\"{{type}}\">\n{{#if formType}}{{#if formToken}}{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if intro}}<p class=\"o-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n<form class=\"o-form\" method=\"post\" action=\"{{site.formAction}}\"><input type=\"hidden\" sh-field-attr=\"formType:value\" name=\"{{site.formTypeField}}\" value=\"{{formType}}\"><input type=\"hidden\" sh-field-attr=\"formToken:value\" name=\"{{site.formTokenField}}\" value=\"{{formToken}}\">{{#form type=formType}}<p class=\"o-field\"><label for=\"o-form-{{name}}\">{{t name}}</label>{{#if multiline}}<textarea id=\"o-form-{{name}}\" name=\"{{name}}\"{{#if required}} required{{/if}}></textarea>{{else}}<input id=\"o-form-{{name}}\" type=\"{{input}}\" name=\"{{name}}\"{{#if required}} required{{/if}}>{{/if}}</p>{{/form}}<input type=\"text\" name=\"{{site.formHoneypot}}\" value=\"\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" aria-label=\"{{t 'honeypot'}}\" style=\"position:absolute;left:-9999px\"><p><button class=\"o-button\" type=\"submit\" sh-field=\"submitLabel\">{{#if submitLabel}}{{submitLabel}}{{else}}{{t \"send\"}}{{/if}}</button></p></form>\n{{/if}}{{else}}{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if body}}<div class=\"o-prose\" sh-field=\"body\">{{{body}}}</div>{{/if}}\n{{/if}}\n</section>{{/getRelation}}\n</div></article>\n</main>\n<footer class=\"o-footer\"><div class=\"o-wrap\">\n<p><strong>Orvalha</strong></p>\n<p>{{t \"hours\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    }
+  ],
+  "postTypeLayout": {
+    "ClinicHome": "Orvalha home",
+    "Listing": "Orvalha listing",
+    "InfoPage": "Orvalha page"
+  },
+  "pageType": "InfoPage"
+}

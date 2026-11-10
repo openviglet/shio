@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 91164,
+    "path": "assets/images/home-dining-room.webp",
+    "sha256": "c988503275d93c77cd62c33db0f863aa59447e25b80d9ee0d1e6c109a04e59ed"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/home-dining-room.png",
+      "role": "picture",
+      "sha256": "1c22b5aedbca3db51388a607134564afe55d20d5ac1d9ea1a445e8c5bef729d4"
+    },
+    {
+      "path": "polyweave.copies.toml",
+      "role": "table",
+      "sha256": "ae302e1f2d703a10b1b6419639b621e35e1bd68a390213d3c5993650c60a9ef2"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:43:18Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

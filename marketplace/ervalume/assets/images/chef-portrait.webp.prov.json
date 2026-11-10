@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 60678,
+    "path": "assets/images/chef-portrait.webp",
+    "sha256": "4ed03a5b24b86fee81e0bc305d96bf4061864585b6ae5bf5b07a161f7bd24e01"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/chef-portrait.png",
+      "role": "picture",
+      "sha256": "b8b7bda96c1156c72c1a3dd459afe413b524d75674f8190901e089a11f60063c"
+    },
+    {
+      "path": "polyweave.copies.toml",
+      "role": "table",
+      "sha256": "ae302e1f2d703a10b1b6419639b621e35e1bd68a390213d3c5993650c60a9ef2"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1200
+  },
+  "produced_at": "2026-11-10T23:43:19Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

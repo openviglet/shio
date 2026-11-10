@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6405591,
+    "path": "assets/source/kitchen-fire.png",
+    "sha256": "42c5246b6910efc06b34901cb1c2824e6e7218ac25d6dbdedf1eb214f7219287"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary photograph of a working wood-fired grill in an open restaurant kitchen during the quiet lull between lunch and dinner service, with a sea bream and blistering vegetables on the grate, herbs hanging above, and a soft-focus kitchen receding behind. Shot on Kodak Portra with fine grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Open restaurant kitchen interior in cool-neutral daylight spilling from an off-frame window on the left, white balance neutral overall with the amber pool of light local only to the embers and underside of the food. A brick hearth wall forms the backdrop behind the grill, weathered red-brown bricks with mortar lines visible. The ceiling above is dim and out of focus. Mild atmospheric haze from rising smoke catches the daylight as it drifts upward. Fine Kodak Portra grain throughout.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Back shelf deep in the background, slightly out of focus, holding a stainless steel saucepan on the left and a polished copper kettle on the right, both catching faint daylight highlights.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Horizontal iron rail mounted across the upper third of the frame above the hearth, dark matte finish. Bunches of fresh herbs \u2014 rosemary sprigs, thyme stems, oregano, bay leaves \u2014 tied with natural twine hang from the rail at intervals, gently softened by shallow depth of field.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Long rectangular wood-fired grill built into a brick hearth, spanning most of the frame width across the lower two-thirds. Heavy cast-iron grate sits atop glowing orange embers and a bed of pale grey ash beneath. Brick surround visible along the sides and back.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Thin curl of pale grey smoke rising from the embers through gaps in the grate, dissipating upward toward the ceiling, catching the cool daylight as it drifts.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Whole sea bream laid skin-side down on the cast-iron grate, centered slightly left. Charred grill marks streak across the flesh side, scales intact on the visible belly edge. A lemon half tucked under the tail, cut face up, juice glistening.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Three red bell peppers blistering on the grate to the right of the fish, skins splitting and blackening at the edges, charred patches against bright red flesh, juices pooling where they rest on the iron.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two courgettes halved lengthwise laid cut-side down on the grate beside the peppers, edges caramelizing to deep brown, pale green flesh visible at the rounded outer sides.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Stack of four well-seasoned cast-iron pans leaning against the brick hearth to the right of the grill, dark patina with faint oil sheen catching daylight, rims stacked unevenly, handles protruding outward.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus wooden prep counter slicing in from the lower-left foreground edge, warm honey-toned grain softened by shallow depth of field. A small pile of coarse white salt mounded near the center, a folded cream linen cloth resting beside it.\"\n      }\n    ]\n  }\n}",
+    "seed": 838221170,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6405591,
+    "sha256": "42c5246b6910efc06b34901cb1c2824e6e7218ac25d6dbdedf1eb214f7219287"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:43:00Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A wood-fired grill in an open restaurant kitchen, glowing embers under a whole fish, peppers and courgettes on the grate, cast iron pans stacked beside it, bunches of herbs hanging from a rail above, a little smoke, no people. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:Rr3iQ50vQIagqYtOY36OIA"
+}

@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6454279,
+    "path": "assets/source/home-studio.png",
+    "sha256": "03f7bb52462c27461143bf4d4a6a779d86c94f4a90123f992cbc6bf39e542407"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2560x1440",
+    "aspect_ratio": "16x9",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2560x1440",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary architectural photograph of an empty S\u00e3o Paulo architecture studio at morning, with a long oak table running diagonally from lower-left toward tall steel-framed windows on the right, morning light casting long parallel shadow bars across a polished concrete floor.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Interior of a small architecture studio in a converted brick workshop in S\u00e3o Paulo, empty of people. Exposed red brick wall along the left side with weathered mortar lines and faint chalk smudges near the floor baseboard. Tall steel-framed industrial windows line the right wall, divided into a grid of small panes, morning daylight pouring through at a low angle as clean directional light. Polished grey concrete floor catches long parallel shadow bars from the window mullions stretching diagonally across the room. Soft ambient fill bounces off the brick wall. Muted palette \u2014 warm oak, weathered red brick, polished grey concrete, deep green foliage. Neutral cool-toned white balance, true-to-life color rendering, fine medium-format film grain throughout.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Long oak table running diagonally from the foreground-left into the midground toward upper-right, warm honey-toned wood with visible grain, acting as the leading diagonal of the composition.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Three rolled paper drawings bound with thin natural twine, resting on the oak table surface in the midground-left area of the table.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Fan of material samples laid out on the oak table surface in the midground, alternating pale travertine stone slabs and dark walnut timber pieces arranged in an overlapping fan pattern.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Three white card architectural models of varying scale clustered on the oak table in the midground-right area, crisp matte white construction showing geometric building forms at small, medium, and larger sizes.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Open hardcover sketchbook lying flat on the oak table near the architectural models, dark cloth-bound cover folded back to reveal two blank cream pages.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Black steel-framed drafting lamp at the far end of the oak table in the midground, articulated arm folded down flat over the table surface, conical shade pointing downward.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tall snake plant in a terracotta pot sitting on the windowsill at the right edge of the frame, upright stiff green leaves with pale variegated striping rising vertically against the bright window light.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Trailing pothos in a small white ceramic planter on the windowsill beside the snake plant, heart-shaped green leaves cascading down over the rim of the pot.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small stack of rolled paper drawings leaning against the left brick wall baseboard in the background, cream-colored tubes propped at a slight angle, twine bindings visible.\"\n      }\n    ]\n  }\n}",
+    "seed": 190131278,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6454279,
+    "sha256": "03f7bb52462c27461143bf4d4a6a779d86c94f4a90123f992cbc6bf39e542407"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:42:09Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary architectural photograph of the inside of a small architecture studio in a converted brick workshop in S\u00e3o Paulo, empty of people: a long oak table with rolled drawings, stone and timber material samples and three white card models, tall steel-framed windows, potted plants, morning light. Natural light, true colours, no people, no text or writing on any surface, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:BAaZgIEXTZunnHEF4XTxlw"
+}

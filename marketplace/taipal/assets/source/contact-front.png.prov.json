@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 7520216,
+    "path": "assets/source/contact-front.png",
+    "sha256": "6266417ea70d695bbd8032eb2ad7462675206283985ac4e74bb1ef9695a7ffec"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary architectural photograph of a quiet tree-lined residential street on an overcast afternoon, showing a converted single-storey red-brick workshop housing a small architecture studio, with a vintage bicycle leaning against the wall beside a tall glazed door.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"An overcast afternoon sky, flat and pale grey with diffused even daylight and neutral cool-toned white balance. Adjacent terraced red-brick buildings recede down the residential street on both sides, partially obscured by mature plane tree foliage. A distant parked car sits further down the street in soft focus. Mature plane trees line the street, their canopies casting dappled shadows across the facade and pavement. A narrow concrete footpath runs along the front of the building, scattered with a few fallen leaves. Deep focus throughout from foreground pavement to background street. Fine ambient grain consistent with documentary architectural photography.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single-storey red-brick workshop facade filling most of the frame as the primary background element, weathered mortar joints between bricks, slight tonal variation across the brickwork in muted true reds. A low concrete plinth runs along the base at pavement level. Plain facade with no signage, no lettering, no house number plate.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tall glazed door set into the brick wall just left of frame centre, slim black steel frame around full-height glass panels. Through the glass, a dim interior is visible with a faint glimpse of drafting tables and paper rolls stacked inside.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Vintage steel bicycle leaning against the brick wall to the right of the door, breaking the right-third of the frame. Worn brown leather saddle, slightly rusted chain, one flat tire splayed outward. Dark steel frame, upright handlebars.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Low black iron railing running horizontally along the front of the building, separating the concrete footpath from a small strip of grass and exposed roots at the curb below.\"\n      }\n    ]\n  }\n}",
+    "seed": 1172158348,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 7520216,
+    "sha256": "6266417ea70d695bbd8032eb2ad7462675206283985ac4e74bb1ef9695a7ffec"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:43:02Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary architectural photograph of the street front of a small architecture studio in a converted single-storey brick workshop on a quiet tree-lined street, a tall glazed door, a bicycle leaning on the wall, plain facade with no signage and no doormat, empty of people. Natural light, true colours, no people, no text or writing on any surface, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:hRwniHVEScqMRhI7vAcaFg"
+}

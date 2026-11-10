@@ -1,0 +1,82 @@
+{
+  "name": "TeamMember",
+  "title": "Team member",
+  "namePlural": "Team members",
+  "description": "One person at the studio, shown as a section of the team page: name, role, portrait and a short profile.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "name",
+      "label": "Name",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "role",
+      "label": "Role",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "summary",
+      "label": "Summary",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "image",
+      "label": "Portrait",
+      "description": null,
+      "widget": "File",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "imageAlt",
+      "label": "Portrait description",
+      "description": "What the picture shows, for someone who cannot see it.",
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "body",
+      "label": "Profile",
+      "description": null,
+      "widget": "HTML Editor",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 6,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

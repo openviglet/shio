@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 164698,
+    "path": "assets/images/team-portrait.webp",
+    "sha256": "396f7105815af1006fa600278ce49384fde8c4b61207062a220cd897a73701ce"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/team-portrait.png",
+      "role": "picture",
+      "sha256": "90eb238df068ec047878cb5216ec88095077408ef8a85cec1279d08ac16bb08b"
+    },
+    {
+      "path": "assets/source/web.copies.toml",
+      "role": "table",
+      "sha256": "30d99510c437853b3273d3d0be4abffece047864e979d2f6b9ffbcbbb2287ccf"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:44:27Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

@@ -1,0 +1,48 @@
+# The WebP copies the package ships, cut from the originals polyweave bought. The originals are
+# git-ignored; this table and each copy's record say what every shipped picture was made from.
+
+into = "assets/images"
+quality = 82
+max_bytes = 300000
+
+[[copy]]
+source = "assets/source/home-studio.png"
+out = "home-studio.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/studio-model.png"
+out = "studio-model.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/case-house.png"
+out = "case-house.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/case-shop.png"
+out = "case-shop.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/case-apartment.png"
+out = "case-apartment.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/team-portrait.png"
+out = "team-portrait.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/team-founder.png"
+out = "team-founder.webp"
+side = 1200
+
+[[copy]]
+source = "assets/source/contact-front.png"
+out = "contact-front.webp"
+side = 1600
+# Cut at the right to leave out a parked car whose number plate carries unreadable lettering.
+box = [0, 98, 2200, 1565]

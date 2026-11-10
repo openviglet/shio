@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6117332,
+    "path": "assets/source/chef-portrait.png",
+    "sha256": "b8b7bda96c1156c72c1a3dd459afe413b524d75674f8190901e089a11f60063c"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "1792x2240",
+    "aspect_ratio": "4x5",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "1792x2240",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary portrait of a Brazilian woman in her early fifties in a working home kitchen, framed from the chest up with soft daylight from a side window, shot on Kodak Portra with shallow depth of field and fine grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A quiet working Brazilian home kitchen at midday. Soft north-facing daylight enters from camera-left through a side window, wrapping across the scene with gentle falloff into shadow on the right. Cool-leaning neutral white balance keeps skin tones accurate with no amber wash. Behind the subject, the wall is a warm off-white plaster. Deep in the background left, a windowsill holds a small terracotta pot of fresh cilantro, leaves reduced to soft green blur. A wooden wall rack runs behind her right shoulder carrying a row of hammered copper pans, softened by shallow depth of field into warm discs of color with faint highlights catching their surfaces. Fine Kodak Portra grain sits evenly across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Brazilian woman in her early fifties, head and shoulders framed from the chest up, anchored slightly off-center toward the right of the frame, body filling roughly 60% of the frame height as the focal subject. In three-quarter front view facing the camera, calm closed-mouth smile, eyes meeting the camera directly with a small reflective highlight catching the window light. Warm brown skin with natural detailed texture, fine lines around the eyes and mouth, dark eyes. Dark hair pulled back loosely with a few strands escaping at the temples. Plain oatmeal-linen apron tied at the neck over a charcoal cotton shirt, slight wrinkles in the linen catching the window light on the left side, gentle shadow falloff on the right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus edge of a wooden cutting board slicing diagonally into the lower-left foreground, warm honey-brown wood grain blurred into soft tonal shapes.\"\n      }\n    ]\n  }\n}",
+    "seed": 479901345,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6117332,
+    "sha256": "b8b7bda96c1156c72c1a3dd459afe413b524d75674f8190901e089a11f60063c"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:41:05Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Head and shoulders portrait, framed from the chest up, of a Brazilian chef in her fifties wearing a plain linen apron over a dark shirt, hands out of frame, copper pans softly blurred on the wall behind her, calm warm expression, shallow depth of field. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:BGUd_u34RK-qS7VztxQWdA"
+}

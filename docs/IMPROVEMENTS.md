@@ -1195,25 +1195,3 @@ against a clean instance proves it (the same proof the promo's agent session is)
 
 **Done when.** The dialog offers at least three clients, each with a copy-paste setup,
 and the docs page states when each was last proved.
-
-### XCIX.6 A catalogue in the reader's language, with finished sites for common businesses (SH1431)
-
-**Seen.** The Marketplace on a Portuguese console lists its packages in English ("A
-finished bilingual sample site for a fictional trail magazine..."), and besides Quilhara
-the catalogue reads as developer material: Blog, Documentation, Landing page, Product
-catalogue, Next.js starter. A small business owner sees one finished site, and it is a
-trail magazine.
-
-**What.** The catalogue carries each package's title and description per locale and the
-console shows the reader's. Three more finished sites in the Quilhara standard (designed
-theme, real photography, bilingual pt-BR/en, forms): a restaurant (menu, booking
-enquiry), a health clinic (services, team, appointment enquiry), a professional office
-(services, cases, contact). Each one passes the showcase matrix the way Quilhara does.
-
-**Landed and left (2026-11-10).** Manifest `i18n` reaches the console for built-in
-packages. The catalogue cannot carry it: released instances refuse an unknown entry key,
-and `manifest:i18n` would refuse every install, so `marketplace.mjs` strips it. A
-catalogue version they never read is the path. See `docs/agents/blueprints.md`.
-
-**Done when.** A pt-BR console lists every package in Portuguese, and four finished
-sites install from the Marketplace and render with no errors.

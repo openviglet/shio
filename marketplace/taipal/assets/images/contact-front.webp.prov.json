@@ -1,0 +1,43 @@
+{
+  "artefact": {
+    "bytes": 276128,
+    "path": "assets/images/contact-front.webp",
+    "sha256": "b3885f36cec7d90409dff230478a4b220e621dee6b67865faa62dd6c5cc69cc7"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/contact-front.png",
+      "role": "picture",
+      "sha256": "6266417ea70d695bbd8032eb2ad7462675206283985ac4e74bb1ef9695a7ffec"
+    },
+    {
+      "path": "assets/source/web.copies.toml",
+      "role": "table",
+      "sha256": "30d99510c437853b3273d3d0be4abffece047864e979d2f6b9ffbcbbb2287ccf"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": [
+      0,
+      98,
+      2200,
+      1565
+    ],
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 74,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:44:29Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

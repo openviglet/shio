@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 5604186,
+    "path": "assets/source/team-helena.png",
+    "sha256": "8196649f02bab1a5863d2117e2b846a87273fd49847b0120399f8c3555199e71"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "1792x2240",
+    "aspect_ratio": "4x5",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "1792x2240",
+    "returned_prompt": "{\n  \"high_level_description\": \"A casual iPhone snapshot of a family physician in her early fifties standing in a bright modern clinic corridor, framed from mid-chest up and anchored slightly left of center, with soft daylight pouring in from a row of windows along one side.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A bright modern clinic corridor mid-morning, dissolving into soft bokeh behind the subject. Pale neutral walls catch cool daylight raking in from a row of windows along one side. A hint of a wooden handrail runs along the right edge of the frame, distant doorway shapes recede into the depth, and a glimpse of a potted plant sits at the far end. Cool-neutral white balance with true-to-life colors, no warm grade. Fine editorial film grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus figure of a nurse in light blue scrubs walking away down the corridor deep in the background, seen from behind, small in the frame, rendered as a soft blurred shape.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Family physician in her early fifties, head and shoulders filling the upper two-thirds of the frame as the focal subject, anchored slightly left of center. In three-quarter front view, body angled toward camera, weight settled on her back foot, shoulders relaxed. Short cropped grey hair neatly trimmed around the ears, fair skin with a natural detailed texture, faint laugh lines at the corners of her eyes. Light blue eyes catching the window light, looking just past the lens toward someone off-frame to her right. Small closed-mouth smile, eyes crinkled at the outer corners. Crisp white medical coat worn open over a sage green blouse with a soft rounded neckline, collar of the coat sitting naturally on the shoulders. Slim silver stethoscope draped around her neck, tubing resting against the coat lapels. No logos visible on the coat.\"\n      }\n    ]\n  }\n}",
+    "seed": 1568366042,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5604186,
+    "sha256": "8196649f02bab1a5863d2117e2b846a87273fd49847b0120399f8c3555199e71"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:42:12Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Head and shoulders portrait, framed from the chest up, of a calm family physician in her fifties with short grey hair, wearing a white coat over a sage green blouse, in a bright clinic corridor, friendly expression, hands out of frame, shallow depth of field. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:W8pi_vTqSC-D-inMoyPZ6w"
+}

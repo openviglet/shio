@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 94720,
+    "path": "assets/images/case-shop.webp",
+    "sha256": "7282f5342d1c5240eacf3c504a0b0e84f1ea2a9f5dc6a887318455ce681893a4"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/case-shop.png",
+      "role": "picture",
+      "sha256": "4911081ff6ce9819b7733977bd40623c9f69804849bc700afe66c4c2a421c155"
+    },
+    {
+      "path": "assets/source/web.copies.toml",
+      "role": "table",
+      "sha256": "30d99510c437853b3273d3d0be4abffece047864e979d2f6b9ffbcbbb2287ccf"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:44:27Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

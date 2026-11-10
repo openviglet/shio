@@ -1,0 +1,100 @@
+{
+  "formatVersion": 1,
+  "name": "taipal",
+  "title": "Taipal showcase",
+  "version": "1.0.0",
+  "description": "A finished bilingual sample site for a fictional architecture and interiors studio: home, services, cases with a case study each, team and contact pages in English and Brazilian Portuguese, with a designed theme, self-hosted fonts, its own photography and an enquiry form. Apply it to a new site to see what Viglet Shio renders.",
+  "i18n": {
+    "pt-BR": {
+      "title": "Vitrine Taipal",
+      "description": "Um site de exemplo pronto e bilíngue para um estúdio fictício de arquitetura e interiores: páginas de início, serviços, projetos com um estudo de caso cada, equipe e contato em português e inglês, com tema desenhado, fontes próprias, fotografia original e formulário de contato. Aplique em um site novo para ver o que o Viglet Shio desenha."
+    }
+  },
+  "params": {
+    "type": "object",
+    "properties": {}
+  },
+  "postTypes": [
+    "post-types/StudioHome.json",
+    "post-types/Listing.json",
+    "post-types/Case.json",
+    "post-types/TeamMember.json",
+    "post-types/ProjectEnquiry.json",
+    "post-types/InfoPage.json",
+    "post-types/Menu.json",
+    "post-types/MenuItem.json",
+    "post-types/SectionFeatureGrid.json",
+    "post-types/SectionForm.json",
+    "post-types/SectionRichText.json",
+    "post-types/StringTable.json"
+  ],
+  "content": [
+    "content/theme.json",
+    "content/en-us.json",
+    "content/pt-br.json"
+  ],
+  "assets": [
+    {
+      "path": "assets/images/home-studio.webp",
+      "alt": "A long oak table with white card models, stone samples and rolled drawings beside tall steel-framed windows, in a brick studio in morning sun."
+    },
+    {
+      "path": "assets/images/studio-model.webp",
+      "alt": "A white card model of a two-storey house with a timber-slat roof, on a green cutting mat beside a steel ruler and a craft knife."
+    },
+    {
+      "path": "assets/images/case-house.webp",
+      "alt": "A board-formed concrete house with a timber slatted screen and a deep roof overhang, on a grassy hillside above mountain ridges at sunset."
+    },
+    {
+      "path": "assets/images/case-shop.webp",
+      "alt": "A narrow bakery with a vaulted plaster ceiling, terrazzo floor, oak shelves of bread and a long oak counter under brass pendant lamps."
+    },
+    {
+      "path": "assets/images/case-apartment.webp",
+      "alt": "A living room with herringbone parquet, white walls, a pale sofa, built-in oak shelves and open doors to a balcony full of plants."
+    },
+    {
+      "path": "assets/images/team-portrait.webp",
+      "alt": "The studio's brick room seen through a doorway: a long oak table with white card models and five wooden chairs, tall steel-framed windows on the right."
+    },
+    {
+      "path": "assets/images/team-founder.webp",
+      "alt": "Head and shoulders of a woman in her fifties with short grey hair and round wire glasses, in a dark linen shirt, beside a steel-framed window in the studio."
+    },
+    {
+      "path": "assets/images/contact-front.webp",
+      "alt": "A single-storey brick building with one tall glass door and a bicycle against the wall, behind a low iron railing on a tree-lined street."
+    },
+    "assets/fonts/fraunces-600.woff2",
+    "assets/fonts/inter-400.woff2",
+    "assets/fonts/inter-600.woff2"
+  ],
+  "forms": {
+    "folder": "/enquiries",
+    "types": [
+      "ProjectEnquiry"
+    ]
+  },
+  "verify": {
+    "posts": [
+      "/",
+      "/inicio",
+      "/services",
+      "/servicos",
+      "/cases",
+      "/projetos",
+      "/cases/hillside-house",
+      "/projetos/casa-da-encosta",
+      "/cases/miolo-bakery",
+      "/projetos/padaria-miolo",
+      "/cases/garden-flat",
+      "/projetos/apartamento-jardim",
+      "/team",
+      "/equipe",
+      "/contact",
+      "/contato"
+    ],
+    "checks": "content"
+  }
+}

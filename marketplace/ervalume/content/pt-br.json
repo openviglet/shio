@@ -1,0 +1,486 @@
+{
+  "posts": [
+    {
+      "url": "/pt/pratos/palmito-na-brasa",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Palmito na brasa",
+        "description": "Pupunha fresca assada na própria casca, com manteiga de limão e pimenta.",
+        "price": "R$ 38",
+        "notes": "Vegetariano"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/palm-hearts"
+    },
+    {
+      "url": "/pt/pratos/bolinhos-de-mandioca",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Bolinhos de mandioca",
+        "description": "Crocantes por fora, macios por dentro, com maionese de coentro para molhar.",
+        "price": "R$ 32",
+        "notes": "Vegetariano"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/cassava-croquettes"
+    },
+    {
+      "url": "/pt/pratos/salada-de-tomate-e-caju",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Salada de tomate e caju",
+        "description": "Tomates maduros, caju fresco, cebola roxa e manjericão rasgado.",
+        "price": "R$ 34",
+        "notes": "Vegano"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/tomato-cashew-salad"
+    },
+    {
+      "url": "/pt/pratos/peixe-inteiro-na-brasa",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Peixe inteiro na brasa",
+        "description": "O peixe do dia grelhado inteiro na lenha, com molho verde de ervas, limão e mandioca assada.",
+        "price": "R$ 92",
+        "notes": "Leva cerca de 25 minutos",
+        "image": "asset:/images/dish-fish.webp",
+        "imageAlt": "Um peixe inteiro grelhado, de pele tostada, num prato escuro, ao lado de uma tigelinha de molho verde de ervas, meio limão e mandioca assada."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/whole-fish"
+    },
+    {
+      "url": "/pt/pratos/paleta-de-porco",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Paleta de porco assada lentamente",
+        "description": "Oito horas no forno a lenha, com feijão preto, couve e farofa.",
+        "price": "R$ 78"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/pork-shoulder"
+    },
+    {
+      "url": "/pt/pratos/moqueca-de-abobora",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Moqueca de abóbora",
+        "description": "Abóbora, azeite de dendê, leite de coco e coentro, servida com arroz integral.",
+        "price": "R$ 64",
+        "notes": "Vegano"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/pumpkin-stew"
+    },
+    {
+      "url": "/pt/pratos/banana-assada",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Banana assada com sorvete de coco",
+        "description": "Banana assada na casca, caramelo de açúcar queimado e uma bola de sorvete de coco.",
+        "price": "R$ 29",
+        "image": "asset:/images/dessert.webp",
+        "imageAlt": "Uma banana assada com canela em pau, uma bola de sorvete de coco e caramelo escuro num prato de cerâmica clara, com uma colher ao lado."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/roasted-banana"
+    },
+    {
+      "url": "/pt/pratos/torta-de-goiabada",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Torta de goiabada com queijo",
+        "description": "Massa podre, goiabada feita na cozinha e uma camada de queijo fresco.",
+        "price": "R$ 27",
+        "notes": "Vegetariano"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/guava-tart"
+    },
+    {
+      "url": "/pt/pratos/mousse-de-limao",
+      "type": "Dish",
+      "folder": "/pt/pratos",
+      "data": {
+        "name": "Mousse de limão com coco tostado",
+        "description": "Leve, azedinha e gelada, com coco tostado na última brasa da noite.",
+        "price": "R$ 24",
+        "notes": "Vegetariano"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/dishes/lime-mousse"
+    },
+    {
+      "url": "/pt/pessoas/lucia-taveira",
+      "type": "Person",
+      "folder": "/pt/pessoas",
+      "data": {
+        "name": "Lúcia Taveira",
+        "role": "Chef e dona",
+        "bio": "Lúcia cozinhou vinte anos em cozinhas de hotel antes de abrir o Ervalume na antiga venda da avó. Ela escreve o cardápio toda tarde a partir do que a feira tinha de manhã.",
+        "image": "asset:/images/chef-portrait.webp",
+        "imageAlt": "Retrato do peito para cima de uma chef de avental de linho na sua cozinha, com panelas de cobre penduradas atrás dela, sorrindo."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/people/lucia-taveira"
+    },
+    {
+      "url": "/pt/pessoas/caio-brandao",
+      "type": "Person",
+      "folder": "/pt/pessoas",
+      "data": {
+        "name": "Caio Brandão",
+        "role": "Salão e bebidas",
+        "bio": "Caio cuida do salão, da agenda de mesas e das bebidas, quase todas com frutas e ervas das mesmas bancas que abastecem a cozinha."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/people/caio-brandao"
+    },
+    {
+      "url": "/pt/secoes/kitchen",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "A cozinha",
+        "body": "<p>Tudo no Ervalume é feito na lenha: uma grelha para peixes e legumes e um forno de tijolo aceso às seis da manhã e ainda morno à meia-noite. O gás serve para uma coisa só, o café.</p><p>A Lúcia compra na feira duas vezes por semana e, nos outros dias, de dois sítios na beira da cidade. O cardápio muda quando a feira muda, então um prato desta página pode ter saído quando você vier, e outro melhor pode ter entrado no lugar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/kitchen"
+    },
+    {
+      "url": "/pt/secoes/sample",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Um restaurante inventado para mostrar um produto de verdade",
+        "body": "<p>O Ervalume é inventado. O restaurante, o endereço, as pessoas e os pratos não existem, e nenhuma mesa daqui pode ser reservada. É um site de exemplo do <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, o CMS de código aberto, instalado a partir de um único pacote do marketplace.</p><p>As fotografias foram geradas para o pacote e podem ser redistribuídas com ele. As fontes são Fraunces e Plus Jakarta Sans, ambas sob a SIL Open Font Licence e servidas pelo próprio site.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/sample"
+    },
+    {
+      "url": "/pt/secoes/booking",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como funcionam as reservas",
+        "body": "<p>O salão tem onze mesas, e quatro ficam guardadas para quem chega sem reserva. Diga o dia, o horário e quantas pessoas vêm, e o Caio responde por e-mail em até um dia, confirmando a mesa ou oferecendo o horário mais próximo que tivermos.</p><p>Seguramos a mesa reservada por quinze minutos. Para grupos de mais de oito pessoas, ou para fechar o salão, escreva para <a href=\"mailto:mesa@ervalume.example\">mesa@ervalume.example</a>.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/booking"
+    },
+    {
+      "url": "/pt/secoes/booking-form",
+      "type": "SectionForm",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Peça uma mesa",
+        "intro": "Respondemos em até um dia. O pedido só vira reserva quando escrevermos de volta confirmando.",
+        "formType": "TableBooking",
+        "submitLabel": "Enviar pedido",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/booking-form"
+    },
+    {
+      "url": "/pt/secoes/contact",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como chegar",
+        "body": "<p>O Ervalume fica na esquina da Rua das Laranjeiras com o Largo do Alecrim, a duas quadras da feira. Procure as portas verdes e os vasos de ervas na calçada.</p><dl><dt>Endereço</dt><dd>Rua das Laranjeiras, 48, Largo do Alecrim</dd><dt>Terça a sábado</dt><dd>12h às 15h e 19h às 23h</dd><dt>Domingo</dt><dd>12h às 16h</dd><dt>Segunda</dt><dd>Fechado</dd><dt>E-mail</dt><dd><a href=\"mailto:ola@ervalume.example\">ola@ervalume.example</a></dd></dl><p>A rua fecha para carros aos domingos. O ponto de ônibus mais próximo fica na praça, e há um bicicletário ao lado da porta.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact"
+    },
+    {
+      "url": "/pt/secoes/not-found",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Esta página não está no cardápio",
+        "body": "<p>A página que você pediu não está aqui. Comece de novo pela <a href=\"/inicio\">página inicial</a>, ou leia o <a href=\"/cardapio\">cardápio</a>.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/not-found"
+    },
+    {
+      "url": "/pt/secoes/strings",
+      "type": "StringTable",
+      "folder": "/pt/secoes",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Pular para o conteúdo\nnav = Navegação principal\nlangs = Outros idiomas\nfooter = Um restaurante fictício, feito para mostrar o que o Viglet Shio constrói.\naddress = Rua das Laranjeiras, 48, Largo do Alecrim\nname = Seu nome\nemail = E-mail\ndate = Data\ntime = Horário\nguests = Número de pessoas\nmessage = Algo que devemos saber\nsend = Enviar\nhoneypot = Deixe este campo vazio"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/strings"
+    },
+    {
+      "url": "/inicio",
+      "type": "RestaurantHome",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Cozinha na lenha",
+        "description": "O Ervalume é um restaurante de bairro pequeno que faz tudo na lenha, com ervas e produtos da feira a duas quadras.",
+        "heading": "Feito na lenha, temperado pela feira",
+        "intro": "Um salão pequeno no Largo do Alecrim, um fogo a lenha e um cardápio escrito toda tarde com o que a feira tinha de manhã.",
+        "image": "asset:/images/home-dining-room.webp",
+        "imageAlt": "Um salão vazio posto para a noite, uma fileira de mesas de madeira sob luminárias de latão, vasos de alecrim e manjericão na janela e um forno a lenha aceso ao fundo.",
+        "ctaLabel": "Reservar uma mesa",
+        "ctaHref": "/reservas",
+        "secondaryLabel": "Ver o cardápio",
+        "secondaryHref": "/cardapio",
+        "dishesHeading": "Do cardápio de hoje",
+        "dishes": [
+          "/pt/pratos/peixe-inteiro-na-brasa",
+          "/pt/pratos/banana-assada"
+        ],
+        "storyHeading": "Toda manhã na feira",
+        "storyText": "A Lúcia está nas bancas às sete. Coentro, pimentas, mandioca e o peixe que chegou de madrugada decidem o que o fogo vai cozinhar à noite.",
+        "storyImage": "asset:/images/market-herbs.webp",
+        "storyImageAlt": "Uma banca de feira com um caixote de coentro e manjericão, maços de cebolinha, um cesto de pimentas vermelhas, raízes de mandioca e limões.",
+        "storyLinkLabel": "Conheça a cozinha",
+        "storyLinkHref": "/sobre",
+        "hoursHeading": "Horário de funcionamento",
+        "hours": [
+          {
+            "label": "Terça a sábado",
+            "value": "12h às 15h e 19h às 23h"
+          },
+          {
+            "label": "Domingo",
+            "value": "12h às 16h"
+          },
+          {
+            "label": "Segunda",
+            "value": "Fechado"
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/"
+    },
+    {
+      "url": "/cardapio",
+      "type": "FoodMenu",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Cardápio",
+        "description": "Entradas, pratos principais e sobremesas feitos na lenha no Ervalume, com preços.",
+        "intro": "Escrito hoje à tarde com o que a feira tinha hoje de manhã. Os preços incluem o serviço.",
+        "startersHeading": "Entradas",
+        "starters": [
+          "/pt/pratos/palmito-na-brasa",
+          "/pt/pratos/bolinhos-de-mandioca",
+          "/pt/pratos/salada-de-tomate-e-caju"
+        ],
+        "mainsHeading": "Pratos principais",
+        "mains": [
+          "/pt/pratos/peixe-inteiro-na-brasa",
+          "/pt/pratos/paleta-de-porco",
+          "/pt/pratos/moqueca-de-abobora"
+        ],
+        "dessertsHeading": "Sobremesas",
+        "desserts": [
+          "/pt/pratos/banana-assada",
+          "/pt/pratos/torta-de-goiabada",
+          "/pt/pratos/mousse-de-limao"
+        ],
+        "note": "Avise sobre qualquer alergia ao sentar. Quase todos os pratos podem ser feitos sem castanhas, lactose ou glúten se soubermos a tempo."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/menu"
+    },
+    {
+      "url": "/sobre",
+      "type": "AboutPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Sobre o Ervalume",
+        "description": "A cozinha e as pessoas por trás do Ervalume, um restaurante fictício criado para mostrar o que o Viglet Shio constrói.",
+        "image": "asset:/images/kitchen-fire.webp",
+        "imageAlt": "Uma grelha a lenha de tijolo com um peixe inteiro, pimentões vermelhos e abobrinhas sobre brasas acesas, ervas penduradas num varão acima e frigideiras de ferro empilhadas ao lado.",
+        "sections": [
+          "/pt/secoes/kitchen",
+          "/pt/secoes/sample"
+        ],
+        "peopleHeading": "As pessoas",
+        "people": [
+          "/pt/pessoas/lucia-taveira",
+          "/pt/pessoas/caio-brandao"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/about"
+    },
+    {
+      "url": "/reservas",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Reservar uma mesa",
+        "description": "Peça uma mesa no Ervalume: diga o dia, o horário e quantas pessoas vêm.",
+        "image": "asset:/images/table-set.webp",
+        "imageAlt": "Uma mesa redonda para quatro diante de uma janela alta, posta com toalha de linho, pratos, guardanapos dobrados, copos, uma jarra de água e um vidrinho de ervas frescas.",
+        "sections": [
+          "/pt/secoes/booking",
+          "/pt/secoes/booking-form"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/book"
+    },
+    {
+      "url": "/contato",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Contato e horários",
+        "description": "Onde fica o Ervalume, quando abre e como falar com a gente.",
+        "image": "asset:/images/street-front.webp",
+        "imageAlt": "A fachada de um restaurante pequeno numa rua de paralelepípedos, com paredes caiadas, portas verdes de madeira abertas, vasos de ervas e duas mesinhas com cadeiras na calçada.",
+        "sections": [
+          "/pt/secoes/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/contact"
+    },
+    {
+      "url": "/pagina-nao-encontrada",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Página não encontrada",
+        "description": "A página que você pediu não está no site do Ervalume.",
+        "sections": [
+          "/pt/secoes/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/404"
+    },
+    {
+      "url": "/navigation/pt-br/home",
+      "type": "MenuItem",
+      "folder": "/navigation/pt-br",
+      "data": {
+        "label": "Início",
+        "target": [
+          "/inicio"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/navigation/en-us/home"
+    },
+    {
+      "url": "/navigation/pt-br/menu",
+      "type": "MenuItem",
+      "folder": "/navigation/pt-br",
+      "data": {
+        "label": "Cardápio",
+        "target": [
+          "/cardapio"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/navigation/en-us/menu"
+    },
+    {
+      "url": "/navigation/pt-br/about",
+      "type": "MenuItem",
+      "folder": "/navigation/pt-br",
+      "data": {
+        "label": "Sobre",
+        "target": [
+          "/sobre"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/navigation/en-us/about"
+    },
+    {
+      "url": "/navigation/pt-br/book",
+      "type": "MenuItem",
+      "folder": "/navigation/pt-br",
+      "data": {
+        "label": "Reservas",
+        "target": [
+          "/reservas"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/navigation/en-us/book"
+    },
+    {
+      "url": "/navigation/pt-br/contact",
+      "type": "MenuItem",
+      "folder": "/navigation/pt-br",
+      "data": {
+        "label": "Contato",
+        "target": [
+          "/contato"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/navigation/en-us/contact"
+    },
+    {
+      "url": "/navigation/pt-br",
+      "type": "Menu",
+      "folder": "/navigation/pt-br",
+      "data": {
+        "title": "Principal",
+        "items": [
+          "/navigation/pt-br/home",
+          "/navigation/pt-br/menu",
+          "/navigation/pt-br/about",
+          "/navigation/pt-br/book",
+          "/navigation/pt-br/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/navigation/en-us"
+    }
+  ]
+}

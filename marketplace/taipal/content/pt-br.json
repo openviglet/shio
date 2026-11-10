@@ -1,0 +1,566 @@
+{
+  "posts": [
+    {
+      "url": "/projetos/casa-da-encosta",
+      "type": "Case",
+      "folder": "/pt/projetos",
+      "data": {
+        "name": "Casa da Encosta",
+        "summary": "Uma casa térrea de família em concreto aparente, escalonada numa encosta da Serra da Mantiqueira para receber a luz da tarde.",
+        "image": "asset:/images/case-house.webp",
+        "imageAlt": "Uma casa de concreto aparente com tela de ripas de madeira e um beiral profundo, numa encosta de capim acima de serras ao pôr do sol.",
+        "caption": "A fachada oeste no fim de uma tarde de seca, com a tela de ripas meio aberta.",
+        "facts": [
+          {
+            "label": "Cliente",
+            "value": "Uma família de quatro pessoas"
+          },
+          {
+            "label": "Local",
+            "value": "Serra da Mantiqueira, Minas Gerais"
+          },
+          {
+            "label": "Ano",
+            "value": "2025"
+          },
+          {
+            "label": "Área",
+            "value": "210 m²"
+          },
+          {
+            "label": "Escopo",
+            "value": "Arquitetura, interiores e paisagismo"
+          },
+          {
+            "label": "Responsável",
+            "value": "Helena Prado"
+          }
+        ],
+        "body": "<p>A família queria uma casa que pudesse fechar num domingo à noite e reabrir um mês depois sem encontrar umidade. O terreno é uma encosta íngreme de capim com vista para oeste, sobre as serras, que é de onde vêm a luz e o tempo.</p><p>Assentamos a casa em três patamares na encosta, com um cômodo de profundidade, para que todos os ambientes tenham a vista e nenhum precise de corredor. As paredes são de concreto moldado contra tábuas brutas de pinus. As mesmas tábuas, aplainadas e oleadas depois da concretagem, viraram a tela de correr que sombreia o vidro oeste à tarde.</p><p>O beiral tem 1,8 metro a oeste, calculado pelo ângulo do sol às quatro da tarde em janeiro. Em volta da casa, um viveiro da região plantou bromélias e capins nativos que dispensam rega depois do primeiro ano.</p>",
+        "ctaLabel": "Fale com a gente sobre um projeto",
+        "ctaHref": "/contato"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/cases/hillside-house"
+    },
+    {
+      "url": "/projetos/padaria-miolo",
+      "type": "Case",
+      "folder": "/pt/projetos",
+      "data": {
+        "name": "Padaria Miolo",
+        "summary": "Uma padaria de 64 m² montada numa loja estreita e abobadada, construída em sete semanas enquanto os padeiros seguiam vendendo pão por uma janela lateral.",
+        "image": "asset:/images/case-shop.webp",
+        "imageAlt": "Uma padaria estreita com teto abobadado de reboco, piso de granilite, prateleiras de carvalho com pães e um balcão comprido de carvalho sob pendentes de latão.",
+        "caption": "Pão da manhã nas prateleiras de carvalho, uma hora depois de abrir.",
+        "facts": [
+          {
+            "label": "Cliente",
+            "value": "Miolo, padaria de fermentação natural"
+          },
+          {
+            "label": "Local",
+            "value": "Vila Mariana, São Paulo"
+          },
+          {
+            "label": "Ano",
+            "value": "2026"
+          },
+          {
+            "label": "Área",
+            "value": "64 m²"
+          },
+          {
+            "label": "Escopo",
+            "value": "Interiores, marcenaria e fachada"
+          },
+          {
+            "label": "Responsável",
+            "value": "Lia Takahashi"
+          }
+        ],
+        "body": "<p>A Miolo tinha crescido além de um balcão num mercado e encontrou uma loja com quatro metros de largura e dezoito de fundo, com uma abóbada antiga sob várias camadas de tinta. O programa era curto: espaço para fila, pão ao alcance da mão e o forno visível da rua.</p><p>Descascamos a abóbada até o tijolo e a revestimos com reboco de cal, que aceita o vapor do forno sem manchar. O piso é de granilite com lascas de uma pedreira a duas horas dali. Um único balcão de carvalho corre nove metros por um lado, e as prateleiras do outro lado param na altura que o cliente alcança sem pedir ajuda.</p><p>A obra foi dividida em etapas para a padaria nunca fechar. Durante sete semanas os padeiros venderam por uma janela lateral enquanto a frente da loja era construída atrás de um tapume.</p>",
+        "ctaLabel": "Fale com a gente sobre um projeto",
+        "ctaHref": "/contato"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/cases/miolo-bakery"
+    },
+    {
+      "url": "/projetos/apartamento-jardim",
+      "type": "Case",
+      "folder": "/pt/projetos",
+      "data": {
+        "name": "Apartamento Jardim",
+        "summary": "Um apartamento de 1962 aberto em torno do taco original, com uma parede a menos e uma varanda que voltou a ser usada.",
+        "image": "asset:/images/case-apartment.webp",
+        "imageAlt": "Uma sala com taco em espinha de peixe, paredes brancas, um sofá claro, prateleiras de carvalho embutidas e portas abertas para uma varanda cheia de plantas.",
+        "caption": "A sala à tarde, com as portas da varanda abertas.",
+        "facts": [
+          {
+            "label": "Cliente",
+            "value": "Um casal aposentado"
+          },
+          {
+            "label": "Local",
+            "value": "Higienópolis, São Paulo"
+          },
+          {
+            "label": "Ano",
+            "value": "2024"
+          },
+          {
+            "label": "Área",
+            "value": "96 m²"
+          },
+          {
+            "label": "Escopo",
+            "value": "Reforma e marcenaria sob medida"
+          },
+          {
+            "label": "Responsável",
+            "value": "Caio Moreno"
+          }
+        ],
+        "body": "<p>O apartamento tinha sido dividido em cômodos pequenos ao longo de sessenta anos, e a varanda servia de depósito. Os donos queriam luz na sala e lugar para dois mil livros.</p><p>Tiramos a parede entre a cozinha e a sala e mantivemos a viga de aço que ela escondia, pintada do mesmo branco do teto. O taco em espinha de peixe foi levantado, limpo e reassentado, e as peças que faltavam foram cortadas do piso de um armário que removemos.</p><p>Os livros ficam em prateleiras de carvalho embutidas nos antigos vãos de janela. As portas de aço originais da varanda foram consertadas em vez de trocadas, e a varanda agora é onde ficam as plantas e o café da manhã.</p>",
+        "ctaLabel": "Fale com a gente sobre um projeto",
+        "ctaHref": "/contato"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/cases/garden-flat"
+    },
+    {
+      "url": "/pt/secoes/services-intro",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Projetos pequenos, desenhados por quem acompanha a obra",
+        "body": "<p>A Taipal pega cerca de seis projetos por ano: casas, apartamentos, lojas e uma ou outra oficina. Quem desenha o seu projeto é quem está na obra quando ele é construído, e é a mesma pessoa que responde suas mensagens.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/services-intro"
+    },
+    {
+      "url": "/pt/secoes/services-what",
+      "type": "SectionFeatureGrid",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "O que fazemos",
+        "intro": "Quatro tipos de trabalho, muitas vezes no mesmo projeto.",
+        "columns": "2",
+        "features": [
+          {
+            "title": "Arquitetura",
+            "body": "Casas novas e pequenos edifícios, da primeira visita ao terreno à última vistoria.",
+            "icon": ""
+          },
+          {
+            "title": "Interiores",
+            "body": "Ambientes, acabamentos, iluminação e mobiliário, escolhidos com você e desenhados ao centímetro.",
+            "icon": ""
+          },
+          {
+            "title": "Reforma",
+            "body": "Apartamentos e casas antigas abertos, consertados e atualizados sem perder o que era bom.",
+            "icon": ""
+          },
+          {
+            "title": "Lojas e ateliês",
+            "body": "Pequenos espaços comerciais planejados em torno de como o trabalho é feito e de como o cliente circula.",
+            "icon": ""
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/services-what"
+    },
+    {
+      "url": "/pt/secoes/services-how",
+      "type": "SectionFeatureGrid",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como um projeto anda",
+        "intro": "A maioria das casas leva um ano da primeira visita à mudança; uma loja ou um apartamento, de três a cinco meses.",
+        "columns": "4",
+        "features": [
+          {
+            "title": "1. Uma visita",
+            "body": "Visitamos o terreno ou o espaço com você, sem custo, e dizemos com franqueza se somos o estúdio certo.",
+            "icon": ""
+          },
+          {
+            "title": "2. Programa e honorários",
+            "body": "Um programa por escrito, uma faixa de orçamento para a obra e honorários fixos para a nossa parte, combinados antes de qualquer desenho.",
+            "icon": ""
+          },
+          {
+            "title": "3. Projeto",
+            "body": "Primeiro croquis e maquete de papel, depois os desenhos para aprovação e para a obra.",
+            "icon": ""
+          },
+          {
+            "title": "4. Na obra",
+            "body": "Visitamos toda semana, conferimos cada pagamento com o que foi feito e mantemos um diário de obra que você pode ler.",
+            "icon": ""
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/services-how"
+    },
+    {
+      "url": "/pt/secoes/services-fees",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Honorários",
+        "body": "<p>Nossos honorários são fixados no início e escritos no contrato, em geral entre 8% e 12% do custo estimado da obra. São pagos em etapas, conforme os desenhos são entregues, e o acompanhamento de obra é cobrado por mês.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/services-fees"
+    },
+    {
+      "url": "/servicos",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Serviços",
+        "description": "O que a Taipal projeta, como um projeto anda da primeira visita à entrega das chaves e como os honorários são definidos.",
+        "image": "asset:/images/studio-model.webp",
+        "imageAlt": "Uma maquete de papel branco de uma casa de dois pavimentos com telhado de ripas de madeira, sobre uma base de corte verde, ao lado de uma régua de aço e um estilete.",
+        "sections": [
+          "/pt/secoes/services-intro",
+          "/pt/secoes/services-what",
+          "/pt/secoes/services-how",
+          "/pt/secoes/services-fees"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/services"
+    },
+    {
+      "url": "/projetos",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Projetos",
+        "description": "Projetos concluídos pela Taipal, cada um com seus dados e um estudo de caso curto.",
+        "intro": "Três projetos recentes, uma casa, uma loja e um apartamento, cada um contado por quem o conduziu.",
+        "listFolder": "/pt/projetos",
+        "listType": "Case"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/cases"
+    },
+    {
+      "url": "/pt/secoes/team-intro",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Seis pessoas e uma mesa comprida",
+        "body": "<p>Trabalhamos numa única sala, numa antiga oficina de tijolo na Vila Romana. Todo mundo desenha, todo mundo vai à obra, e cada projeto tem um responsável com nome, da primeira visita à entrega.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/team-intro"
+    },
+    {
+      "url": "/pt/secoes/team-helena",
+      "type": "TeamMember",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Helena Prado",
+        "role": "Fundadora e arquiteta",
+        "summary": "Fundou a Taipal em 2011 depois de doze anos projetando casas para outros escritórios.",
+        "image": "asset:/images/team-founder.webp",
+        "imageAlt": "Retrato de uma mulher de cinquenta e poucos anos, cabelo grisalho curto e óculos redondos de aro fino, de camisa de linho escura, junto a uma janela de aço no estúdio.",
+        "body": "<p>Helena se formou em São Paulo e passou doze anos desenhando casas para outros escritórios antes de abrir a Taipal com uma mesa emprestada e um cliente. Ainda conduz a maioria das casas novas e visita cada obra ao menos uma vez por semana.</p><p>Dá aula de projeto uma noite por semana e guarda as maquetes de papel de todos os projetos na prateleira acima da sua mesa.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/team-helena"
+    },
+    {
+      "url": "/pt/secoes/team-people",
+      "type": "SectionFeatureGrid",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "O resto do estúdio",
+        "intro": "",
+        "columns": "3",
+        "features": [
+          {
+            "title": "Caio Moreno, Arquiteto e sócio",
+            "body": "Conduz as reformas e sabe mais sobre taco antigo do que qualquer pessoa deveria.",
+            "icon": ""
+          },
+          {
+            "title": "Lia Takahashi, Designer de interiores",
+            "body": "Conduz as lojas e a marcenaria, e desenha cada balcão em tamanho real antes de ser feito.",
+            "icon": ""
+          },
+          {
+            "title": "Rafael Duarte, Obra e custos",
+            "body": "Confere cada nota com o que foi feito na obra e escreve o diário de obra semanal.",
+            "icon": ""
+          },
+          {
+            "title": "Beatriz Lemos, Arquiteta",
+            "body": "Desenha os executivos e cuida da aprovação dos projetos na prefeitura.",
+            "icon": ""
+          },
+          {
+            "title": "Tomás Rocha, Maquetes e desenhos",
+            "body": "Faz as maquetes de papel e madeira e mantém em ordem o arquivo de desenhos do estúdio.",
+            "icon": ""
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/team-people"
+    },
+    {
+      "url": "/pt/secoes/team-about",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Um estúdio inventado para mostrar um produto real",
+        "body": "<p>A Taipal é inventada. O estúdio, as pessoas, os clientes e os projetos não existem, e nada aqui pode ser contratado. É um site de exemplo do <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, o CMS de código aberto, instalado a partir de um único pacote do marketplace.</p><p>As fotografias foram geradas para o pacote e podem ser redistribuídas com ele. As fontes são Fraunces e Inter, ambas sob a SIL Open Font Licence e servidas pelo próprio site.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/team-about"
+    },
+    {
+      "url": "/equipe",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Equipe",
+        "description": "As seis pessoas da Taipal e quem conduz cada tipo de projeto.",
+        "image": "asset:/images/team-portrait.webp",
+        "imageAlt": "A sala de tijolo do estúdio vista de uma porta: uma mesa comprida de carvalho com maquetes de papel branco e cinco cadeiras de madeira, janelas altas de aço à direita.",
+        "sections": [
+          "/pt/secoes/team-intro",
+          "/pt/secoes/team-helena",
+          "/pt/secoes/team-people",
+          "/pt/secoes/team-about"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/team"
+    },
+    {
+      "url": "/pt/secoes/contact-studio",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "O estúdio",
+        "body": "<p>Rua das Taipas, 214, Vila Romana, São Paulo. Estamos no estúdio das nove às seis nos dias úteis; as visitas são com hora marcada, para sempre ter alguém livre para mostrar as maquetes.</p><p>Escreva para <a href=\"mailto:estudio@taipal.example\">estudio@taipal.example</a> ou use o formulário abaixo. Conte onde fica o projeto, mais ou menos o que você tem em mente e quando gostaria de começar. Respondemos em até três dias úteis.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact-studio"
+    },
+    {
+      "url": "/pt/secoes/contact-form",
+      "type": "SectionForm",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Conte sobre o seu projeto",
+        "intro": "Algumas linhas bastam. Quem conduziria o projeto responde pessoalmente.",
+        "formType": "ProjectEnquiry",
+        "submitLabel": "Enviar",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact-form"
+    },
+    {
+      "url": "/contato",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Contato",
+        "description": "Onde fica o estúdio da Taipal, quando está aberto e como contar sobre um projeto.",
+        "image": "asset:/images/contact-front.webp",
+        "imageAlt": "Um prédio térreo de tijolo com uma porta alta de vidro e uma bicicleta encostada na parede, atrás de uma grade baixa de ferro numa rua arborizada.",
+        "sections": [
+          "/pt/secoes/contact-studio",
+          "/pt/secoes/contact-form"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/contact"
+    },
+    {
+      "url": "/pt/secoes/not-found",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Esta página não está nos nossos desenhos",
+        "body": "<p>A página que você pediu não está aqui.</p><p>Recomece pela <a href=\"/inicio\">página inicial</a> ou veja os <a href=\"/projetos\">projetos</a>.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/not-found"
+    },
+    {
+      "url": "/pagina-nao-encontrada",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Página não encontrada",
+        "description": "A página que você pediu não está no site da Taipal.",
+        "sections": [
+          "/pt/secoes/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/404"
+    },
+    {
+      "url": "/inicio",
+      "type": "StudioHome",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Arquitetura e interiores",
+        "description": "A Taipal é um pequeno estúdio de arquitetura e interiores em São Paulo: casas, apartamentos e lojas, desenhados e construídos com cuidado.",
+        "heading": "Casas, apartamentos e lojas, desenhados para serem vividos",
+        "intro": "Um pequeno estúdio de arquitetura e interiores em São Paulo. Seis pessoas, cerca de seis projetos por ano e a mesma pessoa do primeiro croqui à entrega das chaves.",
+        "image": "asset:/images/home-studio.webp",
+        "imageAlt": "Uma mesa comprida de carvalho com maquetes de papel branco, amostras de pedra e desenhos enrolados junto a janelas altas de aço, num estúdio de tijolo ao sol da manhã.",
+        "ctaLabel": "Ver os projetos",
+        "ctaHref": "/projetos",
+        "casesHeading": "Projetos recentes",
+        "cases": [
+          "/projetos/casa-da-encosta",
+          "/projetos/padaria-miolo",
+          "/projetos/apartamento-jardim"
+        ],
+        "servicesHeading": "O que fazemos",
+        "services": [
+          "/pt/secoes/services-what"
+        ],
+        "approachHeading": "Como trabalhamos",
+        "approach": "<p>Todo projeto começa com uma visita e uma maquete de papel. Maquete é barata, rápida de mudar e mais fácil de ler que qualquer desenho, então o cliente vê os ambientes antes de decidir.</p><p>Preferimos materiais que envelhecem bem e podem ser consertados: tijolo, cal, madeira, granilite, aço. Mantemos o que há de bom num prédio antigo e escrevemos cada decisão, para que a obra e o cliente leiam a mesma coisa. <a href=\"/servicos\">Veja como um projeto anda</a>.</p>",
+        "contactHeading": "Tem um projeto em mente?",
+        "contactText": "Conte onde fica e o que você tem em mente. A primeira visita é gratuita, e diremos com franqueza se somos o estúdio certo.",
+        "contactLabel": "Fale com a gente",
+        "contactHref": "/contato"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/"
+    },
+    {
+      "url": "/menu/pt-br/home",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Início",
+        "target": [
+          "/inicio"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/services",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Serviços",
+        "target": [
+          "/servicos"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/cases",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Projetos",
+        "target": [
+          "/projetos"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/team",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Equipe",
+        "target": [
+          "/equipe"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/contact",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Contato",
+        "target": [
+          "/contato"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br",
+      "type": "Menu",
+      "folder": "/menu/pt-br",
+      "data": {
+        "title": "Principal",
+        "items": [
+          "/menu/pt-br/home",
+          "/menu/pt-br/services",
+          "/menu/pt-br/cases",
+          "/menu/pt-br/team",
+          "/menu/pt-br/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/menu/en-us"
+    },
+    {
+      "url": "/pt/secoes/strings",
+      "type": "StringTable",
+      "folder": "/pt/secoes",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Pular para o conteúdo\nnav = Navegação principal\nlangs = Outros idiomas\nstudio = Arquitetura e interiores\nhomeHref = /inicio\nfooter = Um estúdio de arquitetura fictício, feito para mostrar o que o Viglet Shio constrói.\nname = Seu nome\nemail = E-mail\nmessage = Seu projeto\nsend = Enviar\nhoneypot = Deixe este campo vazio"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/strings"
+    }
+  ]
+}

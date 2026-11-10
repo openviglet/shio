@@ -20,7 +20,6 @@
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
 - ⏳ **SH1430** (deps: a recorded session per non-Claude MCP client on a clean instance) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
-- ⏳ **SH1431** (deps: photography for three more sites) **The Marketplace shows English descriptions on a Portuguese console and only one finished site** — The public catalogue carries no other language yet, and no restaurant, clinic or office site exists. → §XCIX.6
 
 ## Priority
 
@@ -43,13 +42,6 @@
 - **Three proved MCP clients, each with a copy-paste setup** The connect dialog offers
   at least three clients, each proved by a recorded session against a clean instance,
   and the docs page states the version and date each was last proved.
-
-## Done when — SH1431
-
-- **Catalogue packages localized, and four finished sites install cleanly** A pt-BR
-  console lists catalogue-installed packages in Portuguese through a catalogue version
-  released instances never read, and a restaurant, a clinic and an office site join
-  Quilhara, each passing the showcase matrix.
 
 ## Non-goals (do NOT add as tasks)
 

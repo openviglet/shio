@@ -59,8 +59,14 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "shio.marketplace")
 public class ShMarketplaceProperties {
 
-    /** The catalogue this project publishes, read unless an operator names another or turns it off. */
-    public static final String DEFAULT_URL = "https://shio.viglet.org/marketplace/marketplace.json";
+    /**
+     * The catalogue this project publishes, read unless an operator names another or turns it off.
+     *
+     * <p>SH1431 — the v2 catalogue, which carries each package's other languages ({@code i18n}) in
+     * its entries and in the manifests inside its zips. An instance released before reads
+     * {@code marketplace.json} beside it, whose bytes never carry the key it would refuse.</p>
+     */
+    public static final String DEFAULT_URL = "https://shio.viglet.org/marketplace/v2/marketplace.json";
 
     /**
      * Whether this instance reads a remote catalogue at all.

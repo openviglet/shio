@@ -1,0 +1,93 @@
+{
+  "formatVersion": 1,
+  "name": "orvalha",
+  "title": "Orvalha clinic sample",
+  "version": "1.0.0",
+  "description": "A finished bilingual sample site for a fictional neighbourhood health clinic: home, services, team, appointment request and contact pages in English and Brazilian Portuguese, with a designed theme, self-hosted fonts and its own photography. The appointment form asks for contact details and a preferred time only. Apply it to a new site to see what Viglet Shio renders.",
+  "i18n": {
+    "pt-BR": {
+      "title": "Exemplo Clínica Orvalha",
+      "description": "Um site de exemplo pronto e bilíngue para uma clínica de bairro fictícia: páginas de início, especialidades, equipe, pedido de agendamento e contato em português e inglês, com tema desenhado, fontes próprias e fotografia original. O formulário de agendamento pede só dados de contato e um horário de preferência. Aplique em um site novo para ver o que o Viglet Shio desenha."
+    }
+  },
+  "params": {
+    "type": "object",
+    "properties": {}
+  },
+  "postTypes": [
+    "post-types/ClinicHome.json",
+    "post-types/Listing.json",
+    "post-types/Specialty.json",
+    "post-types/Practitioner.json",
+    "post-types/AppointmentRequest.json",
+    "post-types/InfoPage.json",
+    "post-types/Menu.json",
+    "post-types/MenuItem.json",
+    "post-types/SectionForm.json",
+    "post-types/SectionRichText.json",
+    "post-types/StringTable.json"
+  ],
+  "content": [
+    "content/theme.json",
+    "content/en-us.json",
+    "content/pt-br.json"
+  ],
+  "assets": [
+    {
+      "path": "assets/images/home-reception.webp",
+      "alt": "A receptionist at a light wood counter greeting a visitor in a bright reception with plants and tall windows."
+    },
+    {
+      "path": "assets/images/services-consulting.webp",
+      "alt": "An empty consulting room with a light wood desk, two chairs and an examination couch by a window."
+    },
+    {
+      "path": "assets/images/service-physio.webp",
+      "alt": "An empty physiotherapy room with a treatment table, folded towels, resistance bands on a hook and a wooden wall bar under a window."
+    },
+    {
+      "path": "assets/images/team-helena.webp",
+      "alt": "A smiling woman in her fifties with short grey hair, in a white coat over a green blouse, a stethoscope at her neck, in a bright corridor."
+    },
+    {
+      "path": "assets/images/team-rafael.webp",
+      "alt": "A smiling man in his thirties with short dark hair and a short beard, in a navy polo shirt, in front of a wooden wall bar."
+    },
+    {
+      "path": "assets/images/team-corridor.webp",
+      "alt": "Three clinicians, two of them in white coats, talking together in a bright clinic corridor."
+    },
+    {
+      "path": "assets/images/waiting-area.webp",
+      "alt": "A calm waiting area with green armchairs, a low wooden table with a water jug, plants and a large sunny window."
+    },
+    {
+      "path": "assets/images/building-front.webp",
+      "alt": "The front of a white single-storey clinic building with a wooden pergola, a ramp and steps to a glass door, on a tree-lined street."
+    },
+    "assets/fonts/plus-jakarta-sans-variable.woff2",
+    "assets/fonts/inter-400.woff2",
+    "assets/fonts/inter-600.woff2"
+  ],
+  "forms": {
+    "folder": "/enquiries",
+    "types": [
+      "AppointmentRequest"
+    ]
+  },
+  "verify": {
+    "posts": [
+      "/",
+      "/inicio",
+      "/services",
+      "/especialidades",
+      "/team",
+      "/equipe",
+      "/appointments",
+      "/agendamento",
+      "/contact",
+      "/contato"
+    ],
+    "checks": "content"
+  }
+}

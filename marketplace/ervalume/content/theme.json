@@ -1,0 +1,118 @@
+{
+  "folders": [
+    {
+      "path": "/theme",
+      "acl": [
+        {
+          "group": "Administrator",
+          "permission": "WRITE"
+        }
+      ]
+    },
+    {
+      "path": "/navigation"
+    },
+    {
+      "path": "/navigation/en-us"
+    },
+    {
+      "path": "/navigation/pt-br"
+    },
+    {
+      "path": "/en"
+    },
+    {
+      "path": "/pt"
+    },
+    {
+      "path": "/en/pages"
+    },
+    {
+      "path": "/en/sections"
+    },
+    {
+      "path": "/en/dishes"
+    },
+    {
+      "path": "/en/people"
+    },
+    {
+      "path": "/pt/paginas"
+    },
+    {
+      "path": "/pt/secoes"
+    },
+    {
+      "path": "/pt/pratos"
+    },
+    {
+      "path": "/pt/pessoas"
+    },
+    {
+      "path": "/enquiries"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/theme/ervalume",
+      "type": "Theme",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Ervalume theme",
+        "CSS": "@font-face { font-family:\"Fraunces\"; font-weight:600; font-display:swap; src:url(\"/fonts/fraunces-600.woff2\") format(\"woff2\"); }\n@font-face { font-family:\"Plus Jakarta Sans\"; font-weight:200 800; font-display:swap; src:url(\"/fonts/plus-jakarta-sans-wght.woff2\") format(\"woff2\"); }\n:root { --char:#2B2620; --olive:#3E4A2C; --leaf:#6E8A3A; --ember:#A8401E; --ember-hi:#C2552F; --cream:#FBF6EC; --linen:#F2E7D3; --ink:#2B2620; --muted:#5F5447; --rule:#E3D7C3;\n  --display:\"Fraunces\", Georgia, serif; --body:\"Plus Jakarta Sans\", system-ui, sans-serif; }\n* { box-sizing:border-box; }\nbody { margin:0; background:var(--cream); color:var(--ink); font:17px/1.7 var(--body); }\nimg { display:block; max-width:100%; height:auto; }\na { color:var(--ember); text-decoration-color:var(--leaf); text-underline-offset:.2em; }\na:hover { text-decoration-thickness:2px; }\nh1, h2, h3 { font-family:var(--display); font-weight:600; color:var(--olive); line-height:1.15; margin:0 0 .5em; letter-spacing:-.01em; }\nh1 { font-size:clamp(2.2rem, 4.4vw, 3.4rem); }\nh2 { font-size:clamp(1.5rem, 2.6vw, 2.05rem); }\nh3 { font-size:1.2rem; }\n.e-wrap { max-width:70rem; margin:0 auto; padding:0 1.25rem; }\n.e-narrow { max-width:46rem; }\n.e-skip { position:absolute; left:1rem; top:-3rem; z-index:10; background:var(--linen); color:var(--ink); padding:.5rem 1rem; border-radius:.3rem; font-weight:700; }\n.e-skip:focus { top:1rem; }\n.e-header { background:var(--olive); color:var(--cream); border-bottom:4px solid var(--ember); }\n.e-header .e-wrap { display:flex; flex-wrap:wrap; align-items:center; gap:1rem 2rem; padding-top:1rem; padding-bottom:1rem; }\n.e-brand { font-family:var(--display); font-size:1.6rem; color:var(--cream); text-decoration:none; letter-spacing:.01em; }\n.e-brand span { color:#E9B48A; }\n.e-nav ul, .e-langs { display:flex; flex-wrap:wrap; gap:.25rem 1.4rem; list-style:none; margin:0; padding:0; }\n.e-nav a, .e-langs a { color:var(--cream); text-decoration:none; font-weight:600; }\n.e-nav a:hover, .e-langs a:hover { text-decoration:underline; text-decoration-color:#E9B48A; }\n.e-nav a[aria-current=page] { text-decoration:underline; text-decoration-color:#E9B48A; text-decoration-thickness:2px; text-underline-offset:.4em; }\n.e-nav a.is-ancestor { text-decoration:underline; text-decoration-color:rgba(251,246,236,.45); text-underline-offset:.4em; }\n.e-langs { margin-left:auto; font-size:.85rem; }\n.e-langs a { text-transform:uppercase; letter-spacing:.08em; border:1px solid rgba(251,246,236,.5); border-radius:999px; padding:.15rem .65rem; }\n.e-hero { position:relative; background:var(--char); color:#fff; }\n.e-hero img { width:100%; aspect-ratio:16/7; object-fit:cover; opacity:.78; }\n.e-hero .e-hero-text { position:absolute; inset:auto 0 0 0; padding:2.75rem 0; background:linear-gradient(transparent, rgba(30,24,18,.9)); }\n.e-hero h1 { color:#fff; max-width:42rem; }\n.e-hero p { max-width:36rem; font-size:1.15rem; margin:0 0 1.25rem; }\n.e-actions { display:flex; flex-wrap:wrap; gap:.75rem; }\n.e-button { display:inline-block; background:var(--ember); color:#fff; font-weight:700; text-decoration:none; padding:.75rem 1.4rem; border-radius:999px; }\n.e-button:hover { background:var(--ember-hi); }\n.e-button-quiet { background:transparent; color:#fff; border:2px solid rgba(255,255,255,.8); }\n.e-button-quiet:hover { background:rgba(255,255,255,.12); }\nbutton.e-button { border:0; cursor:pointer; font:inherit; font-weight:700; }\n.e-section { padding:3.5rem 0; }\n.e-section + .e-section { border-top:1px solid var(--rule); }\n.e-band { background:var(--linen); }\n.e-lead { font-size:1.2rem; color:var(--muted); max-width:44rem; }\n.e-cards { display:grid; gap:1.75rem; grid-template-columns:repeat(auto-fill, minmax(17rem, 1fr)); list-style:none; margin:2rem 0 0; padding:0; }\n.e-cards-row { grid-template-columns:repeat(auto-fit, minmax(17rem, 1fr)); }\n.e-card { background:#fff; border:1px solid var(--rule); border-radius:.6rem; overflow:hidden; display:flex; flex-direction:column; }\n.e-card img { aspect-ratio:3/2; object-fit:cover; width:100%; }\n.e-card-body { padding:1.1rem 1.25rem 1.4rem; }\n.e-card h3 { margin-bottom:.35rem; }\n.e-card p { margin:0 0 .5rem; color:var(--muted); }\n.e-price { font-weight:700; color:var(--ember); white-space:nowrap; }\n.e-card .e-price { color:var(--ember); margin:0; }\n.e-split { display:grid; gap:2.5rem; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); align-items:center; }\n.e-split img { border-radius:.6rem; }\n.e-hours { display:grid; grid-template-columns:auto 1fr; gap:.5rem 1.5rem; margin:1.25rem 0 0; padding:1.25rem 1.5rem; max-width:34rem; background:#fff; border:1px solid var(--rule); border-left:4px solid var(--leaf); border-radius:.4rem; }\n.e-hours dt { font-weight:700; color:var(--olive); }\n.e-hours dd { margin:0; }\n.e-figure { margin:0 0 2rem; }\n.e-figure img { border-radius:.6rem; }\n.e-prose p, .e-prose ul, .e-prose dl { margin:0 0 1.1rem; }\n.e-prose dl { display:grid; grid-template-columns:auto 1fr; gap:.35rem 1.25rem; }\n.e-prose dt { font-weight:700; color:var(--olive); }\n.e-prose dd { margin:0; }\n.e-page section + section { margin-top:2.5rem; }\n.e-course { margin-top:2.75rem; }\n.e-dishes { list-style:none; margin:1rem 0 0; padding:0; }\n.e-dish { display:grid; grid-template-columns:1fr auto; gap:.25rem 1.5rem; align-items:start; padding:1.1rem 0; border-bottom:1px dashed var(--rule); }\n.e-dish-pictured { grid-template-columns:7rem 1fr auto; }\n.e-dish img { width:7rem; height:7rem; object-fit:cover; border-radius:.5rem; }\n.e-dish h3 { margin:0 0 .2rem; }\n.e-dish p { margin:0; color:var(--muted); }\n.e-dish .e-dish-note { font-size:.9rem; color:var(--leaf); font-weight:600; margin-top:.25rem; }\n.e-dish .e-price { color:var(--ember); font-size:1.05rem; }\n.e-note { margin-top:2.5rem; padding:1rem 1.25rem; background:var(--linen); border-radius:.4rem; color:var(--muted); }\n.e-people { display:grid; gap:1.75rem; grid-template-columns:repeat(auto-fill, minmax(16rem, 1fr)); list-style:none; margin:1.5rem 0 0; padding:0; }\n.e-person img { width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:.6rem; margin-bottom:.9rem; }\n.e-person h3 { margin-bottom:.15rem; }\n.e-role { margin:0 0 .5rem; color:var(--leaf); font-weight:700; }\n.e-person p { color:var(--muted); }\n.e-form { display:grid; gap:1rem; max-width:36rem; margin-top:1.5rem; }\n.e-field { margin:0; }\n.e-field label { display:block; font-weight:700; margin-bottom:.3rem; }\n.e-field input, .e-field textarea { box-sizing:border-box; width:100%; padding:.65rem .8rem; font:inherit; color:var(--ink); background:#fff; border:1px solid var(--rule); border-radius:.4rem; }\n.e-field textarea { min-height:7rem; }\n.e-footer { background:var(--char); color:var(--linen); padding:2.5rem 0; margin-top:3rem; font-size:.95rem; }\n.e-footer a { color:#fff; }\n.e-footer .e-wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; }\n.e-footer p { margin:0; }\n@media (max-width: 48rem) { .e-split { grid-template-columns:1fr; } .e-hero img { aspect-ratio:4/3; opacity:1; } .e-hero .e-hero-text { position:static; background:var(--char); padding:1.75rem 0 2rem; } .e-langs { margin-left:0; } .e-dish-pictured { grid-template-columns:5rem 1fr; } .e-dish-pictured .e-price { grid-column:2; } .e-dish img { width:5rem; height:5rem; } }\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-home",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Ervalume home",
+        "THEME": "Ervalume theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Ervalume</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"e-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"e-header\"><div class=\"e-wrap\">\n<a class=\"e-brand\" href=\"/\">Erva<span>lume</span></a>\n<nav class=\"e-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"e-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<div class=\"e-hero\">\n{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"100vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}{{/if}}\n<div class=\"e-hero-text\"><div class=\"e-wrap\">\n<h1 sh-field=\"heading\">{{heading}}</h1>\n{{#if intro}}<p sh-field=\"intro\">{{intro}}</p>{{/if}}\n<p class=\"e-actions\">{{#if ctaLabel}}<a class=\"e-button\" sh-field=\"ctaLabel\" sh-field-attr=\"ctaHref:href\" href=\"{{ctaHref}}\">{{ctaLabel}}</a>{{/if}}{{#if secondaryLabel}}<a class=\"e-button e-button-quiet\" sh-field=\"secondaryLabel\" sh-field-attr=\"secondaryHref:href\" href=\"{{secondaryHref}}\">{{secondaryLabel}}</a>{{/if}}</p>\n</div></div>\n</div>\n<section class=\"e-section\"><div class=\"e-wrap\">\n<h2 sh-field=\"dishesHeading\">{{dishesHeading}}</h2>\n<ul class=\"e-cards e-cards-row\">{{#getRelation dishes}}<li class=\"e-card\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div class=\"e-card-body\"><h3>{{title}}</h3>{{#if summary}}<p>{{summary}}</p>{{/if}}<p class=\"e-price\">{{price}}</p></div></li>{{/getRelation}}</ul>\n</div></section>\n<section class=\"e-section e-band\"><div class=\"e-wrap e-split\">\n<div>\n<h2 sh-field=\"storyHeading\">{{storyHeading}}</h2>\n{{#if storyText}}<p class=\"e-lead\" sh-field=\"storyText\">{{storyText}}</p>{{/if}}\n{{#if storyLinkLabel}}<p><a sh-field=\"storyLinkLabel\" sh-field-attr=\"storyLinkHref:href\" href=\"{{storyLinkHref}}\">{{storyLinkLabel}}</a></p>{{/if}}\n</div>\n{{#if storyImage}}{{#image storyImage}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 50vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../storyImageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}\n</div></section>\n<section class=\"e-section\"><div class=\"e-wrap\">\n<h2 sh-field=\"hoursHeading\">{{hoursHeading}}</h2>\n{{#if hours}}<dl class=\"e-hours\">{{#each hours}}<dt data-shio-row=\"hours\" sh-field=\"hours.{{@index}}.label\">{{label}}</dt><dd sh-field=\"hours.{{@index}}.value\">{{value}}</dd>{{/each}}</dl>{{/if}}\n</div></section>\n</main>\n<footer class=\"e-footer\"><div class=\"e-wrap\">\n<p>Ervalume</p>\n<p>{{t \"address\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-menu",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Ervalume menu",
+        "THEME": "Ervalume theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Ervalume</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"e-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"e-header\"><div class=\"e-wrap\">\n<a class=\"e-brand\" href=\"/\">Erva<span>lume</span></a>\n<nav class=\"e-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"e-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<article class=\"e-section\"><div class=\"e-wrap e-narrow\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if intro}}<p class=\"e-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n{{#if starters}}<section class=\"e-course\">\n<h2 sh-field=\"startersHeading\">{{startersHeading}}</h2>\n<ul class=\"e-dishes\">{{#getRelation starters}}<li class=\"e-dish{{#if image}} e-dish-pictured{{/if}}\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"7rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div><h3>{{title}}</h3>{{#if summary}}<p>{{summary}}</p>{{/if}}{{#if notes}}<p class=\"e-dish-note\">{{notes}}</p>{{/if}}</div><p class=\"e-price\">{{price}}</p></li>{{/getRelation}}</ul>\n</section>{{/if}}\n{{#if mains}}<section class=\"e-course\">\n<h2 sh-field=\"mainsHeading\">{{mainsHeading}}</h2>\n<ul class=\"e-dishes\">{{#getRelation mains}}<li class=\"e-dish{{#if image}} e-dish-pictured{{/if}}\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"7rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div><h3>{{title}}</h3>{{#if summary}}<p>{{summary}}</p>{{/if}}{{#if notes}}<p class=\"e-dish-note\">{{notes}}</p>{{/if}}</div><p class=\"e-price\">{{price}}</p></li>{{/getRelation}}</ul>\n</section>{{/if}}\n{{#if desserts}}<section class=\"e-course\">\n<h2 sh-field=\"dessertsHeading\">{{dessertsHeading}}</h2>\n<ul class=\"e-dishes\">{{#getRelation desserts}}<li class=\"e-dish{{#if image}} e-dish-pictured{{/if}}\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"7rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div><h3>{{title}}</h3>{{#if summary}}<p>{{summary}}</p>{{/if}}{{#if notes}}<p class=\"e-dish-note\">{{notes}}</p>{{/if}}</div><p class=\"e-price\">{{price}}</p></li>{{/getRelation}}</ul>\n</section>{{/if}}\n{{#if note}}<p class=\"e-note\" sh-field=\"note\">{{note}}</p>{{/if}}\n</div></article>\n</main>\n<footer class=\"e-footer\"><div class=\"e-wrap\">\n<p>Ervalume</p>\n<p>{{t \"address\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-about",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Ervalume about",
+        "THEME": "Ervalume theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Ervalume</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"e-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"e-header\"><div class=\"e-wrap\">\n<a class=\"e-brand\" href=\"/\">Erva<span>lume</span></a>\n<nav class=\"e-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"e-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<article class=\"e-section\"><div class=\"e-wrap e-narrow e-page\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if image}}<figure class=\"e-figure\">{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 46rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}</figure>{{/if}}\n{{#getRelation sections}}<section sh-post=\"{{id}}\" data-shio-section=\"{{type}}\">\n{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if body}}<div class=\"e-prose\" sh-field=\"body\">{{{body}}}</div>{{/if}}\n</section>{{/getRelation}}\n</div></article>\n{{#if people}}<section class=\"e-section e-band\"><div class=\"e-wrap\">\n<h2 sh-field=\"peopleHeading\">{{peopleHeading}}</h2>\n<ul class=\"e-people\">{{#getRelation people}}<li class=\"e-person\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<h3>{{title}}</h3>{{#if role}}<p class=\"e-role\">{{role}}</p>{{/if}}{{#if summary}}<p>{{summary}}</p>{{/if}}</li>{{/getRelation}}</ul>\n</div></section>{{/if}}\n</main>\n<footer class=\"e-footer\"><div class=\"e-wrap\">\n<p>Ervalume</p>\n<p>{{t \"address\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-page",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Ervalume page",
+        "THEME": "Ervalume theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Ervalume</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"e-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"e-header\"><div class=\"e-wrap\">\n<a class=\"e-brand\" href=\"/\">Erva<span>lume</span></a>\n<nav class=\"e-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"e-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<article class=\"e-section\"><div class=\"e-wrap e-narrow e-page\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if image}}<figure class=\"e-figure\">{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 46rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}</figure>{{/if}}\n{{#getRelation sections}}<section sh-post=\"{{id}}\" data-shio-section=\"{{type}}\">\n{{#if formType}}{{#if formToken}}{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if intro}}<p class=\"e-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n<form class=\"e-form\" method=\"post\" action=\"{{site.formAction}}\"><input type=\"hidden\" sh-field-attr=\"formType:value\" name=\"{{site.formTypeField}}\" value=\"{{formType}}\"><input type=\"hidden\" sh-field-attr=\"formToken:value\" name=\"{{site.formTokenField}}\" value=\"{{formToken}}\">{{#form type=formType}}<p class=\"e-field\"><label for=\"e-form-{{name}}\">{{t name}}</label>{{#if multiline}}<textarea id=\"e-form-{{name}}\" name=\"{{name}}\"{{#if required}} required{{/if}}></textarea>{{else}}<input id=\"e-form-{{name}}\" type=\"{{input}}\" name=\"{{name}}\"{{#if required}} required{{/if}}>{{/if}}</p>{{/form}}<input type=\"text\" name=\"{{site.formHoneypot}}\" value=\"\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" aria-label=\"{{t 'honeypot'}}\" style=\"position:absolute;left:-9999px\"><p><button class=\"e-button\" type=\"submit\" sh-field=\"submitLabel\">{{#if submitLabel}}{{submitLabel}}{{else}}{{t \"send\"}}{{/if}}</button></p></form>\n{{/if}}{{else}}{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if body}}<div class=\"e-prose\" sh-field=\"body\">{{{body}}}</div>{{/if}}\n{{/if}}\n</section>{{/getRelation}}\n</div></article>\n</main>\n<footer class=\"e-footer\"><div class=\"e-wrap\">\n<p>Ervalume</p>\n<p>{{t \"address\"}}</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    }
+  ],
+  "postTypeLayout": {
+    "RestaurantHome": "Ervalume home",
+    "FoodMenu": "Ervalume menu",
+    "AboutPage": "Ervalume about",
+    "InfoPage": "Ervalume page"
+  },
+  "pageType": "InfoPage"
+}

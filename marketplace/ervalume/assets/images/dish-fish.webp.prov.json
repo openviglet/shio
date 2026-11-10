@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 162664,
+    "path": "assets/images/dish-fish.webp",
+    "sha256": "ffca25104b9668b853e322b07f97adbbc7763f55800f924bf348db51ea9c5c26"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/dish-fish.png",
+      "role": "picture",
+      "sha256": "c5a59cf9a2987d050a4757a66b9090f9e7eaad8c8f41ef5810dfac9a7bc593a6"
+    },
+    {
+      "path": "polyweave.copies.toml",
+      "role": "table",
+      "sha256": "ae302e1f2d703a10b1b6419639b621e35e1bd68a390213d3c5993650c60a9ef2"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:43:19Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

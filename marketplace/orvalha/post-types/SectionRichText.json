@@ -1,0 +1,34 @@
+{
+  "name": "SectionRichText",
+  "title": "Rich Text Section",
+  "namePlural": "Rich Text Sections",
+  "description": "Prose. The escape hatch that keeps the other sections from growing fields they do not need.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "heading",
+      "label": "Heading",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "body",
+      "label": "Body",
+      "description": null,
+      "widget": "HTML Editor",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

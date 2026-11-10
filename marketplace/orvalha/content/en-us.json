@@ -1,0 +1,449 @@
+{
+  "posts": [
+    {
+      "url": "/en/specialties/family-medicine",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Family medicine",
+        "summary": "Check-ups and ongoing care for adults, and the first appointment to book when you are not sure whom to see.",
+        "image": "asset:/images/services-consulting.webp",
+        "imageAlt": "An empty consulting room with a light wood desk, two chairs and an examination couch by a window."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/specialties/paediatrics",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Paediatrics",
+        "summary": "Appointments for babies, children and teenagers, in a consulting room set aside for younger patients."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/specialties/cardiology",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Cardiology",
+        "summary": "Consultations with a cardiologist. When the doctor asks for tests, the front desk books them at a partner laboratory."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/specialties/dermatology",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Dermatology",
+        "summary": "Consultations about skin, hair and nails, for adults and children."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/specialties/physiotherapy",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Physiotherapy",
+        "summary": "Sessions of about fifty minutes in the therapy room on the ground floor, planned with you at the first visit.",
+        "image": "asset:/images/service-physio.webp",
+        "imageAlt": "An empty physiotherapy room with a treatment table, folded towels, resistance bands on a hook and a wooden wall bar under a window."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/specialties/nutrition",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Nutrition",
+        "summary": "Consultations with a nutritionist to plan meals that fit your routine and your budget."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/specialties/psychology",
+      "type": "Specialty",
+      "folder": "/en/specialties",
+      "data": {
+        "name": "Psychology",
+        "summary": "Weekly sessions with a psychologist, in person or by video call."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/helena-duarte",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Dr Helena Duarte",
+        "role": "Family physician and clinical director",
+        "summary": "Has looked after families in this neighbourhood for twenty years and coordinates the clinic's team.",
+        "image": "asset:/images/team-helena.webp",
+        "imageAlt": "A smiling woman in her fifties with short grey hair, in a white coat over a green blouse, a stethoscope at her neck, in a bright corridor."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/caio-nogueira",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Dr Caio Nogueira",
+        "role": "Cardiologist",
+        "summary": "Sees patients on Tuesday and Thursday afternoons and explains every test before he asks for it."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/livia-okamoto",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Dr Lívia Okamoto",
+        "role": "Paediatrician",
+        "summary": "Follows children from their first weeks to their teens, and keeps a shelf of picture books in her room."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/bianca-ferraz",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Dr Bianca Ferraz",
+        "role": "Dermatologist",
+        "summary": "Sees adults and children on Monday and Wednesday mornings."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/rafael-moura",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Rafael Moura",
+        "role": "Physiotherapist",
+        "summary": "Plans each course of sessions with the patient and writes the home exercises down on paper.",
+        "image": "asset:/images/team-rafael.webp",
+        "imageAlt": "A smiling man in his thirties with short dark hair and a short beard, in a navy polo shirt, in front of a wooden wall bar."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/julia-andrade",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Júlia Andrade",
+        "role": "Nutritionist",
+        "summary": "Works from what you already cook and eat, and plans changes one week at a time."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/team/clara-sampaio",
+      "type": "Practitioner",
+      "folder": "/en/team",
+      "data": {
+        "name": "Clara Sampaio",
+        "role": "Psychologist",
+        "summary": "Sees adults and adolescents, in person at the clinic or by video call."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/",
+      "type": "ClinicHome",
+      "folder": "/en/pages",
+      "data": {
+        "title": "A neighbourhood clinic",
+        "description": "Orvalha is a small outpatient clinic with seven specialties under one roof: family medicine, paediatrics, cardiology, dermatology, physiotherapy, nutrition and psychology.",
+        "heading": "Unhurried care, close to home",
+        "intro": "Seven specialties under one roof, a front desk that answers the same day, and appointments that start on time.",
+        "image": "asset:/images/home-reception.webp",
+        "imageAlt": "A receptionist at a light wood counter greeting a visitor in a bright reception with plants and tall windows.",
+        "ctaLabel": "Request an appointment",
+        "ctaHref": "/appointments",
+        "servicesHeading": "What we offer",
+        "services": [
+          "/en/specialties/family-medicine",
+          "/en/specialties/paediatrics",
+          "/en/specialties/physiotherapy"
+        ],
+        "servicesLinkLabel": "See every specialty",
+        "servicesLinkHref": "/services",
+        "teamHeading": "Some of the team",
+        "team": [
+          "/en/team/helena-duarte",
+          "/en/team/rafael-moura",
+          "/en/team/livia-okamoto"
+        ],
+        "teamLinkLabel": "Meet the whole team",
+        "teamLinkHref": "/team",
+        "visitHeading": "Your first visit",
+        "visitBody": "<p>Arrive ten minutes early and bring an identity document and any recent test results. The front desk opens your record while you wait.</p><p>The waiting area is on the ground floor, with water, a quiet corner for children and step-free access from the street.</p>",
+        "visitImage": "asset:/images/waiting-area.webp",
+        "visitImageAlt": "A calm waiting area with green armchairs, a low wooden table with a water jug, plants and a large sunny window."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/services",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Services",
+        "description": "The specialties at Orvalha, each described in a sentence or two.",
+        "intro": "Every specialty is booked the same way: through the appointment form or at the front desk.",
+        "listFolder": "/en/specialties",
+        "listType": "Specialty"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/team",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Our team",
+        "description": "The doctors and therapists who see patients at Orvalha.",
+        "intro": "Doctors and therapists who work together and share one record for each patient.",
+        "image": "asset:/images/team-corridor.webp",
+        "imageAlt": "Three clinicians, two of them in white coats, talking together in a bright clinic corridor.",
+        "listFolder": "/en/team",
+        "listType": "Practitioner"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/appointment-how",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How it works",
+        "body": "<p>Tell us how to reach you and when you would prefer to come. The front desk calls or writes back within one working day to offer a time and the right specialty.</p><p>Please do not write about symptoms or health conditions here: you will talk about them in the appointment. In an emergency, call 192 or go to the nearest emergency department.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact-address",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Address and hours",
+        "body": "<p>Rua das Paineiras, 214, Jardim do Orvalho.</p><ul><li>Monday to Friday: 7:30 to 19:00</li><li>Saturday: 8:00 to 12:00</li><li>Sundays and public holidays: closed</li></ul><p>Write to <a href=\"mailto:contact@orvalha.example\">contact@orvalha.example</a>. We answer within one working day.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact-arrive",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How to get here",
+        "body": "<ul><li>By bus: the lines that stop at Praça das Paineiras leave you two minutes away on foot.</li><li>By car: four parking spaces behind the building, one of them reserved for people with reduced mobility.</li><li>By bicycle: there is a rack beside the entrance.</li></ul><p>The entrance has a ramp beside the steps, and a lift goes to the first floor.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact-about",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "A clinic made up for a sample",
+        "body": "<p>Orvalha is invented. The clinic, its address and every person on this site are fictional, and no appointment made here is real. It is a sample site for <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, the open-source CMS, installed from one marketplace package.</p><p>The photographs were generated for the package. The fonts are Plus Jakarta Sans and Inter, both under the SIL Open Font Licence and served from the site itself.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/not-found",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "This page is not here",
+        "body": "<p>The page you asked for does not exist, or it has moved.</p><p>Start again from the <a href=\"/\">home page</a>, or <a href=\"/appointments\">request an appointment</a>.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/appointment-form",
+      "type": "SectionForm",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Your details",
+        "intro": "Only how to reach you and when suits you.",
+        "formType": "AppointmentRequest",
+        "submitLabel": "Send request",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/appointments",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Request an appointment",
+        "description": "Ask for an appointment and the front desk calls you back within one working day.",
+        "sections": [
+          "/en/sections/appointment-how",
+          "/en/sections/appointment-form"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/contact",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Contact and directions",
+        "description": "Address, opening hours and how to reach the Orvalha clinic.",
+        "sections": [
+          "/en/sections/contact-address",
+          "/en/sections/contact-arrive",
+          "/en/sections/contact-about"
+        ],
+        "image": "asset:/images/building-front.webp",
+        "imageAlt": "The front of a white single-storey clinic building with a wooden pergola, a ramp and steps to a glass door, on a tree-lined street."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/404",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Page not found",
+        "description": "The page you asked for is not on the Orvalha site.",
+        "sections": [
+          "/en/sections/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/home",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Home",
+        "target": [
+          "/"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/services",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Services",
+        "target": [
+          "/services"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/team",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Team",
+        "target": [
+          "/team"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/appointments",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Appointments",
+        "target": [
+          "/appointments"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/contact",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Contact",
+        "target": [
+          "/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us",
+      "type": "Menu",
+      "folder": "/menu/en-us",
+      "data": {
+        "title": "Main",
+        "items": [
+          "/menu/en-us/home",
+          "/menu/en-us/services",
+          "/menu/en-us/team",
+          "/menu/en-us/appointments",
+          "/menu/en-us/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/strings",
+      "type": "StringTable",
+      "folder": "/en/sections",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Skip to content\nnav = Main navigation\nlangs = Other languages\nhomeHref = /\nhours = Monday to Friday 7:30 to 19:00, Saturday 8:00 to 12:00\nfooter = A fictional clinic, made to show what Viglet Shio builds.\nname = Your name\nemail = Email\nphone = Phone (optional)\npreferredTime = Preferred days and times\nsend = Send\nhoneypot = Leave this field empty"
+      },
+      "publish": true,
+      "locale": "en-us"
+    }
+  ]
+}

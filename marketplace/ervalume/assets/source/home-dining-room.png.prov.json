@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 5243729,
+    "path": "assets/source/home-dining-room.png",
+    "sha256": "1c22b5aedbca3db51388a607134564afe55d20d5ac1d9ea1a445e8c5bef729d4"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2560x1440",
+    "aspect_ratio": "16x9",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2560x1440",
+    "returned_prompt": "{\n  \"high_level_description\": \"A handheld phone photo of a small Brazilian neighbourhood restaurant dining room at early evening, with wooden tables receding diagonally toward a glowing wood-fired oven at the back, pendant lamps casting amber pools on linen napkins and cool blue daylight entering from a window on the right.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Small neighbourhood restaurant dining room in Brazil at early evening just before service begins. Terracotta floor tiles run across the ground with subtle grout lines and faint wear marks near the entrance. Walls are plain plaster in a warm off-white tone. An open kitchen pass-through sits in the back wall revealing a wood-fired oven with glowing orange embers visible through its arched opening, the ember glow spilling locally into the kitchen area. A window along the right wall shows a sliver of dusky blue sky and a neighbouring rooftop above it. Cool blue ambient daylight enters from the window and mixes with small local amber pools from the pendant lamps and the deep orange ember glow from the wood oven \u2014 three distinct light sources, none dominating the whole frame. Neutral cool-toned white balance overall, true-to-life colour rendering, no global warm wash.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Open kitchen pass-through cut into the back wall, centred in the upper-middle of the frame as the focal vanishing point of the receding tables. Arched opening reveals a stone-and-brick wood-fired oven inside, with bright orange embers glowing through the arch and casting deep orange light into the kitchen alcove.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Stack of clean ceramic plates on a narrow side shelf mounted to the wall beside the kitchen pass-through opening on the left. Roughly eight to ten round white plates stacked neatly, edges aligned.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Row of four simple wooden tables receding diagonally from the lower-left foreground toward the kitchen pass-through at the back. Each table set with a folded white linen napkin, a clear water glass, and a small ceramic plate. Warm honey-toned wood with visible grain.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Four brass pendant lamps hanging on thin cords over each table along the row, switched on. Round brass shades with a warm patina, each casting a small local amber pool of light onto the linen napkin directly below it.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single wooden chair pulled slightly out from the nearest foreground table on the left, angled away from the table edge as if recently moved back. Simple slatted backrest, matching the table's honey-toned wood.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Three potted herbs lined up on the window sill along the right wall \u2014 rosemary with needle-like grey-green foliage, basil with broad green leaves, and a small mint plant. Each sits in a chipped terracotta pot with visible rim chips and weathered clay surface.\"\n      }\n    ]\n  }\n}",
+    "seed": 198675798,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5243729,
+    "sha256": "1c22b5aedbca3db51388a607134564afe55d20d5ac1d9ea1a445e8c5bef729d4"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:43:18Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A small neighbourhood restaurant dining room in Brazil at early evening just before service, wooden tables set with linen napkins and glasses, terracotta floor tiles, potted herbs on the window sills, warm pendant lamps, an open kitchen with a wood oven glowing at the back, empty, no people. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:nl_V5Q56SlqivsIDkF7h0Q"
+}

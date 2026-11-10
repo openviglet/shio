@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6365696,
+    "path": "assets/source/table-set.png",
+    "sha256": "daa28b3ba5131a11c4903f61c5dfbf750966b4bb037b567cb991fbbd39515f0f"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary photograph of a quiet round restaurant table for four set by a tall sash window in soft mid-morning daylight, the room empty and waiting, shot on iPhone with Kodak Portra grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A quiet empty restaurant interior in soft mid-morning daylight. A tall sash window fills the upper two-thirds of the frame directly behind the table, divided into rectangular panes by thin white muntins, with a sheer pale curtain pushed to one side. Pale plaster walls flank the window with a faint shadow line where the curtain meets them. Worn wood-plank flooring runs across the foreground beneath the chairs, one chair leg catching a small pool of light from the window. Cool-toned neutral white balance, true colors, soft diffused daylight pouring through the window as the only light source, wrapping the tablecloth in gentle falloff and casting long soft shadows across the linen. Fine Kodak Portra grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Round wooden restaurant table centered in the frame, draped with a slightly rumpled white linen tablecloth falling just past the edge onto the floor. Soft daylight wraps the cloth in gentle tonal falloff.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Place setting at the back-left of the table, slightly softened by depth. Plain off-white ceramic plate, folded natural-linen napkin tucked beside it, simple clear water glass, basic silverware resting on the napkin fold.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Place setting at the back-right of the table, slightly softened by depth. Plain off-white ceramic plate, folded natural-linen napkin beside it, clear water glass, silverware on the napkin fold.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Place setting at the front-left of the table, crisp focus. Plain off-white ceramic plate, folded natural-linen napkin beside it, clear water glass, silverware resting on the napkin fold.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Place setting at the front-right of the table, crisp focus. Plain off-white ceramic plate, folded natural-linen napkin beside it, clear water glass, silverware resting on the napkin fold.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tall clear glass carafe of water anchored near the center of the table, half full. Condensation beading on the lower third, casting a long soft shadow across the linen toward the right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small clear glass jar beside the carafe holding a loose bunch of fresh herbs \u2014 basil and parsley stems trailing over the rim. Casts a soft shadow across the linen.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Wooden chair with simple spindle back pulled out at a slight angle behind the table, partially visible above the tablecloth, softened by depth.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Wooden chair with simple spindle back pulled out at a slight angle behind the right side of the table, softened by depth.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Wooden chair with simple spindle back pulled out at a slight angle behind the left side of the table, softened by depth.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Wooden chair with simple spindle back pushed back a touch further than the others behind the front-right place setting, as if recently stood up from. Front legs catch a small pool of light on the wood-plank floor.\"\n      }\n    ]\n  }\n}",
+    "seed": 463925029,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6365696,
+    "sha256": "daa28b3ba5131a11c4903f61c5dfbf750966b4bb037b567cb991fbbd39515f0f"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:41:59Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A round restaurant table for four by a tall window, set with a linen tablecloth, plates, folded napkins, simple glasses, a carafe of water and a small jar of fresh herbs, wooden chairs, empty room, no people, no newspapers, no printed matter, soft daylight. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:Jh-gpsVZQUy7AABDUHBxeA"
+}

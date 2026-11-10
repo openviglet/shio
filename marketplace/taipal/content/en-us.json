@@ -1,0 +1,544 @@
+{
+  "posts": [
+    {
+      "url": "/cases/hillside-house",
+      "type": "Case",
+      "folder": "/en/cases",
+      "data": {
+        "name": "Hillside House",
+        "summary": "A one-storey family house cast in board-formed concrete, stepped down a slope in the Mantiqueira hills to face the evening light.",
+        "image": "asset:/images/case-house.webp",
+        "imageAlt": "A board-formed concrete house with a timber slatted screen and a deep roof overhang, on a grassy hillside above mountain ridges at sunset.",
+        "caption": "The west front at the end of a dry-season afternoon, with the slatted screen half open.",
+        "facts": [
+          {
+            "label": "Client",
+            "value": "A family of four"
+          },
+          {
+            "label": "Location",
+            "value": "Serra da Mantiqueira, Minas Gerais"
+          },
+          {
+            "label": "Year",
+            "value": "2025"
+          },
+          {
+            "label": "Area",
+            "value": "210 m²"
+          },
+          {
+            "label": "Scope",
+            "value": "Architecture, interiors and planting"
+          },
+          {
+            "label": "Lead",
+            "value": "Helena Prado"
+          }
+        ],
+        "body": "<p>The family wanted a house they could close on a Sunday night and open again a month later without finding it damp. The site is a steep grass slope with a view west over the ridges, which is where the light and the weather both come from.</p><p>We set the house in three steps down the slope, one room deep, so every room has the view and none needs a corridor. The walls are concrete cast against rough pine boards. The same boards, planed and oiled after the pour, became the sliding screen that shades the west glass in the afternoon.</p><p>The roof overhang is 1.8 metres on the west, worked out from the sun's angle at four in the afternoon in January. Around the house a local nursery planted bromeliads and native grasses that need no watering after the first year.</p>",
+        "ctaLabel": "Talk to us about a project",
+        "ctaHref": "/contact"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/cases/miolo-bakery",
+      "type": "Case",
+      "folder": "/en/cases",
+      "data": {
+        "name": "Miolo Bakery",
+        "summary": "A 64 m² bakery fitted into a narrow vaulted shop, built in seven weeks while the bakers kept selling bread from a side window.",
+        "image": "asset:/images/case-shop.webp",
+        "imageAlt": "A narrow bakery with a vaulted plaster ceiling, terrazzo floor, oak shelves of bread and a long oak counter under brass pendant lamps.",
+        "caption": "Morning bread on the oak shelves, an hour after opening.",
+        "facts": [
+          {
+            "label": "Client",
+            "value": "Miolo, a sourdough bakery"
+          },
+          {
+            "label": "Location",
+            "value": "Vila Mariana, São Paulo"
+          },
+          {
+            "label": "Year",
+            "value": "2026"
+          },
+          {
+            "label": "Area",
+            "value": "64 m²"
+          },
+          {
+            "label": "Scope",
+            "value": "Interiors, joinery and shopfront"
+          },
+          {
+            "label": "Lead",
+            "value": "Lia Takahashi"
+          }
+        ],
+        "body": "<p>Miolo had outgrown a counter in a market hall and found a shop four metres wide and eighteen deep, with an old vaulted ceiling under layers of paint. The brief was short: room for a queue, bread within reach, and the oven visible from the street.</p><p>We stripped the vault back to brick and finished it in lime plaster, which takes the steam from the oven without staining. The floor is terrazzo with chips of stone from a quarry two hours away. A single oak counter runs nine metres down one side, and the shelves on the other side stop at the height a customer can reach without asking.</p><p>The work was phased so the bakery never closed. For seven weeks the bakers sold through a side window while the front of the shop was built behind a hoarding.</p>",
+        "ctaLabel": "Talk to us about a project",
+        "ctaHref": "/contact"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/cases/garden-flat",
+      "type": "Case",
+      "folder": "/en/cases",
+      "data": {
+        "name": "Garden Flat",
+        "summary": "A 1962 apartment opened up around its original parquet, with one wall taken out and a balcony brought back into use.",
+        "image": "asset:/images/case-apartment.webp",
+        "imageAlt": "A living room with herringbone parquet, white walls, a pale sofa, built-in oak shelves and open doors to a balcony full of plants.",
+        "caption": "The living room in the afternoon, with the balcony doors open.",
+        "facts": [
+          {
+            "label": "Client",
+            "value": "A retired couple"
+          },
+          {
+            "label": "Location",
+            "value": "Higienópolis, São Paulo"
+          },
+          {
+            "label": "Year",
+            "value": "2024"
+          },
+          {
+            "label": "Area",
+            "value": "96 m²"
+          },
+          {
+            "label": "Scope",
+            "value": "Renovation and built-in joinery"
+          },
+          {
+            "label": "Lead",
+            "value": "Caio Moreno"
+          }
+        ],
+        "body": "<p>The flat had been divided into small rooms over sixty years, and the balcony was used to store boxes. The owners wanted light in the living room and somewhere to keep two thousand books.</p><p>We removed the wall between the kitchen and the living room and kept the steel beam it had hidden, painted the same white as the ceiling. The herringbone parquet was lifted, cleaned and relaid, and the missing blocks were cut from the floor of a cupboard we took out.</p><p>The books live on oak shelves built into the old window recesses. The original steel balcony doors were repaired rather than replaced, and the balcony is now where the plants and the morning coffee are.</p>",
+        "ctaLabel": "Talk to us about a project",
+        "ctaHref": "/contact"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/services-intro",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Small projects, drawn by the people who build them",
+        "body": "<p>Taipal takes on about six projects a year: houses, flats, shops and the odd workshop. The person who draws your project is the person on site when it is built, and the same person answers your messages.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/services-what",
+      "type": "SectionFeatureGrid",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "What we do",
+        "intro": "Four kinds of work, often in the same project.",
+        "columns": "2",
+        "features": [
+          {
+            "title": "Architecture",
+            "body": "New houses and small buildings, from the first site visit to the last inspection.",
+            "icon": ""
+          },
+          {
+            "title": "Interiors",
+            "body": "Rooms, finishes, lighting and furniture, chosen with you and drawn to the centimetre.",
+            "icon": ""
+          },
+          {
+            "title": "Renovation",
+            "body": "Older flats and houses opened up, repaired and brought up to date without losing what was good.",
+            "icon": ""
+          },
+          {
+            "title": "Shops and studios",
+            "body": "Small commercial spaces planned around how the work is done and how customers move.",
+            "icon": ""
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/services-how",
+      "type": "SectionFeatureGrid",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How a project runs",
+        "intro": "Most houses take a year from the first visit to moving in; a shop or a flat, three to five months.",
+        "columns": "4",
+        "features": [
+          {
+            "title": "1. A visit",
+            "body": "We see the site or the space with you, free of charge, and say honestly whether we are the right studio.",
+            "icon": ""
+          },
+          {
+            "title": "2. A brief and a fee",
+            "body": "A written brief, a budget range for the works and a fixed fee for our part, agreed before any drawing.",
+            "icon": ""
+          },
+          {
+            "title": "3. Design",
+            "body": "Sketches and a card model first, then drawings for approval and for the builder.",
+            "icon": ""
+          },
+          {
+            "title": "4. On site",
+            "body": "We visit every week, check each payment against the work done and keep a written log you can read.",
+            "icon": ""
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/services-fees",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Fees",
+        "body": "<p>Our fee is fixed at the start and written into the contract, usually between 8 and 12 per cent of the estimated cost of the works. It is paid in stages as the drawings are delivered, and site supervision is priced by the month.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/services",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Services",
+        "description": "What Taipal designs, how a project runs from the first visit to the keys, and how the fee is set.",
+        "image": "asset:/images/studio-model.webp",
+        "imageAlt": "A white card model of a two-storey house with a timber-slat roof, on a green cutting mat beside a steel ruler and a craft knife.",
+        "sections": [
+          "/en/sections/services-intro",
+          "/en/sections/services-what",
+          "/en/sections/services-how",
+          "/en/sections/services-fees"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/cases",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Cases",
+        "description": "Finished projects by Taipal, each with its facts and a short case study.",
+        "intro": "Three recent projects, a house, a shop and a flat, each told by the person who led it.",
+        "listFolder": "/en/cases",
+        "listType": "Case"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/team-intro",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Six people and a long table",
+        "body": "<p>We work in one room in a converted brick workshop in Vila Romana. Everyone draws, everyone goes to site, and every project has one named lead from the first visit to the handover.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/team-helena",
+      "type": "TeamMember",
+      "folder": "/en/team",
+      "data": {
+        "name": "Helena Prado",
+        "role": "Founder and architect",
+        "summary": "Founded Taipal in 2011 after twelve years designing houses for other offices.",
+        "image": "asset:/images/team-founder.webp",
+        "imageAlt": "Head and shoulders of a woman in her fifties with short grey hair and round wire glasses, in a dark linen shirt, beside a steel-framed window in the studio.",
+        "body": "<p>Helena trained in São Paulo and spent twelve years drawing houses for other offices before starting Taipal with a borrowed table and one client. She still leads most of the new houses and visits every site at least once a week.</p><p>She teaches a building studio one evening a week and keeps the card models from every project on the shelf above her desk.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/team-people",
+      "type": "SectionFeatureGrid",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "The rest of the studio",
+        "intro": "",
+        "columns": "3",
+        "features": [
+          {
+            "title": "Caio Moreno, Architect and associate",
+            "body": "Leads the renovations and knows more about old parquet than anyone should.",
+            "icon": ""
+          },
+          {
+            "title": "Lia Takahashi, Interior designer",
+            "body": "Leads the shops and the joinery, and draws every counter at full size before it is made.",
+            "icon": ""
+          },
+          {
+            "title": "Rafael Duarte, Site and costs",
+            "body": "Checks every invoice against the work on site and writes the weekly site log.",
+            "icon": ""
+          },
+          {
+            "title": "Beatriz Lemos, Architect",
+            "body": "Draws the construction sets and handles the planning applications.",
+            "icon": ""
+          },
+          {
+            "title": "Tomás Rocha, Models and drawings",
+            "body": "Builds the card and timber models and keeps the studio's drawing archive in order.",
+            "icon": ""
+          }
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/team-about",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "A studio made up to show a real product",
+        "body": "<p>Taipal is invented. The studio, its people, its clients and its projects do not exist, and nothing here can be commissioned. It is a sample site for <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, the open-source CMS, installed from one marketplace package.</p><p>The photographs were generated for the package and are free to redistribute with it. The fonts are Fraunces and Inter, both under the SIL Open Font Licence and served from the site itself.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/team",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Team",
+        "description": "The six people at Taipal and who leads which kind of project.",
+        "image": "asset:/images/team-portrait.webp",
+        "imageAlt": "The studio's brick room seen through a doorway: a long oak table with white card models and five wooden chairs, tall steel-framed windows on the right.",
+        "sections": [
+          "/en/sections/team-intro",
+          "/en/sections/team-helena",
+          "/en/sections/team-people",
+          "/en/sections/team-about"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact-studio",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "The studio",
+        "body": "<p>Rua das Taipas, 214, Vila Romana, São Paulo. We are in from nine to six on weekdays; visits are by appointment, so there is always someone free to show you the models.</p><p>Write to <a href=\"mailto:estudio@taipal.example\">estudio@taipal.example</a>, or use the form below. Tell us where the project is, roughly what you have in mind and when you would like to start. We answer within three working days.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact-form",
+      "type": "SectionForm",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Tell us about your project",
+        "intro": "A few lines are enough. The architect who would lead the project writes back.",
+        "formType": "ProjectEnquiry",
+        "submitLabel": "Send",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/contact",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Contact",
+        "description": "Where the Taipal studio is, when it is open, and how to tell us about a project.",
+        "image": "asset:/images/contact-front.webp",
+        "imageAlt": "A single-storey brick building with one tall glass door and a bicycle against the wall, behind a low iron railing on a tree-lined street.",
+        "sections": [
+          "/en/sections/contact-studio",
+          "/en/sections/contact-form"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/not-found",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "This page is not on our drawings",
+        "body": "<p>The page you asked for is not here.</p><p>Start again from the <a href=\"/\">home page</a>, or see the <a href=\"/cases\">cases</a>.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/404",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Page not found",
+        "description": "The page you asked for is not on the Taipal site.",
+        "sections": [
+          "/en/sections/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/",
+      "type": "StudioHome",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Architecture and interiors",
+        "description": "Taipal is a small architecture and interiors studio in São Paulo: houses, flats and shops, drawn and built with care.",
+        "heading": "Houses, flats and shops, drawn to be lived in",
+        "intro": "A small architecture and interiors studio in São Paulo. Six people, about six projects a year, and the same person from the first sketch to the keys.",
+        "image": "asset:/images/home-studio.webp",
+        "imageAlt": "A long oak table with white card models, stone samples and rolled drawings beside tall steel-framed windows, in a brick studio in morning sun.",
+        "ctaLabel": "See the cases",
+        "ctaHref": "/cases",
+        "casesHeading": "Recent cases",
+        "cases": [
+          "/cases/hillside-house",
+          "/cases/miolo-bakery",
+          "/cases/garden-flat"
+        ],
+        "servicesHeading": "What we do",
+        "services": [
+          "/en/sections/services-what"
+        ],
+        "approachHeading": "How we work",
+        "approach": "<p>Every project starts with a visit and a card model. Models are cheap, quick to change and easier to read than any drawing, so clients see the rooms before they decide on them.</p><p>We prefer materials that age well and can be repaired: brick, lime, timber, terrazzo, steel. We keep what is good in an old building, and we write down every decision so the builder and the client read the same thing. <a href=\"/services\">Read how a project runs</a>.</p>",
+        "contactHeading": "Have a project in mind?",
+        "contactText": "Tell us where it is and what you have in mind. The first visit is free, and we will say honestly whether we are the right studio for it.",
+        "contactLabel": "Get in touch",
+        "contactHref": "/contact"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/home",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Home",
+        "target": [
+          "/"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/services",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Services",
+        "target": [
+          "/services"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/cases",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Cases",
+        "target": [
+          "/cases"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/team",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Team",
+        "target": [
+          "/team"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/contact",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Contact",
+        "target": [
+          "/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us",
+      "type": "Menu",
+      "folder": "/menu/en-us",
+      "data": {
+        "title": "Main",
+        "items": [
+          "/menu/en-us/home",
+          "/menu/en-us/services",
+          "/menu/en-us/cases",
+          "/menu/en-us/team",
+          "/menu/en-us/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/strings",
+      "type": "StringTable",
+      "folder": "/en/sections",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Skip to content\nnav = Main navigation\nlangs = Other languages\nstudio = Architecture and interiors\nhomeHref = /\nfooter = A fictional architecture studio, made to show what Viglet Shio builds.\nname = Your name\nemail = Email\nmessage = Your project\nsend = Send\nhoneypot = Leave this field empty"
+      },
+      "publish": true,
+      "locale": "en-us"
+    }
+  ]
+}

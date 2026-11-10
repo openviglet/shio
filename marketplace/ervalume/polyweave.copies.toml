@@ -1,0 +1,44 @@
+# The WebP copies the package ships, cut from the originals polyweave bought.
+into = "assets/images"
+quality = 82
+max_bytes = 300000
+
+[[copy]]
+source = "assets/source/home-dining-room.png"
+out = "home-dining-room.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/dish-fish.png"
+out = "dish-fish.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/kitchen-fire.png"
+out = "kitchen-fire.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/chef-portrait.png"
+out = "chef-portrait.webp"
+side = 1200
+
+[[copy]]
+source = "assets/source/market-herbs.png"
+out = "market-herbs.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/dessert.png"
+out = "dessert.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/street-front.png"
+out = "street-front.webp"
+side = 1600
+
+[[copy]]
+source = "assets/source/table-set.png"
+out = "table-set.webp"
+side = 1600

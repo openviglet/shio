@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6140397,
+    "path": "assets/source/team-corridor.png",
+    "sha256": "874519d18d9b0f7d3b0e197e9e58dba52e62807d4b836c14fe85cd3c3a7ee3b2"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary photograph of three clinicians pausing mid-conversation in a bright hospital corridor on a weekday morning, anchored slightly right of center in a loose triangle, shot on iPhone with cool-neutral white balance and fine Kodak Portra grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A bright hospital corridor interior with pale blue-grey walls and a continuous stainless-steel handrail running along the right side at hip height. Polished vinyl floor reflects the window light in soft elongated streaks. A tall window deep in the background lets in cool morning daylight through a half-drawn sheer curtain, the light raking locally across the floor and catching coat edges without washing the whole frame. Soft natural falloff into corridor depth, mild background motion from a distant figure walking away near the far end of the hall. Cool-neutral white balance, true-to-life skin tones, accurate clinical whites without amber cast.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Doorway visible behind the group in the midground, set into the pale blue-grey wall. White-painted door frame around a closed door. Small wall-mounted hand sanitizer dispenser beside it at shoulder height, white plastic housing with a clear reservoir.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Middle-aged woman clinician standing center-right of the group, in three-quarter view facing left toward her colleagues, body angled inward. Medium build, light skin tone, shoulder-length brown hair pulled back loosely. White lab coat over a soft grey blouse and dark trousers, low brown leather loafers. Stethoscope draped around her neck. Both hands hold a slim tablet at chest height angled toward her colleagues, head tilted down toward the screen with a focused considering expression, gaze directed at the tablet.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Younger male clinician standing to the left of the woman, in three-quarter view facing right toward her, leaning slightly forward listening. Light skin tone, short dark brown hair, clean-shaven. White lab coat over a pale blue button-down shirt and charcoal chinos, brown derby shoes. Left hand holds an open spiral notebook at waist height, right hand pinches a pen mid-gesture near chest level. Gaze directed at the woman's tablet.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Third clinician standing to the left of the male clinician, in three-quarters turned view facing right toward the other two as he speaks. Medium build, warm medium-brown skin tone, short black hair, trimmed beard. Olive crewneck sweater over a white tee collar visible at the neckline, dark jeans, white sneakers. Right hand tucked into his front pocket, left hand gesturing lightly at chest height. Gaze directed at the woman.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus rolling IV stand cropped into the lower-left foreground edge, only the upper pole and hook arm visible. Slim chrome pole with a clear fluid bag hanging from the hook, blurred from foreground proximity.\"\n      }\n    ]\n  }\n}",
+    "seed": 670929642,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6140397,
+    "sha256": "874519d18d9b0f7d3b0e197e9e58dba52e62807d4b836c14fe85cd3c3a7ee3b2"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:36:50Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Three clinicians in plain clothes and white coats talking quietly together in a bright clinic corridor, holding a tablet and a notebook, candid, morning light from a window. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:DDi-q4bCQ8yaMj67QpBU-A"
+}

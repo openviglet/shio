@@ -1,0 +1,58 @@
+{
+  "name": "AppointmentRequest",
+  "title": "Appointment request",
+  "namePlural": "Appointment requests",
+  "description": "A request to be called back about an appointment, sent from the appointments page. It asks for contact details and a preferred time only, never for health information. A submission is stored as one, as a draft.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "name",
+      "label": "Your name",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "phone",
+      "label": "Phone",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "preferredTime",
+      "label": "Preferred days and times",
+      "description": null,
+      "widget": "Text Area",
+      "required": true,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

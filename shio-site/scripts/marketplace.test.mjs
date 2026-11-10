@@ -47,7 +47,8 @@ function python() {
 }
 
 /** SH1254 — published from `marketplace/`, built into no jar. */
-const PUBLISHED_ONLY = ["quilhara"];
+// SH1431 — and the three finished business sites beside it: a restaurant, a clinic and a studio.
+const PUBLISHED_ONLY = ["ervalume", "orvalha", "quilhara", "taipal"];
 
 test("SH676: every first-party package becomes a catalogue entry", () => {
   const { items } = build({ write: false });
@@ -213,4 +214,20 @@ test("SH1431: a package's other languages never reach the published catalogue or
     assert.ok(!item.requires.includes("manifest:i18n"),
       `SH1431: ${item.id} requires manifest:i18n, so every released instance would refuse to install it`);
   }
+});
+
+test("SH1431: the v2 catalogue carries each package's other languages, in the entry and in its zip", () => {
+  const { items, itemsV2 } = build({ write: false });
+  assert.deepEqual(itemsV2.map((item) => item.id), items.map((item) => item.id),
+    "SH1431: v2 lists the same packages as the first catalogue");
+  const quilhara = itemsV2.find((item) => item.id === "shio-blueprint-quilhara");
+  assert.ok(quilhara.i18n?.["pt-BR"]?.description, "SH1431: a pt-BR console reads the showcase in Portuguese");
+  assert.ok(quilhara.requires.includes("manifest:i18n"),
+    "SH1431: an instance that cannot read i18n learns it from the entry, not after the download");
+  assert.match(quilhara.downloadUrl, /\/marketplace\/v2\/shio-blueprint-quilhara\//u,
+    "SH1431: the v2 entry downloads the zip whose manifest keeps i18n, not the first catalogue's");
+  const java = readFileSync(join(HERE, "..", "..", "shio-app", "src", "main", "java", "com", "viglet", "shio",
+    "marketplace", "ShMarketplaceProperties.java"), "utf8");
+  assert.match(java, /DEFAULT_URL = "https:\/\/shio\.viglet\.org\/marketplace\/v2\/marketplace\.json"/u,
+    "SH1431: an instance that reads i18n is pointed at the catalogue that carries it");
 });

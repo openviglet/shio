@@ -135,7 +135,7 @@ maximum is clamped, and the response says so.
 | `shio.review.email-from` | *(unset)* | The sender address of that e-mail; unset uses `spring.mail.username` |
 | `shio.blueprint.path` | `store/blueprints` | An extra directory of blueprint packages, beside the built-in ones; marketplace installs land here. Empty means the built-in ones alone |
 | `shio.marketplace.enabled` | `true` | Read the package catalogue below. Set `false` on an air-gapped or multi-tenant instance: nothing then leaves the JVM |
-| `shio.marketplace.url` | `https://shio.viglet.org/marketplace/marketplace.json` | The catalogue the marketplace lists |
+| `shio.marketplace.url` | `https://shio.viglet.org/marketplace/v2/marketplace.json` | The catalogue the marketplace lists. This version carries each package's title and description in other languages; `marketplace.json` beside it is the same catalogue without them, for older instances |
 | `shio.marketplace.timeout-millis` | `5000` | How long to wait before listing the built-in packages alone |
 
 ---

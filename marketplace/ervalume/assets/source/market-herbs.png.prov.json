@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6673193,
+    "path": "assets/source/market-herbs.png",
+    "sha256": "94e010653247dea36507e938cb1c666d8f3c34a3166dbf9ee9f210abd2bca8bd"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary photograph of a Brazilian street market stall at first light, with wooden crates heaped with fresh coriander, basil, chives, red chillies, cassava roots and limes on a worn plank surface, shot on Kodak Portra with fine grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Soft-focus background hinting at a tiled sidewalk in pale grey tones and the leg of a neighboring stall receding into cool shadow at right. Natural morning daylight rakes in from the upper left, leaving deeper areas in cool soft shadow. Neutral white balance with no warm grading wash. Fine Kodak Portra grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Worn wooden plank surface beneath the crates, dark brown grain streaked with water marks and herb residue. Runs across the lower portion of the frame as the base for all produce.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Cassava roots stacked in the lower-left foreground. Knobby pale-brown tubers with rough bark texture, several cut ends showing creamy white flesh inside. Anchors the immediate foreground.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Loose limes scattered across the front of the crates in the lower-center foreground. Deep green skins with dimpled pebbled texture, one lime split open showing juicy pale-green segments and translucent pulp.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Weathered wooden crate in the foreground-left piled high with bright green coriander bunches. Stems tangled together, flat serrated leaves catching morning light along their edges, midground depth.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Second crate beside the coriander overflowing with fresh basil. Broad glossy deep-green leaves with visible pale veining, a few small white flowers scattered among the foliage, midground center.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Third crate holding neat bundles of chives tied with thin beige twine. Slender cylindrical green stalks fanning outward from each bundle, midground right of center.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Cluster of vivid red chillies spilling over the edge of a shallow crate at right. Glossy elongated skins in saturated red, slender green stems still attached, some hanging over the crate rim.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus woven straw basket at the far right edge of the frame, holding more chive bundles and a folded burlap cloth in muted tan tones. Dissolves into ambient blur.\"\n      }\n    ]\n  }\n}",
+    "seed": 209544510,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6673193,
+    "sha256": "94e010653247dea36507e938cb1c666d8f3c34a3166dbf9ee9f210abd2bca8bd"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:41:22Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Close view of wooden crates on a street market stall in Brazil, piled with fresh coriander, basil, chives, red chillies, cassava roots and limes, no people, no signs, no labels, no price tags, soft morning light. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:wruCevCzS_G5XtPQjQZ_QA"
+}

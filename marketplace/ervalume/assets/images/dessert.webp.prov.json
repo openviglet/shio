@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 130038,
+    "path": "assets/images/dessert.webp",
+    "sha256": "88a6e8a12fcc5467e595bef40b4a7a2770f941ab1f45bed08d0072ff63f53605"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/dessert.png",
+      "role": "picture",
+      "sha256": "028b56c2a434cd75e5089b2eb7242442b80162b37d2aa0a89810f005da6f381d"
+    },
+    {
+      "path": "polyweave.copies.toml",
+      "role": "table",
+      "sha256": "ae302e1f2d703a10b1b6419639b621e35e1bd68a390213d3c5993650c60a9ef2"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:43:20Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

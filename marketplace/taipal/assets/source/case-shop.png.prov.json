@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 5897048,
+    "path": "assets/source/case-shop.png",
+    "sha256": "4911081ff6ce9819b7733977bd40623c9f69804849bc700afe66c4c2a421c155"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary architectural photograph of a small neighborhood bakery interior at opening hour, viewed from near the entrance down the length of the shop toward an arched front window letting in cool morning daylight.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A small neighborhood bakery interior at opening hour, quiet and empty just before the first customer arrives. Curved plaster walls in soft warm off-white sweep from the back wall toward the ceiling with faint hand-troweled texture catching the light. The terrazzo floor is cream with grey and ochre aggregate chips, polished to a soft sheen, extending from the foreground into the depth of the shop. Cool morning daylight pours through the arched front window at the far end as the dominant light source, raking across the curved plaster and pooling on the terrazzo floor. Neutral white balance with true-to-life color rendering of pale oak grain, cream plaster, and warm bread crusts against the cool window light. Soft natural shadows under the shelves and counter.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Pale oak counter running along the right wall from midground into the background, with a glass display case on top. Empty metal trays lined up behind the glass. A folded cream linen cloth drapes over the near corner of the counter.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Open wooden shelving mounted to the left wall, stacked with loaves of crusty country bread, baguettes wrapped in brown paper sleeves, round boules, and a few seeded rolls. Pale wood shelves with warm bread crusts visible.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Three brass pendant lamps hanging at staggered heights above the counter, each with a frosted globe shade. Switched off, brass fixtures catching faint window light.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tall arched front window at the far end of the shop, the primary architectural focal point. Cool morning daylight pours through it, with a sliver of pale street visible beyond.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small wooden stool tucked under the end of the counter on the right side, three-legged with a round seat. A single flour-dusted ceramic mixing bowl rests on top.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Folded chalkboard menu leaning against the left wall beside the wooden shelving, dark slate surface with a thin wooden frame, currently blank.\"\n      }\n    ]\n  }\n}",
+    "seed": 1914591608,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5897048,
+    "sha256": "4911081ff6ce9819b7733977bd40623c9f69804849bc700afe66c4c2a421c155"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:33:12Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary architectural photograph of a finished small bakery shop interior with terrazzo floor, pale oak counters, curved plaster walls and pendant lamps, bread on wooden shelves, empty of people, morning light from the street. Natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:Bn-yk4CSSW26vD3OSzkoog"
+}

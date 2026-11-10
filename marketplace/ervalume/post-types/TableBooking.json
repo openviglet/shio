@@ -1,0 +1,82 @@
+{
+  "name": "TableBooking",
+  "title": "Table booking",
+  "namePlural": "Table bookings",
+  "description": "A table a guest asked for from the booking page. A submission is stored as one, as a draft, for someone to confirm by email.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "name",
+      "label": "Your name",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "date",
+      "label": "Date",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "time",
+      "label": "Time",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "guests",
+      "label": "Number of guests",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "message",
+      "label": "Anything we should know",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 6,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

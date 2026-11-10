@@ -95,15 +95,20 @@ test("SH1369/SH1377: the docs pages, .mdx and card descriptions included, name e
       + "they are, but a sentence names the product in full");
 });
 
-test("SH1376: the Quilhara showcase pages name the product in full, in both languages", () => {
-  // The showcase on this site shows screenshots of these pages, so their text is visitor text here.
+test("SH1376/SH1431: every finished sample site names the product in full, in both languages", () => {
+  // The showcase on this site shows screenshots of these pages, so their text is visitor text here;
+  // SH1431 added three more finished sites to the Marketplace, read the same way.
   const BARE_ANY = /(?<!Viglet )(?<![\w/.@-])(Shio|Turing|Dumont)\b/u;
-  const found = ["en-us", "pt-br"].flatMap((locale) => {
-    const file = `../marketplace/quilhara/content/${locale}.json`;
+  const packages = readdirSync(join(SITE, "..", "marketplace"))
+    .filter((name) => statSync(join(SITE, "..", "marketplace", name, "content")).isDirectory());
+  assert.ok(packages.includes("quilhara") && packages.length >= 4,
+    "SH1431: the walk did not reach the sample packages, so an empty answer would prove nothing");
+  const found = packages.flatMap((name) => ["en-us", "pt-br"].flatMap((locale) => {
+    const file = `../marketplace/${name}/content/${locale}.json`;
     return readFileSync(join(SITE, file), "utf8").split("\n").flatMap((line, index) =>
-      BARE_ANY.test(line) ? [`${locale}.json:${index + 1}: ${line.trim().slice(0, 120)}`] : []);
-  });
-  assert.deepEqual(found, [], "SH1376: a bare product name in the Quilhara sample content");
+      BARE_ANY.test(line) ? [`${name}/${locale}.json:${index + 1}: ${line.trim().slice(0, 120)}`] : []);
+  }));
+  assert.deepEqual(found, [], "SH1376: a bare product name in a sample site's content");
 });
 
 test("SH1369: the breadcrumbs crawlers read name the product in full", () => {

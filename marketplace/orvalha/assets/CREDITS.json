@@ -1,0 +1,78 @@
+{
+  "fonts/inter-400.woff2": {
+    "source": "Inter, latin subset, from the @fontsource/inter package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-inter.txt"
+  },
+  "fonts/inter-600.woff2": {
+    "source": "Inter, latin subset, from the @fontsource/inter package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-inter.txt"
+  },
+  "fonts/plus-jakarta-sans-variable.woff2": {
+    "source": "Plus Jakarta Sans, variable weight, latin subset, from the @fontsource-variable/plus-jakarta-sans package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-plus-jakarta-sans.txt"
+  },
+  "images/building-front.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "The front of a small two-storey clinic building on a quiet tree-lined street in a Brazilian town, white walls, wooden slatted shade, a ramp and steps to a glass door, a bicycle rack, blank signboard. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 223851929,
+    "producedAt": "2026-11-10T23:36:30Z",
+    "original": "assets/source/building-front.png (sha256 82b76943c671ec229fdbcc17b9d0c59afbccbc4828a70704bfdbc0660d8961ed)"
+  },
+  "images/home-reception.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A bright, calm reception area of a small outpatient clinic in Brazil, light wood counter, a receptionist in a plain blouse greeting a visitor, potted plants, large windows with soft morning light, pale green and white walls. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 454050160,
+    "producedAt": "2026-11-10T23:34:32Z",
+    "original": "assets/source/home-reception.png (sha256 f033baab040500c9220f51c41ba64a078ac9844823b2cbdcdd0123baca867288)"
+  },
+  "images/service-physio.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "An empty, bright physiotherapy room in a small clinic, a padded treatment table with a folded white towel, coloured resistance bands hanging on a hook, a wooden wall bar along one wall, a foam roller on the floor, a large window with soft daylight, bare painted walls with no posters, no charts and no signs, nobody in the room. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1632002641,
+    "producedAt": "2026-11-10T23:41:25Z",
+    "original": "assets/source/service-physio.png (sha256 5bedff91ce136d0e563fc3311d25f2ec47c424f273129a460d7947fa0ff2eb29)"
+  },
+  "images/services-consulting.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "An empty, tidy consulting room in a small outpatient clinic, a light wood desk with a closed laptop, two chairs, an examination couch with a fresh paper sheet, a window with sheer curtains and a plant, soft pale green wall. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1494875646,
+    "producedAt": "2026-11-10T23:35:00Z",
+    "original": "assets/source/services-consulting.png (sha256 4c2c7436f0975857d2c630817ddf4fd0323a1c2d12cbf63fbf6803d37fcc1d99)"
+  },
+  "images/team-corridor.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Three clinicians in plain clothes and white coats talking quietly together in a bright clinic corridor, holding a tablet and a notebook, candid, morning light from a window. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 670929642,
+    "producedAt": "2026-11-10T23:36:50Z",
+    "original": "assets/source/team-corridor.png (sha256 874519d18d9b0f7d3b0e197e9e58dba52e62807d4b836c14fe85cd3c3a7ee3b2)"
+  },
+  "images/team-helena.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Head and shoulders portrait, framed from the chest up, of a calm family physician in her fifties with short grey hair, wearing a white coat over a sage green blouse, in a bright clinic corridor, friendly expression, hands out of frame, shallow depth of field. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1568366042,
+    "producedAt": "2026-11-10T23:42:12Z",
+    "original": "assets/source/team-helena.png (sha256 8196649f02bab1a5863d2117e2b846a87273fd49847b0120399f8c3555199e71)"
+  },
+  "images/team-rafael.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Head and shoulders portrait, framed from the chest up, of a physiotherapist in his thirties with a short beard, wearing a plain navy polo shirt, in a bright therapy room with a wooden wall bar softly blurred behind him, relaxed smile, hands out of frame, shallow depth of field. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1710154174,
+    "producedAt": "2026-11-10T23:42:27Z",
+    "original": "assets/source/team-rafael.png (sha256 cefa32fd185f7eb1c72399cff03e9bf36512b7943d42543e3e8a4ab05e014c29)"
+  },
+  "images/waiting-area.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A calm waiting area in a small clinic, a few upholstered chairs in muted green, a low wooden table with a jug of water and glasses, plants, a large window with afternoon light, nobody waiting. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1505354027,
+    "producedAt": "2026-11-10T23:36:13Z",
+    "original": "assets/source/waiting-area.png (sha256 f17eb29e232b13ccc24501c7b1e8efb573e21d0df80b98990f1b603ab1818bd7)"
+  }
+}

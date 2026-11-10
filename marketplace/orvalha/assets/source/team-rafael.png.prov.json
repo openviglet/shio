@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 5929992,
+    "path": "assets/source/team-rafael.png",
+    "sha256": "cefa32fd185f7eb1c72399cff03e9bf36512b7943d42543e3e8a4ab05e014c29"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "1792x2240",
+    "aspect_ratio": "4x5",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "1792x2240",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary head-and-shoulders portrait of a physiotherapist in his thirties smiling warmly, framed slightly off-center against a softly blurred wooden wall bar in a bright clinic, shot on Kodak Portra with fine grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A bright physiotherapy clinic mid-morning. A pale clinical wall surface recedes into shallow-focus bokeh behind the subject, with soft daylight pouring in from a side window camera-left giving gentle directional light across the scene and a soft falloff into shadow on the opposite side. Neutral cool-toned white balance throughout.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Wooden Swedish ladder wall bar mounted on the back wall directly behind the subject, rendered as softly blurred horizontal wood slats in warm pale oak tones, evenly spaced, spanning most of the frame width at mid-height.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Faint out-of-focus suggestion of a therapy mat or equipment edge along the lower frame edge, indistinct soft shape in muted neutral tones, heavily blurred.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Physiotherapist in his thirties, head and shoulders framed from the chest up, positioned slightly off-center toward the right of the frame, occupying roughly 60% of the frame height as the focal subject. In three-quarter front view facing the camera, gaze directed at the lens. Short neatly trimmed dark beard, medium skin tone, warm relaxed smile with eyes slightly crinkled at the outer corners, brown eyes catching the window light with a small reflective highlight. Plain navy polo shirt with a small collar opening at the neck. Shoulders squared but relaxed. His skin has a natural, detailed texture.\"\n      }\n    ]\n  }\n}",
+    "seed": 1710154174,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5929992,
+    "sha256": "cefa32fd185f7eb1c72399cff03e9bf36512b7943d42543e3e8a4ab05e014c29"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:42:27Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Head and shoulders portrait, framed from the chest up, of a physiotherapist in his thirties with a short beard, wearing a plain navy polo shirt, in a bright therapy room with a wooden wall bar softly blurred behind him, relaxed smile, hands out of frame, shallow depth of field. Documentary photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:TB6MnMPbRl6KBlqTQWIktw"
+}

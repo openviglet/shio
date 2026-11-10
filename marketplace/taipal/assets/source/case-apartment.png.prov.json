@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 6661102,
+    "path": "assets/source/case-apartment.png",
+    "sha256": "cc39fc0aa9ae4067c1a4af854194b969741de40ffce2a60c8b183c80a16b149a"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "2496x1664",
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary architectural photograph of a renovated 1960s S\u00e3o Paulo apartment living room on a quiet weekday afternoon, with afternoon daylight pouring through a sliding glass balcony door at the right, framed off-center from a low camera position.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A renovated 1960s S\u00e3o Paulo apartment living room interior. White plaster walls with subtle hand-troweled texture catch cool neutral light, with warm directional sunlight entering from the right and grazing surfaces it touches directly. Restored herringbone parquet floor in warm honey oak runs across the ground, faint wear pattern along the central walkway, slight sheen catching the afternoon sun in patches where the light lands, long gentle shadows stretching leftward across the boards. Cool-leaning white balance overall; warmth lives only where sun actually strikes. Fine soft grain throughout.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Built-in oak shelving running along the left wall, midground-left, the primary background element on that side. Warm honey-oak open shelves stacked with art books lying flat and upright, two ceramic vases in muted earth tones, a small brass desk lamp on a middle shelf, and a trailing pothos spilling green leaves down from the top shelf.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Sliding glass balcony door at the right edge of the frame, partially open, white-painted aluminum frame. Through the opening, a wrought-iron balcony railing is visible lined with potted plants: a monstera with split leaves, an upright snake plant, and a tall fiddle-leaf fig. Afternoon daylight pours through into the room.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single framed black-and-white architectural print hung on the white plaster wall above the sofa, midground-center. Thin dark wood frame, monochrome image of a building facade inside, centered above the seating area.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Low-slung mid-century sofa in oatmeal boucl\u00e9 upholstery, thin tapered walnut legs, positioned center-frame facing the camera in three-quarter front view. Two linen throw pillows propped against the backrest, one muted terracotta and one sage green. A folded cream knit blanket draped over the right armrest.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small round walnut coffee table in front of the sofa, midground-center, low height. On its surface: an open hardcover book laid face-down with pages splayed, a half-full ceramic mug in matte off-white, and a pair of wire-rimmed reading glasses folded beside the mug.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Woven jute area rug anchoring the seating area, foreground-center extending toward the lower frame. Natural tan fiber weave with visible texture, edges slightly rumpled and lifting at the corners, partially under the sofa and coffee table.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus corner of a wooden dining chair slicing into the lower-left foreground, suggesting the adjacent kitchen beyond. Dark walnut back slat and seat edge visible, softly blurred.\"\n      }\n    ]\n  }\n}",
+    "seed": 1741063318,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6661102,
+    "sha256": "cc39fc0aa9ae4067c1a4af854194b969741de40ffce2a60c8b183c80a16b149a"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:33:33Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary architectural photograph of a renovated 1960s apartment living room in S\u00e3o Paulo with restored parquet floor, white walls, a low sofa, built-in oak shelving and a balcony with plants, afternoon light. Natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:xp6HnP28Smu1Uq1ThXjVTQ"
+}

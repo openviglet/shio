@@ -1,0 +1,78 @@
+{
+  "images/case-apartment.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary architectural photograph of a renovated 1960s apartment living room in São Paulo with restored parquet floor, white walls, a low sofa, built-in oak shelving and a balcony with plants, afternoon light. Natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1741063318,
+    "producedAt": "2026-11-10T23:33:33Z",
+    "original": "assets/source/case-apartment.png (sha256 cc39fc0aa9ae4067c1a4af854194b969741de40ffce2a60c8b183c80a16b149a)"
+  },
+  "images/case-house.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary architectural photograph of a finished small family house with exposed concrete walls, a timber slatted screen and a deep roof overhang, set in a garden of native plants on a hillside in southern Brazil, late afternoon. Natural light, true colours, no text, no logos, no watermark.",
+    "seed": 620382871,
+    "producedAt": "2026-11-10T23:32:55Z",
+    "original": "assets/source/case-house.png (sha256 8b3a21c487968f8efff4b39de5e0ba3d3c8867d5ae64adeff1eca958f083f32e)"
+  },
+  "images/case-shop.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary architectural photograph of a finished small bakery shop interior with terrazzo floor, pale oak counters, curved plaster walls and pendant lamps, bread on wooden shelves, empty of people, morning light from the street. Natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1914591608,
+    "producedAt": "2026-11-10T23:33:12Z",
+    "original": "assets/source/case-shop.png (sha256 4911081ff6ce9819b7733977bd40623c9f69804849bc700afe66c4c2a421c155)"
+  },
+  "images/contact-front.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary architectural photograph of the street front of a small architecture studio in a converted single-storey brick workshop on a quiet tree-lined street, a tall glazed door, a bicycle leaning on the wall, plain facade with no signage and no doormat, empty of people. Natural light, true colours, no people, no text or writing on any surface, no logos, no watermark.",
+    "seed": 1172158348,
+    "producedAt": "2026-11-10T23:43:02Z",
+    "original": "assets/source/contact-front.png (sha256 6266417ea70d695bbd8032eb2ad7462675206283985ac4e74bb1ef9695a7ffec)"
+  },
+  "images/home-studio.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary architectural photograph of the inside of a small architecture studio in a converted brick workshop in São Paulo, empty of people: a long oak table with rolled drawings, stone and timber material samples and three white card models, tall steel-framed windows, potted plants, morning light. Natural light, true colours, no people, no text or writing on any surface, no logos, no watermark.",
+    "seed": 190131278,
+    "producedAt": "2026-11-10T23:42:09Z",
+    "original": "assets/source/home-studio.png (sha256 03f7bb52462c27461143bf4d4a6a779d86c94f4a90123f992cbc6bf39e542407)"
+  },
+  "images/studio-model.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Close documentary architectural photograph of a white card and balsa architectural model of a small two-storey house on a drafting desk, a cutting mat, a steel ruler, a scalpel and trace paper beside it, side light from a window. Natural light, true colours, no text, no logos, no watermark.",
+    "seed": 161860915,
+    "producedAt": "2026-11-10T23:32:38Z",
+    "original": "assets/source/studio-model.png (sha256 2767d1a64e2570122bdfd0e468e1015ae32253f8bf77d3fc376f17df3342e4c0)"
+  },
+  "images/team-founder.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary head-and-shoulders portrait of an architect in her fifties with short grey hair and round glasses, wearing a dark linen shirt, standing beside a steel-framed window in a brick studio, calm expression, shallow depth of field, framed from the chest up with both hands out of frame. Natural light, true colours, no text, no logos, no watermark.",
+    "seed": 549977,
+    "producedAt": "2026-11-10T23:42:45Z",
+    "original": "assets/source/team-founder.png (sha256 46689ca4633539e85aefef4baf527772af1dd306e1ddd2777c0b76dc0a75ef06)"
+  },
+  "images/team-portrait.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary architectural photograph of a small architecture studio seen from the doorway, empty of people: one long plain oak table in the middle of a brick room with six simple wooden chairs neatly pushed in, three white card models on the table, tall steel-framed windows on the right, concrete floor, soft late afternoon light. Natural light, true colours, no people, no text or writing on any surface, no logos, no watermark.",
+    "seed": 2141029779,
+    "producedAt": "2026-11-10T23:43:57Z",
+    "original": "assets/source/team-portrait.png (sha256 90eb238df068ec047878cb5216ec88095077408ef8a85cec1279d08ac16bb08b)"
+  },
+  "fonts/fraunces-600.woff2": {
+    "source": "Fraunces, latin subset, from the @fontsource/fraunces package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-fraunces.txt"
+  },
+  "fonts/inter-400.woff2": {
+    "source": "Inter, latin subset, from the @fontsource/inter package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-inter.txt"
+  },
+  "fonts/inter-600.woff2": {
+    "source": "Inter, latin subset, from the @fontsource/inter package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-inter.txt"
+  }
+}

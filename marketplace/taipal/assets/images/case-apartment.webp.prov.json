@@ -1,0 +1,38 @@
+{
+  "artefact": {
+    "bytes": 165814,
+    "path": "assets/images/case-apartment.webp",
+    "sha256": "a486b67de7a666f3832b74edbb5e01affe93183034f10397db45dab82a7c0bd0"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/case-apartment.png",
+      "role": "picture",
+      "sha256": "cc39fc0aa9ae4067c1a4af854194b969741de40ffce2a60c8b183c80a16b149a"
+    },
+    {
+      "path": "assets/source/web.copies.toml",
+      "role": "table",
+      "sha256": "30d99510c437853b3273d3d0be4abffece047864e979d2f6b9ffbcbbb2287ccf"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "max_bytes": 300000,
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:44:27Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

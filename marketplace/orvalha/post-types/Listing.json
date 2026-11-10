@@ -1,0 +1,94 @@
+{
+  "name": "Listing",
+  "title": "Listing",
+  "namePlural": "Listings",
+  "description": "A card listing of every post of one type in one folder.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "title",
+      "label": "Title",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "description",
+      "label": "Description",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "intro",
+      "label": "Intro",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "image",
+      "label": "Image",
+      "description": null,
+      "widget": "File",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "imageAlt",
+      "label": "Image description",
+      "description": "What the picture shows, for someone who cannot see it.",
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "listFolder",
+      "label": "Folder listed",
+      "description": "The folder whose posts this page lists, such as /en/trails.",
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 6,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "listType",
+      "label": "Type listed",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 7,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

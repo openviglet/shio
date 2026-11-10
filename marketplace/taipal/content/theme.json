@@ -1,0 +1,118 @@
+{
+  "folders": [
+    {
+      "path": "/theme",
+      "acl": [
+        {
+          "group": "Administrator",
+          "permission": "WRITE"
+        }
+      ]
+    },
+    {
+      "path": "/menu"
+    },
+    {
+      "path": "/menu/en-us"
+    },
+    {
+      "path": "/menu/pt-br"
+    },
+    {
+      "path": "/en"
+    },
+    {
+      "path": "/pt"
+    },
+    {
+      "path": "/en/cases"
+    },
+    {
+      "path": "/en/pages"
+    },
+    {
+      "path": "/en/sections"
+    },
+    {
+      "path": "/en/team"
+    },
+    {
+      "path": "/pt/projetos"
+    },
+    {
+      "path": "/pt/paginas"
+    },
+    {
+      "path": "/pt/secoes"
+    },
+    {
+      "path": "/pt/equipe"
+    },
+    {
+      "path": "/enquiries"
+    }
+  ],
+  "posts": [
+    {
+      "url": "/theme/taipal",
+      "type": "Theme",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Taipal theme",
+        "CSS": "@font-face { font-family:\"Fraunces\"; font-weight:600; font-display:swap; src:url(\"/fonts/fraunces-600.woff2\") format(\"woff2\"); }\n@font-face { font-family:\"Inter\"; font-weight:400; font-display:swap; src:url(\"/fonts/inter-400.woff2\") format(\"woff2\"); }\n@font-face { font-family:\"Inter\"; font-weight:600; font-display:swap; src:url(\"/fonts/inter-600.woff2\") format(\"woff2\"); }\n:root { --paper:#F5F2ED; --stone:#EAE4DA; --ink:#1F1E1C; --muted:#57534D; --rule:#D9D2C7; --clay:#9A4A2A; --clay-dark:#7A3A20; --sage:#4F5C47;\n  --display:\"Fraunces\", Georgia, serif; --body:\"Inter\", system-ui, sans-serif; }\n* { box-sizing:border-box; }\nbody { margin:0; background:var(--paper); color:var(--ink); font:16.5px/1.65 var(--body); }\nimg { display:block; max-width:100%; height:auto; }\na { color:var(--clay); text-underline-offset:.2em; }\na:hover { color:var(--clay-dark); }\nh1, h2, h3 { font-weight:600; line-height:1.15; margin:0 0 .6em; color:var(--ink); }\nh1 { font-family:var(--display); font-size:clamp(2.2rem, 4.6vw, 3.6rem); letter-spacing:-.01em; }\nh2 { font-size:clamp(1.35rem, 2.2vw, 1.7rem); letter-spacing:-.015em; }\nh3 { font-size:1.1rem; letter-spacing:-.01em; }\n.t-wrap { max-width:74rem; margin:0 auto; padding:0 1.5rem; }\n.t-narrow { max-width:46rem; }\n.t-skip { position:absolute; left:1rem; top:-3rem; z-index:10; background:var(--ink); color:var(--paper); padding:.5rem 1rem; font-weight:600; }\n.t-skip:focus { top:1rem; }\n.t-header { border-bottom:1px solid var(--rule); }\n.t-header .t-wrap { display:flex; flex-wrap:wrap; align-items:baseline; gap:.75rem 2.5rem; padding-top:1.4rem; padding-bottom:1.2rem; }\n.t-brand { font-family:var(--display); font-weight:600; font-size:1.6rem; color:var(--ink); text-decoration:none; }\n.t-brand span { font-family:var(--body); font-size:.72rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-left:.6rem; }\n.t-nav ul, .t-langs { display:flex; flex-wrap:wrap; gap:.25rem 1.6rem; list-style:none; margin:0; padding:0; }\n.t-nav a { color:var(--ink); text-decoration:none; font-size:.95rem; }\n.t-nav a:hover, .t-nav a[aria-current=page] { text-decoration:underline; text-decoration-color:var(--clay); text-decoration-thickness:2px; text-underline-offset:.45em; }\n.t-nav a.is-ancestor { text-decoration:underline; text-decoration-color:var(--rule); text-decoration-thickness:2px; text-underline-offset:.45em; }\n.t-langs { margin-left:auto; font-size:.8rem; }\n.t-langs a { color:var(--muted); text-decoration:none; text-transform:uppercase; letter-spacing:.12em; font-weight:600; }\n.t-langs a:hover { color:var(--clay); }\n.t-hero { padding:4rem 0 3.5rem; }\n.t-hero .t-wrap { display:grid; gap:2.5rem 3rem; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); align-items:end; }\n.t-hero p { font-size:1.15rem; color:var(--muted); max-width:30rem; margin:0 0 1.75rem; }\n.t-hero img { width:100%; aspect-ratio:16/10; object-fit:cover; }\n.t-button { display:inline-block; background:var(--ink); color:var(--paper); font-weight:600; text-decoration:none; padding:.8rem 1.5rem; letter-spacing:.01em; }\n.t-button:hover { background:var(--clay-dark); color:var(--paper); }\nbutton.t-button { border:0; cursor:pointer; font:inherit; font-weight:600; }\n.t-section { padding:4rem 0; }\n.t-section + .t-section { border-top:1px solid var(--rule); }\n.t-band { background:var(--stone); }\n.t-lead { font-size:1.2rem; color:var(--muted); max-width:44rem; }\n.t-cards { display:grid; gap:2.5rem 2rem; grid-template-columns:repeat(auto-fill, minmax(18rem, 1fr)); list-style:none; margin:2rem 0 0; padding:0; }\n.t-cards-row { grid-template-columns:repeat(auto-fit, minmax(18rem, 1fr)); }\n.t-card img { aspect-ratio:4/3; object-fit:cover; width:100%; margin-bottom:1rem; }\n.t-card h2, .t-card h3 { font-size:1.2rem; margin-bottom:.3rem; }\n.t-card a { color:var(--ink); text-decoration:none; }\n.t-card a:hover { color:var(--clay); text-decoration:underline; }\n.t-card p { margin:0; color:var(--muted); }\n.t-grid { display:grid; gap:2rem; grid-template-columns:repeat(auto-fit, minmax(14rem, 1fr)); list-style:none; margin:2rem 0 0; padding:0; }\n.t-grid li { border-top:2px solid var(--ink); padding-top:1rem; }\n.t-grid p { margin:0; color:var(--muted); }\n.t-split { display:grid; gap:3rem; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); align-items:start; }\n.t-facts { display:grid; grid-template-columns:auto 1fr; gap:.6rem 1.5rem; margin:0 0 1.5rem; padding:1.5rem 0; border-top:2px solid var(--ink); border-bottom:1px solid var(--rule); }\n.t-facts dt { font-size:.78rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); padding-top:.2em; }\n.t-facts dd { margin:0; }\n.t-figure { margin:0 0 2.5rem; }\n.t-figure img { width:100%; }\n.t-figure figcaption { font-size:.88rem; color:var(--muted); margin-top:.6rem; }\n.t-prose p, .t-prose ul { margin:0 0 1.1rem; }\n.t-page section { margin:0 0 3.5rem; }\n.t-member { display:grid; gap:2rem; grid-template-columns:minmax(0, 2fr) minmax(0, 3fr); align-items:start; }\n.t-role { font-size:.8rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--clay); margin:-.2rem 0 1rem; }\n.t-contact { display:flex; flex-wrap:wrap; gap:1.5rem 3rem; align-items:center; justify-content:space-between; }\n.t-contact p { margin:0; max-width:36rem; color:var(--muted); font-size:1.1rem; }\n.t-form { display:grid; gap:1rem; max-width:36rem; margin-top:1.5rem; }\n.t-field { margin:0; }\n.t-field label { display:block; font-weight:600; margin-bottom:.3rem; }\n.t-field input, .t-field textarea { width:100%; padding:.65rem .8rem; font:inherit; color:var(--ink); background:#fff; border:1px solid var(--rule); border-radius:0; }\n.t-field input:focus, .t-field textarea:focus { outline:2px solid var(--clay); outline-offset:1px; }\n.t-field textarea { min-height:9rem; }\n.t-footer { border-top:1px solid var(--rule); padding:2.5rem 0 3rem; margin-top:2rem; font-size:.92rem; color:var(--muted); }\n.t-footer .t-wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:1rem; }\n.t-footer p { margin:0; }\n.t-footer .t-mark { font-family:var(--display); font-weight:600; color:var(--ink); font-size:1.1rem; }\n@media (max-width: 48rem) { .t-hero .t-wrap, .t-split, .t-member { grid-template-columns:1fr; } .t-langs { margin-left:0; } .t-hero { padding:2.5rem 0; } .t-section { padding:3rem 0; } }\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-home",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Taipal home",
+        "THEME": "Taipal theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Taipal</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"t-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"t-header\"><div class=\"t-wrap\">\n<a class=\"t-brand\" href=\"{{t 'homeHref'}}\">Taipal<span>{{t \"studio\"}}</span></a>\n<nav class=\"t-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"t-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<section class=\"t-hero\"><div class=\"t-wrap\">\n<div>\n<h1 sh-field=\"heading\">{{heading}}</h1>\n{{#if intro}}<p sh-field=\"intro\">{{intro}}</p>{{/if}}\n{{#if ctaLabel}}<a class=\"t-button\" sh-field=\"ctaLabel\" sh-field-attr=\"ctaHref:href\" href=\"{{ctaHref}}\">{{ctaLabel}}</a>{{/if}}\n</div>\n{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 58vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}{{/if}}\n</div></section>\n<section class=\"t-section\"><div class=\"t-wrap\">\n<h2 sh-field=\"casesHeading\">{{casesHeading}}</h2>\n<ul class=\"t-cards t-cards-row\">{{#getRelation cases}}<li class=\"t-card\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<h3><a href=\"{{link}}\">{{title}}</a></h3>{{#if summary}}<p>{{summary}}</p>{{/if}}</li>{{/getRelation}}</ul>\n</div></section>\n<section class=\"t-section t-band\"><div class=\"t-wrap\">\n<h2 sh-field=\"servicesHeading\">{{servicesHeading}}</h2>\n{{#getRelation services}}<div sh-post=\"{{id}}\" data-shio-section=\"{{type}}\">{{#if intro}}<p class=\"t-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}{{#if features}}<ul class=\"t-grid\">{{#each features}}<li data-shio-row=\"features\"><h3 sh-field=\"features.{{@index}}.title\">{{title}}</h3>{{#if body}}<p sh-field=\"features.{{@index}}.body\">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}</div>{{/getRelation}}\n</div></section>\n<section class=\"t-section\"><div class=\"t-wrap t-narrow\">\n<h2 sh-field=\"approachHeading\">{{approachHeading}}</h2>\n<div class=\"t-prose\" sh-field=\"approach\">{{{approach}}}</div>\n</div></section>\n<section class=\"t-section t-band\"><div class=\"t-wrap\">\n<h2 sh-field=\"contactHeading\">{{contactHeading}}</h2>\n<div class=\"t-contact\"><p sh-field=\"contactText\">{{contactText}}</p>{{#if contactLabel}}<a class=\"t-button\" sh-field=\"contactLabel\" sh-field-attr=\"contactHref:href\" href=\"{{contactHref}}\">{{contactLabel}}</a>{{/if}}</div>\n</div></section>\n</main>\n<footer class=\"t-footer\"><div class=\"t-wrap\">\n<p class=\"t-mark\">Taipal</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-listing",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Taipal listing",
+        "THEME": "Taipal theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Taipal</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"t-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"t-header\"><div class=\"t-wrap\">\n<a class=\"t-brand\" href=\"{{t 'homeHref'}}\">Taipal<span>{{t \"studio\"}}</span></a>\n<nav class=\"t-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"t-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<section class=\"t-section\"><div class=\"t-wrap\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if intro}}<p class=\"t-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n<ul class=\"t-cards\">{{#query folder=listFolder type=listType sort=\"title\" limit=\"24\"}}<li class=\"t-card\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 33vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<h2><a href=\"{{link}}\">{{title}}</a></h2>{{#if summary}}<p>{{summary}}</p>{{/if}}</li>{{/query}}</ul>\n</div></section>\n</main>\n<footer class=\"t-footer\"><div class=\"t-wrap\">\n<p class=\"t-mark\">Taipal</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-case",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Taipal case",
+        "THEME": "Taipal theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Taipal</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"t-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"t-header\"><div class=\"t-wrap\">\n<a class=\"t-brand\" href=\"{{t 'homeHref'}}\">Taipal<span>{{t \"studio\"}}</span></a>\n<nav class=\"t-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"t-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<article class=\"t-section\"><div class=\"t-wrap\">\n<h1 sh-field=\"name\">{{name}}</h1>\n{{#if summary}}<p class=\"t-lead\" sh-field=\"summary\">{{summary}}</p>{{/if}}\n{{#if image}}<figure class=\"t-figure\">{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"100vw\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}{{#if caption}}<figcaption sh-field=\"caption\">{{caption}}</figcaption>{{/if}}</figure>{{/if}}\n<div class=\"t-split\">\n<div class=\"t-prose\" sh-field=\"body\">{{{body}}}</div>\n<aside>\n{{#if facts}}<dl class=\"t-facts\">{{#each facts}}<dt data-shio-row=\"facts\" sh-field=\"facts.{{@index}}.label\">{{label}}</dt><dd sh-field=\"facts.{{@index}}.value\">{{value}}</dd>{{/each}}</dl>{{/if}}\n{{#if ctaLabel}}<p><a class=\"t-button\" sh-field=\"ctaLabel\" sh-field-attr=\"ctaHref:href\" href=\"{{ctaHref}}\">{{ctaLabel}}</a></p>{{/if}}\n</aside>\n</div>\n</div></article>\n</main>\n<footer class=\"t-footer\"><div class=\"t-wrap\">\n<p class=\"t-mark\">Taipal</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    },
+    {
+      "url": "/theme/layout-page",
+      "type": "PageLayout",
+      "folder": "/theme",
+      "data": {
+        "TITLE": "Taipal page",
+        "THEME": "Taipal theme",
+        "HTML": "<!doctype html>\n<html lang=\"{{post.locale}}\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{{post.title}} | Taipal</title>\n<meta name=\"description\" content=\"{{post.summary}}\">\n<link rel=\"canonical\" href=\"{{post.canonical}}\">\n{{#translations}}<link rel=\"alternate\" hreflang=\"{{locale}}\" href=\"{{link}}\">\n{{/translations}}<style>{{theme.css}}</style>\n</head>\n<body>\n<a class=\"t-skip\" href=\"#main\">{{t \"skip\"}}</a>\n<header class=\"t-header\"><div class=\"t-wrap\">\n<a class=\"t-brand\" href=\"{{t 'homeHref'}}\">Taipal<span>{{t \"studio\"}}</span></a>\n<nav class=\"t-nav\" aria-label=\"{{t 'nav'}}\"><ul>\n{{#menu title=\"Main\"}}<li>{{#if url}}<a href=\"{{url}}\"{{#if current}} aria-current=\"page\"{{/if}}{{#if ancestor}} class=\"is-ancestor\"{{/if}}>{{name}}</a>{{else}}<span>{{name}}</span>{{/if}}</li>{{/menu}}\n</ul></nav>\n<ul class=\"t-langs\" aria-label=\"{{t 'langs'}}\">{{#translations}}<li><a href=\"{{link}}\" hreflang=\"{{locale}}\" lang=\"{{locale}}\" title=\"{{title}}\">{{language}}</a></li>{{/translations}}</ul>\n</div></header>\n<main id=\"main\">\n<article class=\"t-section t-page\"><div class=\"t-wrap t-narrow\">\n<h1 sh-field=\"title\">{{title}}</h1>\n{{#if image}}<figure class=\"t-figure\">{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 46rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\">{{/image}}</figure>{{/if}}\n{{#getRelation sections}}<section sh-post=\"{{id}}\" data-shio-section=\"{{type}}\">\n{{#if formType}}{{#if formToken}}{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if intro}}<p class=\"t-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n<form class=\"t-form\" method=\"post\" action=\"{{site.formAction}}\"><input type=\"hidden\" sh-field-attr=\"formType:value\" name=\"{{site.formTypeField}}\" value=\"{{formType}}\"><input type=\"hidden\" sh-field-attr=\"formToken:value\" name=\"{{site.formTokenField}}\" value=\"{{formToken}}\">{{#form type=formType}}<p class=\"t-field\"><label for=\"t-form-{{name}}\">{{t name}}</label>{{#if multiline}}<textarea id=\"t-form-{{name}}\" name=\"{{name}}\"{{#if required}} required{{/if}}></textarea>{{else}}<input id=\"t-form-{{name}}\" type=\"{{input}}\" name=\"{{name}}\"{{#if required}} required{{/if}}>{{/if}}</p>{{/form}}<input type=\"text\" name=\"{{site.formHoneypot}}\" value=\"\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" aria-label=\"{{t 'honeypot'}}\" style=\"position:absolute;left:-9999px\"><p><button class=\"t-button\" type=\"submit\" sh-field=\"submitLabel\">{{#if submitLabel}}{{submitLabel}}{{else}}{{t \"send\"}}{{/if}}</button></p></form>\n{{/if}}{{else}}{{#if role}}<div class=\"t-member\">{{#if image}}{{#image image}}<img src=\"{{url}}\" srcset=\"{{srcset}}\" sizes=\"(max-width: 48rem) 100vw, 18rem\" width=\"{{width}}\" height=\"{{height}}\" alt=\"{{../imageAlt}}\" loading=\"lazy\">{{/image}}{{/if}}<div><h2 sh-field=\"name\">{{name}}</h2><p class=\"t-role\" sh-field=\"role\">{{role}}</p><div class=\"t-prose\" sh-field=\"body\">{{{body}}}</div></div></div>\n{{else}}{{#if heading}}<h2 sh-field=\"heading\">{{heading}}</h2>{{/if}}\n{{#if intro}}<p class=\"t-lead\" sh-field=\"intro\">{{intro}}</p>{{/if}}\n{{#if body}}<div class=\"t-prose\" sh-field=\"body\">{{{body}}}</div>{{/if}}\n{{#if features}}<ul class=\"t-grid\">{{#each features}}<li data-shio-row=\"features\"><h3 sh-field=\"features.{{@index}}.title\">{{title}}</h3>{{#if body}}<p sh-field=\"features.{{@index}}.body\">{{body}}</p>{{/if}}</li>{{/each}}</ul>{{/if}}\n{{/if}}{{/if}}\n</section>{{/getRelation}}\n</div></article>\n</main>\n<footer class=\"t-footer\"><div class=\"t-wrap\">\n<p class=\"t-mark\">Taipal</p>\n<p>{{t \"footer\"}}</p>\n<p hidden sh-field=\"description\">{{post.summary}}</p>\n</div></footer>\n</body>\n</html>\n"
+      },
+      "publish": true
+    }
+  ],
+  "postTypeLayout": {
+    "StudioHome": "Taipal home",
+    "Listing": "Taipal listing",
+    "Case": "Taipal case",
+    "InfoPage": "Taipal page"
+  },
+  "pageType": "InfoPage"
+}

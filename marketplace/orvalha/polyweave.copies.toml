@@ -1,0 +1,49 @@
+# The WebP copies the package ships, cut by polyweave's picture.copies from the originals it bought.
+#
+#     polyweave picture.copies --root marketplace/orvalha --source polyweave.copies.toml
+#
+# The originals under assets/source/ are not committed (see .gitignore); each copy's record names
+# its source and this table.
+
+into    = "assets/images"
+quality = 82
+
+[[copy]]
+source = "assets/source/home-reception.png"
+out    = "home-reception.webp"
+side   = 1600
+
+[[copy]]
+source = "assets/source/services-consulting.png"
+out    = "services-consulting.webp"
+side   = 1600
+
+[[copy]]
+source = "assets/source/service-physio.png"
+out    = "service-physio.webp"
+side   = 1600
+
+[[copy]]
+source = "assets/source/team-helena.png"
+out    = "team-helena.webp"
+side   = 1200
+
+[[copy]]
+source = "assets/source/team-rafael.png"
+out    = "team-rafael.webp"
+side   = 1200
+
+[[copy]]
+source = "assets/source/team-corridor.png"
+out    = "team-corridor.webp"
+side   = 1600
+
+[[copy]]
+source = "assets/source/waiting-area.png"
+out    = "waiting-area.webp"
+side   = 1600
+
+[[copy]]
+source = "assets/source/building-front.png"
+out    = "building-front.webp"
+side   = 1600

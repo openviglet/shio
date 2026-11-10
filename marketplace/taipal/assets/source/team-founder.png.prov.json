@@ -1,0 +1,45 @@
+{
+  "artefact": {
+    "bytes": 5831567,
+    "path": "assets/source/team-founder.png",
+    "sha256": "46689ca4633539e85aefef4baf527772af1dd306e1ddd2777c0b76dc0a75ef06"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "asked_resolution": "1792x2240",
+    "aspect_ratio": "4x5",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "1792x2240",
+    "returned_prompt": "{\n  \"high_level_description\": \"A casual iPhone snapshot of an architect in her fifties with short silver-grey hair and round wire-frame glasses, photographed head-and-shoulders in her brick-walled studio beside a steel-framed industrial window on a quiet weekday morning.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A quiet architect's studio on a weekday morning. Exposed red-brick wall fills most of the backdrop behind the subject, mortar lines slightly uneven, sitting in soft shadow falloff on the camera-left side. A single framed architectural drawing hangs softly out of focus on the brick wall in the deep background. Cool north-facing daylight enters from the steel window at camera-right, raking across the scene with a neutral cool-toned white balance. Fine editorial grain sits evenly across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Steel-framed industrial window filling the right third of the frame directly beside the subject's right shoulder. Black mullions divide the glass into a regular grid of rectangular panes. Faint reflection of the room visible in one pane. Cool daylight pours through.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small terracotta pot resting on the windowsill behind the subject's right shoulder, holding a trailing pothos with heart-shaped green leaves spilling down over the sill edge. Slightly out of focus.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus edge of a wooden drafting table slicing diagonally into the lower-left foreground corner. A rolled blueprint tube rests horizontally on its surface, pale blue paper with a thin binding band. Heavily blurred.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Architect in her fifties, head-and-shoulders portrait anchored slightly left of center, body filling roughly 60% of the frame height as the focal subject. Short silver-grey hair cropped close at the nape, round wire-frame glasses catching a small highlight from the window light, fine lines around the eyes and mouth, fair skin with natural detailed texture showing pores and individual grey hairs sharp in focus. Dark charcoal linen button-up shirt with top button undone and soft collar break. Head turned three-quarters toward the window at camera-right, gaze settled just past the lens toward the window light, calm composed expression with a slight closed-mouth half-smile. Brown eyes catching the cool window light with a small reflective highlight.\"\n      }\n    ]\n  }\n}",
+    "seed": 549977,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5831567,
+    "sha256": "46689ca4633539e85aefef4baf527772af1dd306e1ddd2777c0b76dc0a75ef06"
+  },
+  "params": {},
+  "produced_at": "2026-11-10T23:42:45Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary head-and-shoulders portrait of an architect in her fifties with short grey hair and round glasses, wearing a dark linen shirt, standing beside a steel-framed window in a brick studio, calm expression, shallow depth of field, framed from the chest up with both hands out of frame. Natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:kYzk8RmmRZ6-yGFoe3mA3Q"
+}

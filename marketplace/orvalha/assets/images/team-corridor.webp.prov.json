@@ -1,0 +1,37 @@
+{
+  "artefact": {
+    "bytes": 91792,
+    "path": "assets/images/team-corridor.webp",
+    "sha256": "983901e8ce49011a06b483e93136ecbf18b3895181db564d4e345bb9f1b5f5f2"
+  },
+  "elapsed_s": null,
+  "engine": {
+    "name": "picture.copies",
+    "pillow": "12.1.1"
+  },
+  "inputs": [
+    {
+      "path": "assets/source/team-corridor.png",
+      "role": "picture",
+      "sha256": "874519d18d9b0f7d3b0e197e9e58dba52e62807d4b836c14fe85cd3c3a7ee3b2"
+    },
+    {
+      "path": "polyweave.copies.toml",
+      "role": "table",
+      "sha256": "b6fd12809230ff057281bd24e86ee182689011633ee17f5a61027cd84d7a72b7"
+    }
+  ],
+  "kind": "picture",
+  "measurements": {},
+  "params": {
+    "box": null,
+    "made_by": "picture.copies",
+    "quality": 82,
+    "side": 1600
+  },
+  "produced_at": "2026-11-10T23:42:30Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  }
+}

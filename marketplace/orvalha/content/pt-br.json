@@ -1,0 +1,477 @@
+{
+  "posts": [
+    {
+      "url": "/pt/especialidades/clinica-geral",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Clínica geral",
+        "summary": "Check-ups e acompanhamento de adultos, e a primeira consulta a marcar quando você não sabe com quem falar.",
+        "image": "asset:/images/services-consulting.webp",
+        "imageAlt": "Um consultório vazio com mesa de madeira clara, duas cadeiras e uma maca perto da janela."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/family-medicine"
+    },
+    {
+      "url": "/pt/especialidades/pediatria",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Pediatria",
+        "summary": "Consultas para bebês, crianças e adolescentes, num consultório reservado para os mais novos."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/paediatrics"
+    },
+    {
+      "url": "/pt/especialidades/cardiologia",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Cardiologia",
+        "summary": "Consultas com cardiologista. Quando o médico pede exames, a recepção agenda num laboratório parceiro."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/cardiology"
+    },
+    {
+      "url": "/pt/especialidades/dermatologia",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Dermatologia",
+        "summary": "Consultas sobre pele, cabelo e unhas, para adultos e crianças."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/dermatology"
+    },
+    {
+      "url": "/pt/especialidades/fisioterapia",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Fisioterapia",
+        "summary": "Sessões de cerca de cinquenta minutos na sala de terapia do térreo, planejadas com você na primeira visita.",
+        "image": "asset:/images/service-physio.webp",
+        "imageAlt": "Uma sala de fisioterapia vazia com maca, toalhas dobradas, faixas elásticas num gancho e uma barra de madeira na parede, sob a janela."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/physiotherapy"
+    },
+    {
+      "url": "/pt/especialidades/nutricao",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Nutrição",
+        "summary": "Consultas com nutricionista para planejar refeições que caibam na sua rotina e no seu orçamento."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/nutrition"
+    },
+    {
+      "url": "/pt/especialidades/psicologia",
+      "type": "Specialty",
+      "folder": "/pt/especialidades",
+      "data": {
+        "name": "Psicologia",
+        "summary": "Sessões semanais com psicóloga, presenciais ou por vídeo."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/specialties/psychology"
+    },
+    {
+      "url": "/pt/equipe/helena-duarte",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Dra. Helena Duarte",
+        "role": "Médica de família e diretora clínica",
+        "summary": "Cuida de famílias deste bairro há vinte anos e coordena a equipe da clínica.",
+        "image": "asset:/images/team-helena.webp",
+        "imageAlt": "Uma mulher sorridente de uns cinquenta anos, de cabelo grisalho curto, jaleco branco sobre blusa verde e estetoscópio no pescoço, num corredor claro."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/helena-duarte"
+    },
+    {
+      "url": "/pt/equipe/caio-nogueira",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Dr. Caio Nogueira",
+        "role": "Cardiologista",
+        "summary": "Atende às terças e quintas à tarde e explica cada exame antes de pedi-lo."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/caio-nogueira"
+    },
+    {
+      "url": "/pt/equipe/livia-okamoto",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Dra. Lívia Okamoto",
+        "role": "Pediatra",
+        "summary": "Acompanha crianças das primeiras semanas até a adolescência e mantém uma estante de livros ilustrados no consultório."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/livia-okamoto"
+    },
+    {
+      "url": "/pt/equipe/bianca-ferraz",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Dra. Bianca Ferraz",
+        "role": "Dermatologista",
+        "summary": "Atende adultos e crianças às segundas e quartas pela manhã."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/bianca-ferraz"
+    },
+    {
+      "url": "/pt/equipe/rafael-moura",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Rafael Moura",
+        "role": "Fisioterapeuta",
+        "summary": "Planeja cada ciclo de sessões com o paciente e anota os exercícios de casa no papel.",
+        "image": "asset:/images/team-rafael.webp",
+        "imageAlt": "Um homem sorridente de uns trinta anos, de cabelo escuro curto e barba curta, de camisa polo azul-marinho, diante de uma barra de madeira na parede."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/rafael-moura"
+    },
+    {
+      "url": "/pt/equipe/julia-andrade",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Júlia Andrade",
+        "role": "Nutricionista",
+        "summary": "Parte do que você já cozinha e come, e planeja as mudanças uma semana de cada vez."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/julia-andrade"
+    },
+    {
+      "url": "/pt/equipe/clara-sampaio",
+      "type": "Practitioner",
+      "folder": "/pt/equipe",
+      "data": {
+        "name": "Clara Sampaio",
+        "role": "Psicóloga",
+        "summary": "Atende adultos e adolescentes, presencialmente na clínica ou por vídeo."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/team/clara-sampaio"
+    },
+    {
+      "url": "/inicio",
+      "type": "ClinicHome",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Uma clínica de bairro",
+        "description": "A Orvalha é uma pequena clínica ambulatorial com sete especialidades no mesmo endereço: clínica geral, pediatria, cardiologia, dermatologia, fisioterapia, nutrição e psicologia.",
+        "heading": "Cuidado sem pressa, perto de casa",
+        "intro": "Sete especialidades no mesmo lugar, uma recepção que responde no mesmo dia e consultas que começam na hora.",
+        "image": "asset:/images/home-reception.webp",
+        "imageAlt": "Uma recepcionista num balcão de madeira clara recebendo uma visitante numa recepção iluminada, com plantas e janelas altas.",
+        "ctaLabel": "Pedir um agendamento",
+        "ctaHref": "/agendamento",
+        "servicesHeading": "O que oferecemos",
+        "services": [
+          "/pt/especialidades/clinica-geral",
+          "/pt/especialidades/pediatria",
+          "/pt/especialidades/fisioterapia"
+        ],
+        "servicesLinkLabel": "Ver todas as especialidades",
+        "servicesLinkHref": "/especialidades",
+        "teamHeading": "Parte da equipe",
+        "team": [
+          "/pt/equipe/helena-duarte",
+          "/pt/equipe/rafael-moura",
+          "/pt/equipe/livia-okamoto"
+        ],
+        "teamLinkLabel": "Conhecer a equipe toda",
+        "teamLinkHref": "/equipe",
+        "visitHeading": "Sua primeira visita",
+        "visitBody": "<p>Chegue dez minutos antes e traga um documento de identidade e os exames recentes que tiver. A recepção abre a sua ficha enquanto você espera.</p><p>A sala de espera fica no térreo, com água, um cantinho tranquilo para crianças e acesso sem degraus desde a rua.</p>",
+        "visitImage": "asset:/images/waiting-area.webp",
+        "visitImageAlt": "Uma sala de espera tranquila com poltronas verdes, uma mesa baixa de madeira com jarra de água, plantas e uma janela grande e ensolarada."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/"
+    },
+    {
+      "url": "/especialidades",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Especialidades",
+        "description": "As especialidades da Orvalha, cada uma descrita em uma ou duas frases.",
+        "intro": "Todas as especialidades são agendadas do mesmo jeito: pelo formulário de agendamento ou na recepção.",
+        "listFolder": "/pt/especialidades",
+        "listType": "Specialty"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/services"
+    },
+    {
+      "url": "/equipe",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Nossa equipe",
+        "description": "Os médicos e terapeutas que atendem na Orvalha.",
+        "intro": "Médicos e terapeutas que trabalham juntos e compartilham uma única ficha de cada paciente.",
+        "image": "asset:/images/team-corridor.webp",
+        "imageAlt": "Três profissionais de saúde, dois de jaleco branco, conversando num corredor claro da clínica.",
+        "listFolder": "/pt/equipe",
+        "listType": "Practitioner"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/team"
+    },
+    {
+      "url": "/pt/secoes/appointment-how",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como funciona",
+        "body": "<p>Diga como falar com você e quando prefere vir. A recepção liga ou escreve em até um dia útil para oferecer um horário e a especialidade certa.</p><p>Por favor, não escreva aqui sobre sintomas ou condições de saúde: você vai falar disso na consulta. Em caso de emergência, ligue 192 ou procure o pronto-socorro mais próximo.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/appointment-how"
+    },
+    {
+      "url": "/pt/secoes/contact-address",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Endereço e horário",
+        "body": "<p>Rua das Paineiras, 214, Jardim do Orvalho.</p><ul><li>Segunda a sexta: das 7h30 às 19h</li><li>Sábado: das 8h às 12h</li><li>Domingos e feriados: fechado</li></ul><p>Escreva para <a href=\"mailto:contato@orvalha.example\">contato@orvalha.example</a>. Respondemos em até um dia útil.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact-address"
+    },
+    {
+      "url": "/pt/secoes/contact-arrive",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como chegar",
+        "body": "<ul><li>De ônibus: as linhas que param na Praça das Paineiras deixam você a dois minutos a pé.</li><li>De carro: quatro vagas atrás do prédio, uma delas reservada para pessoas com mobilidade reduzida.</li><li>De bicicleta: há um bicicletário ao lado da entrada.</li></ul><p>A entrada tem rampa ao lado dos degraus, e um elevador leva ao primeiro andar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact-arrive"
+    },
+    {
+      "url": "/pt/secoes/contact-about",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Uma clínica inventada para um exemplo",
+        "body": "<p>A Orvalha é inventada. A clínica, o endereço e todas as pessoas deste site são fictícios, e nenhum agendamento feito aqui é real. É um site de exemplo do <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, o CMS de código aberto, instalado a partir de um único pacote do marketplace.</p><p>As fotografias foram geradas para o pacote. As fontes são Plus Jakarta Sans e Inter, ambas sob a SIL Open Font Licence e servidas pelo próprio site.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact-about"
+    },
+    {
+      "url": "/pt/secoes/not-found",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Esta página não está aqui",
+        "body": "<p>A página que você pediu não existe, ou mudou de endereço.</p><p>Recomece pela <a href=\"/inicio\">página inicial</a> ou <a href=\"/agendamento\">peça um agendamento</a>.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/not-found"
+    },
+    {
+      "url": "/pt/secoes/appointment-form",
+      "type": "SectionForm",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Seus dados",
+        "intro": "Só como falar com você e quando é melhor.",
+        "formType": "AppointmentRequest",
+        "submitLabel": "Enviar pedido",
+        "formToken": ""
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/appointment-form"
+    },
+    {
+      "url": "/agendamento",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Pedir um agendamento",
+        "description": "Peça um agendamento e a recepção retorna em até um dia útil.",
+        "sections": [
+          "/pt/secoes/appointment-how",
+          "/pt/secoes/appointment-form"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/appointments"
+    },
+    {
+      "url": "/contato",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Contato e como chegar",
+        "description": "Endereço, horário de funcionamento e como chegar à clínica Orvalha.",
+        "sections": [
+          "/pt/secoes/contact-address",
+          "/pt/secoes/contact-arrive",
+          "/pt/secoes/contact-about"
+        ],
+        "image": "asset:/images/building-front.webp",
+        "imageAlt": "A fachada de uma clínica térrea branca com pérgola de madeira, rampa e degraus até uma porta de vidro, numa rua arborizada."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/contact"
+    },
+    {
+      "url": "/pagina-nao-encontrada",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Página não encontrada",
+        "description": "A página que você pediu não está no site da Orvalha.",
+        "sections": [
+          "/pt/secoes/not-found"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/404"
+    },
+    {
+      "url": "/menu/pt-br/home",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Início",
+        "target": [
+          "/inicio"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/services",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Especialidades",
+        "target": [
+          "/especialidades"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/team",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Equipe",
+        "target": [
+          "/equipe"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/appointments",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Agendamento",
+        "target": [
+          "/agendamento"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/contact",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Contato",
+        "target": [
+          "/contato"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br",
+      "type": "Menu",
+      "folder": "/menu/pt-br",
+      "data": {
+        "title": "Principal",
+        "items": [
+          "/menu/pt-br/home",
+          "/menu/pt-br/services",
+          "/menu/pt-br/team",
+          "/menu/pt-br/appointments",
+          "/menu/pt-br/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/menu/en-us"
+    },
+    {
+      "url": "/pt/secoes/strings",
+      "type": "StringTable",
+      "folder": "/pt/secoes",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Pular para o conteúdo\nnav = Navegação principal\nlangs = Outros idiomas\nhomeHref = /inicio\nhours = Segunda a sexta das 7h30 às 19h, sábado das 8h às 12h\nfooter = Uma clínica fictícia, feita para mostrar o que o Viglet Shio constrói.\nname = Seu nome\nemail = E-mail\nphone = Telefone (opcional)\npreferredTime = Dias e horários de preferência\nsend = Enviar\nhoneypot = Deixe este campo vazio"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/strings"
+    }
+  ]
+}

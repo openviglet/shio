@@ -289,6 +289,30 @@ derive `manifest:i18n` and every released instance would refuse every package. S
 reaches what the instance itself reads (the packages in the jar, and `shio.blueprint.path`), and
 delivering it through the public catalogue waits for a catalogue version released instances never read.
 
+**Three more finished sites (SH1431).** `marketplace/ervalume` (a restaurant: menu, booking form),
+`marketplace/orvalha` (a clinic: specialties, team, appointment request asking no health data) and
+`marketplace/taipal` (an architecture studio: services, three cases, team, enquiry) are published
+beside Quilhara in its standard: own theme, bilingual content linked by `translationOf`, eight
+photographs bought through polyweave under a 1.00 USD budget each that the owner set, and a closed
+form proposed through `forms`. Each declares its own home and enquiry types (`RestaurantHome`,
+`ClinicHome`, `StudioHome`, `TableBooking`, `AppointmentRequest`, `ProjectEnquiry`), because
+`ShBlueprintAccessibilityTest` applies every package into one database and a shared name must mean
+the same fields; the generic types are byte copies of Quilhara's. Every photograph was looked at by
+a person before it shipped: generated photos of people fail at hands, so the portraits are framed
+with hands out and several scenes have no people (PW696 asks polyweave to check this). The packager
+leaves out the `*.prov.json` polyweave writes beside each copy (PW694). Each has a
+`blueprint.apply.<name>` ceiling, and `full-names.test.mjs` reads every package's content.
+
+**That version is `marketplace/v2/marketplace.json` (SH1431).** `marketplace.mjs` writes it beside
+the first: the same entries, plus `i18n`, plus `manifest:i18n` in `requires`, with a `downloadUrl`
+under `v2/` whose zip's manifest keeps `i18n`, so a package installed from it is still listed in the
+reader's language (the installed copy, not the catalogue entry, is what the listing shows after an
+install). README and screenshots are not copied; the v2 entry points at the first catalogue's.
+`ShMarketplaceProperties.DEFAULT_URL` names `v2/` from this release; `marketplace.json` keeps its exact
+bytes for every instance released before, which the generator's SH1431 test holds. An instance on this
+release that starts before the site deploys `v2/` sees the catalogue as unreachable, which leaves the
+built-in packages listed (SH646's rule), until the next deploy.
+
 ## The three packages that carry an index page (SH216)
 
 SH156 gave `landing` and `marketing-site` a front end and deliberately stopped there. `blog`, `docs`

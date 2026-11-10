@@ -58,7 +58,7 @@ instance reads the published one with nothing configured. These are the defaults
 
 ```properties
 shio.marketplace.enabled=true
-shio.marketplace.url=https://shio.viglet.org/marketplace/marketplace.json
+shio.marketplace.url=https://shio.viglet.org/marketplace/v2/marketplace.json
 shio.marketplace.timeout-millis=5000
 shio.blueprint.path=store/blueprints
 ```

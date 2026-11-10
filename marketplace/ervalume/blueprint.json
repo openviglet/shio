@@ -1,0 +1,95 @@
+{
+  "formatVersion": 1,
+  "name": "ervalume",
+  "title": "Ervalume restaurant",
+  "version": "1.0.0",
+  "description": "A finished bilingual sample site for a fictional neighbourhood restaurant that cooks over wood: home, menu with prices, about, table booking and contact pages in English and Brazilian Portuguese, with a designed theme, self-hosted fonts and its own photography. Apply it to a new site to see what Viglet Shio renders.",
+  "i18n": {
+    "pt-BR": {
+      "title": "Restaurante Ervalume",
+      "description": "Um site de exemplo pronto e bilíngue para um restaurante de bairro fictício que cozinha na lenha: páginas de início, cardápio com preços, sobre, reserva de mesa e contato em português e inglês, com tema desenhado, fontes próprias e fotografia original. Aplique em um site novo para ver o que o Viglet Shio desenha."
+    }
+  },
+  "params": {
+    "type": "object",
+    "properties": {}
+  },
+  "postTypes": [
+    "post-types/RestaurantHome.json",
+    "post-types/FoodMenu.json",
+    "post-types/Dish.json",
+    "post-types/AboutPage.json",
+    "post-types/Person.json",
+    "post-types/TableBooking.json",
+    "post-types/InfoPage.json",
+    "post-types/Menu.json",
+    "post-types/MenuItem.json",
+    "post-types/SectionForm.json",
+    "post-types/SectionRichText.json",
+    "post-types/StringTable.json"
+  ],
+  "content": [
+    "content/theme.json",
+    "content/en-us.json",
+    "content/pt-br.json"
+  ],
+  "assets": [
+    {
+      "path": "assets/images/home-dining-room.webp",
+      "alt": "An empty dining room set for the evening, a row of wooden tables under brass lamps, pots of rosemary and basil on the window sill and a wood oven glowing at the back."
+    },
+    {
+      "path": "assets/images/dish-fish.webp",
+      "alt": "A whole grilled fish with charred skin on a dark plate, beside a small bowl of green herb sauce, half a lime and roasted cassava."
+    },
+    {
+      "path": "assets/images/kitchen-fire.webp",
+      "alt": "A brick wood-fired grill with a whole fish, red peppers and courgettes over glowing embers, herbs hanging from a rail above and cast iron pans stacked beside it."
+    },
+    {
+      "path": "assets/images/chef-portrait.webp",
+      "alt": "Portrait from the chest up of a chef in a linen apron in her kitchen, copper pans hanging behind her, smiling."
+    },
+    {
+      "path": "assets/images/market-herbs.webp",
+      "alt": "A market stall with a wooden crate of coriander and basil, bundles of chives, a basket of red chillies, cassava roots and limes."
+    },
+    {
+      "path": "assets/images/dessert.webp",
+      "alt": "A roasted banana with cinnamon sticks, a scoop of coconut ice cream and dark caramel on a pale ceramic plate, a spoon beside it."
+    },
+    {
+      "path": "assets/images/street-front.webp",
+      "alt": "The front of a small restaurant on a cobbled street, whitewashed walls, open green wooden doors, potted herbs and two small tables with chairs on the pavement."
+    },
+    {
+      "path": "assets/images/table-set.webp",
+      "alt": "A round table for four in front of a tall window, set with a linen cloth, plates, folded napkins, glasses, a carafe of water and a small jar of fresh herbs."
+    },
+    "assets/fonts/fraunces-600.woff2",
+    "assets/fonts/plus-jakarta-sans-wght.woff2"
+  ],
+  "forms": {
+    "folder": "/enquiries",
+    "types": [
+      "TableBooking"
+    ]
+  },
+  "verify": {
+    "posts": [
+      "/",
+      "/inicio",
+      "/menu",
+      "/cardapio",
+      "/about",
+      "/sobre",
+      "/book",
+      "/reservas",
+      "/contact",
+      "/contato",
+      "/404",
+      "/pagina-nao-encontrada"
+    ],
+    "checks": "content"
+  }
+}
