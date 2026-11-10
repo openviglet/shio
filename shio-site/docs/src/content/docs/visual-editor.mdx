@@ -1,14 +1,14 @@
 ---
-title: The Universal Editor
+title: The Visual Editor
 description: "Edit a page where it is read: open it in the console, change its text and sections on the page, and save the change to the draft."
 sidebar:
-  label: The Universal Editor
+  label: The Visual Editor
 ---
 
 import { Steps } from "@astrojs/starlight/components";
 
 This page is for curators who change a site's pages and for developers who make a template or
-a front end editable. With the **Universal Editor** you open the rendered page inside the
+a front end editable. With the **Visual Editor** you open the rendered page inside the
 console, change the text, fields and sections where you see them, and save the change to the
 page's **draft**. The live page stays as it is until you publish.
 
@@ -23,7 +23,7 @@ page's **draft**. The live page stays as it is until you publish.
 
 </Steps>
 
-The page opens in the Universal Editor, drafts included, so a page that nothing links to yet
+The page opens in the Visual Editor, drafts included, so a page that nothing links to yet
 can be edited where it will be read. Sections, menus and other posts that are not pages open in
 their form instead.
 
@@ -34,7 +34,7 @@ Other ways to open a page:
 
 - Choose its title in the site's **Pages** view.
 - Choose **Edit on the page**, beside **Preview**, in the page's form.
-- Choose **Universal Editor** in the console's sidebar, then a site to open its home page, or
+- Choose **Visual Editor** in the console's sidebar, then a site to open its home page, or
   enter an external URL under **Open External URL**.
 
 ## Edit text and other fields
@@ -176,7 +176,7 @@ For a site served by your own front end (a Next.js app or anything else over the
 
 </Steps>
 
-The page is then editable in the Universal Editor through **Open External URL**.
+The page is then editable in the Visual Editor through **Open External URL**.
 
 :::caution
 The bridge does nothing without that meta tag. A framed page cannot tell who framed it, so
@@ -208,7 +208,7 @@ A field belongs to the nearest `sh-post` above it, and to the page's post when t
 ## Save and publish endpoints
 
 Every save is one merge per post into its draft, with the changed fields in `attrs`. The
-Universal Editor in the console calls:
+Visual Editor in the console calls:
 
 ```http
 PATCH /api/v2/post-unified/{id}     {"attrs": {"heading": "..."}, "publish": false}

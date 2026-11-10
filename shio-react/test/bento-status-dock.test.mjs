@@ -262,7 +262,7 @@ test("SH971: the shell loads the choice and offers it, and the kinds agree with 
 })
 
 /*
- * SH972 — the Universal Editor is outside the shell, so it docks the assistant itself, in flow at
+ * SH972 — the Visual Editor is outside the shell, so it docks the assistant itself, in flow at
  * the foot of its properties panel, and its saves drive it.
  */
 test("SH972: the inline dock renders in flow, never pinned over the page", async () => {
@@ -285,11 +285,11 @@ test("SH972: the editor docks it in the properties panel, and its saves drive it
     "SH972: the dock is not in the editor's properties panel, so the one surface that saves on"
       + " every click has no outcome channel")
   const persist = editor.slice(editor.indexOf("const persist = async"), editor.indexOf("const refresh = () =>"))
-  assert.match(persist, /setWorking\(t\("universalEditor\.saving"\)\)/, "SH972: a save in flight moves nothing")
+  assert.match(persist, /setWorking\(t\("visualEditor\.saving"\)\)/, "SH972: a save in flight moves nothing")
   assert.match(persist, /setWorking\(null\)/, "SH972: the working state outlives the save")
   assert.match(persist, /reportRefusal\(error,/,
     "SH972: a refused save is the word Error again rather than the server's problem document")
-  assert.match(persist, /universalEditor\.draftSavedFields/, "SH972: a landed save does not name its fields")
+  assert.match(persist, /visualEditor\.draftSavedFields/, "SH972: a landed save does not name its fields")
 })
 
 /*

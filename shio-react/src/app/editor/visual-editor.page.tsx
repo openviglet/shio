@@ -21,7 +21,7 @@ import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
-import { ShUniversalEditorService, type PatternSummary } from "@/services/universal-editor/universal-editor.service"
+import { ShVisualEditorService, type PatternSummary } from "@/services/visual-editor/visual-editor.service"
 import { fillFromDefaults, freeInstance, placementDocument, unfilled } from "./pattern-placement"
 import { copyReference } from "./section-reference"
 import { buttonIndex, caretY, gapIndex, placeAt } from "./section-placement"
@@ -34,14 +34,14 @@ import { cn } from "@/lib/utils"
 import type {
   ContentChange, FrameRect, InsertableContainer, InsertableType, SectionOp, SelectedElement,
   SelectedSection,
-} from "@/models/universal-editor/universal-editor.model"
+} from "@/models/visual-editor/visual-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 import { EDITOR_PATH_PARAM, followedAddress, framePath } from "@/lib/editor-path"
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
 import { Spinner } from "@/components/spinner"
 
 const siteService = new ShSiteService()
-const editorService = new ShUniversalEditorService()
+const editorService = new ShVisualEditorService()
 // SH1400 — publishing through the form's own call, with its ETag and its gate override.
 const unifiedService = new ShPostUnifiedService()
 
@@ -129,14 +129,14 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, dr
           and "nobody said", and the server distinguishes them. `fix` is present only for the
           second, and it is the line that would give this page a catalogue.
         */}
-        {container.fix ?? t("universalEditor.nothingFits")}
+        {container.fix ?? t("visualEditor.nothingFits")}
       </p>
     )
   }
   return (
     <div className="space-y-2">
       <div className="text-xs font-medium text-muted-foreground">
-        {t("universalEditor.addSection")}
+        {t("visualEditor.addSection")}
       </div>
       {container.accepts.map((type) => (
         <div key={type.type} className="rounded-md border p-2"
@@ -157,13 +157,13 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, dr
               {relative && (
                 <Button variant="outline" size="sm" className="text-xs" disabled={busy}
                   onClick={() => onInsert(type, false)}>
-                  <Plus className="h-3 w-3 mr-1" />{t("universalEditor.insertAbove")}
+                  <Plus className="h-3 w-3 mr-1" />{t("visualEditor.insertAbove")}
                 </Button>
               )}
               <Button variant="outline" size="sm" className="text-xs" disabled={busy}
                 onClick={() => onInsert(type, true)}>
                 <Plus className="h-3 w-3 mr-1" />
-                {relative ? t("universalEditor.insertBelow") : t("universalEditor.insertAtEnd")}
+                {relative ? t("visualEditor.insertBelow") : t("visualEditor.insertAtEnd")}
               </Button>
             </div>
           ) : (
@@ -173,7 +173,7 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, dr
               so a shorter list would be a quieter lie than an honest gap.
             */
             <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-              {t("universalEditor.typeNotProvisioned", { type: type.type })}
+              {t("visualEditor.typeNotProvisioned", { type: type.type })}
             </p>
           )}
         </div>
@@ -207,7 +207,7 @@ function FieldsForm({ postId, focusProp, pendingValue, onEdit, t }: {
   onEdit: (field: { prop: string; label: string; value?: string }, value: string) => void
   t: (key: string, options?: Record<string, unknown>) => string
 }) {
-  const editorService = useMemo(() => new ShUniversalEditorService(), [])
+  const editorService = useMemo(() => new ShVisualEditorService(), [])
   const postTypeService = useMemo(() => new ShPostTypeService(), [])
   const post = useQuery({
     queryKey: addressKey(`id:${postId}|editable`),
@@ -240,7 +240,7 @@ function FieldsForm({ postId, focusProp, pendingValue, onEdit, t }: {
         if (raw !== undefined && raw !== null && typeof raw === "object") {
           return (
             <div key={field.name} id={`ue-field-${field.name}`} className="rounded-md border p-2 text-xs text-muted-foreground">
-              {label}: {t("universalEditor.fieldOnPage")}
+              {label}: {t("visualEditor.fieldOnPage")}
             </div>
           )
         }
@@ -270,19 +270,19 @@ function PatternRail({ patterns, busy, t, onInsert }: {
 }) {
   return (
     <div className="space-y-2 pt-2">
-      <div className="text-xs font-medium text-muted-foreground">{t("universalEditor.patterns")}</div>
+      <div className="text-xs font-medium text-muted-foreground">{t("visualEditor.patterns")}</div>
       {patterns.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t("universalEditor.noPatterns")}</p>
+        <p className="text-xs text-muted-foreground">{t("visualEditor.noPatterns")}</p>
       ) : patterns.map((pattern) => (
         <div key={pattern.name} className="rounded-md border p-2">
           <div className="text-sm font-medium">{pattern.title || pattern.name}</div>
           <p className="text-xs text-muted-foreground mt-0.5">{pattern.sections.join(", ")}</p>
           <p className="text-xs text-muted-foreground">
-            {t("universalEditor.patternPushed", { when: new Date(pattern.pushed).toLocaleString() })}
+            {t("visualEditor.patternPushed", { when: new Date(pattern.pushed).toLocaleString() })}
           </p>
           <Button variant="outline" size="sm" className="text-xs mt-2" disabled={busy}
             onClick={() => onInsert(pattern)}>
-            <Plus className="h-3 w-3 mr-1" />{t("universalEditor.insertPattern")}
+            <Plus className="h-3 w-3 mr-1" />{t("visualEditor.insertPattern")}
           </Button>
         </div>
       ))}
@@ -319,12 +319,12 @@ function SectionOverlay({ rect, label, position, index, of, writable, t, onOp }:
         <span className="px-1 font-medium">{label}</span>
         <span className="px-1 text-gray-400">{position}</span>
         <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
-          title={t("universalEditor.moveUp")} disabled={!writable || index === 0}
+          title={t("visualEditor.moveUp")} disabled={!writable || index === 0}
           onClick={() => onOp("move", index - 1)}>
           <ArrowUp className="h-3.5 w-3.5" />
         </button>
         <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
-          title={t("universalEditor.moveDown")} disabled={!writable || index >= of - 1}
+          title={t("visualEditor.moveDown")} disabled={!writable || index >= of - 1}
           onClick={() => onOp("move", index + 1)}>
           <ArrowDown className="h-3.5 w-3.5" />
         </button>
@@ -334,12 +334,12 @@ function SectionOverlay({ rect, label, position, index, of, writable, t, onOp }:
           A curator who finds that out by editing one of them has been surprised (P7).
         */}
         <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
-          title={t("universalEditor.duplicateHint")} disabled={!writable}
+          title={t("visualEditor.duplicateHint")} disabled={!writable}
           onClick={() => onOp("duplicate")}>
           <Copy className="h-3.5 w-3.5" />
         </button>
         <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-red-700 disabled:opacity-40"
-          title={t("universalEditor.removeSection")} disabled={!writable}
+          title={t("visualEditor.removeSection")} disabled={!writable}
           onClick={() => onOp("remove")}>
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -388,9 +388,9 @@ const BRIDGE_BADGE: Record<BridgeState, string> = {
  * second curator their site is broken would be a worse defect than the one being fixed.
  */
 const BRIDGE_LABEL: Record<BridgeState, string> = {
-  waiting: "universalEditor.connecting",
-  ready: "universalEditor.connected",
-  absent: "universalEditor.notConnected",
+  waiting: "visualEditor.connecting",
+  ready: "visualEditor.connected",
+  absent: "visualEditor.notConnected",
 }
 
 export default function VisualEditorPage() {
@@ -580,7 +580,7 @@ export default function VisualEditorPage() {
     }
   })
   const siteError = site.isError && !isCancelled(site.error)
-    ? t("universalEditor.siteNotFound", { key: siteId })
+    ? t("visualEditor.siteNotFound", { key: siteId })
     : null
   const src = externalSrc ?? fetchedSrc
   const bridge: BridgeState = handshake.src === src ? handshake.bridge : "waiting"
@@ -796,7 +796,7 @@ export default function VisualEditorPage() {
    * below, since this console mounts a `BrowserRouter` and `useBlocker` needs a data router.
    */
   // SH1090 — the router blocker asks with the editor's own words, which name how many edits.
-  useUnsavedGuard(changes.size > 0, t("universalEditor.leaveConfirm", { count: changes.size }))
+  useUnsavedGuard(changes.size > 0, t("visualEditor.leaveConfirm", { count: changes.size }))
 
   // SH303 — resolve the declared field labels rather than reading them off the page: one place
   // declares a label, and it is the post-type. SH305 — and it is the *selected post's* type, not
@@ -1025,9 +1025,9 @@ export default function VisualEditorPage() {
       // again — the economy this had as state, unchanged.
       client.setQueryData(
         addressKey(`summary:editorSections|${selectedSection.pagePostId}|${next.length}`), next)
-      toast.success(t("universalEditor.sectionSaved"))
+      toast.success(t("visualEditor.sectionSaved"))
     } catch {
-      toast.error(t("universalEditor.sectionSaveError"))
+      toast.error(t("visualEditor.sectionSaveError"))
       // The page now shows an order the content does not have, and there is no way to put one
       // element back without knowing what else changed. A reload is the honest repair.
       refresh()
@@ -1057,10 +1057,10 @@ export default function VisualEditorPage() {
       const entries = [...sectionArray.entries]
       entries.splice(section.index + 1, 0, copyReference(entries[section.index], copy))
       await editorService.patch(section.pagePostId, { [SECTIONS_FIELD]: entries })
-      toast.success(t("universalEditor.sectionDuplicated"))
+      toast.success(t("visualEditor.sectionDuplicated"))
       refresh()
     } catch {
-      toast.error(t("universalEditor.sectionSaveError"))
+      toast.error(t("visualEditor.sectionSaveError"))
       refresh()
     } finally {
       setReordering(false)
@@ -1113,7 +1113,7 @@ export default function VisualEditorPage() {
       const pattern = await editorService.pattern(summary.name)
       const missing = unfilled(pattern)
       if (missing.length) {
-        toast.error(t("universalEditor.patternNeedsValues", { name: summary.name, params: missing.join(", ") }))
+        toast.error(t("visualEditor.patternNeedsValues", { name: summary.name, params: missing.join(", ") }))
         return
       }
       const page = await editorService.agentRead(pageId)
@@ -1122,10 +1122,10 @@ export default function VisualEditorPage() {
         pattern: fillFromDefaults(pattern), page, instance: freeInstance(summary.name, page), after: at,
       })
       await editorService.applyDocument(document)
-      toast.success(t("universalEditor.patternInserted", { name: summary.title || summary.name }))
+      toast.success(t("visualEditor.patternInserted", { name: summary.title || summary.name }))
       refresh()
     } catch {
-      toast.error(t("universalEditor.sectionInsertError"))
+      toast.error(t("visualEditor.sectionInsertError"))
     } finally {
       setInserting(false)
     }
@@ -1145,16 +1145,16 @@ export default function VisualEditorPage() {
         folderId: await folderForSection(pageId),
         postType: type.type,
         data: titleField
-          ? { [titleField]: t("universalEditor.newSection", { type: type.title ?? type.type }) }
+          ? { [titleField]: t("visualEditor.newSection", { type: type.title ?? type.type }) }
           : {},
       })
       const spellsPaths = sectionArray.entries.some((entry) => typeof entry === "string" && entry.startsWith("/"))
       const reference = spellsPaths && created.furl ? created.furl : created.id
       await editorService.patch(pageId, { [SECTIONS_FIELD]: placeAt(sectionArray.entries, reference, at) })
-      toast.success(t("universalEditor.sectionInserted"))
+      toast.success(t("visualEditor.sectionInserted"))
       refresh()
     } catch {
-      toast.error(t("universalEditor.sectionInsertError"))
+      toast.error(t("visualEditor.sectionInsertError"))
     } finally {
       setInserting(false)
     }
@@ -1248,14 +1248,14 @@ export default function VisualEditorPage() {
    */
   const reportSaveDelta = (delta: SaveDelta) => {
     const moved = (value: boolean | null, yes: string, no: string) =>
-      t(value === null ? "universalEditor.deltaUnchecked" : value ? yes : no)
+      t(value === null ? "visualEditor.deltaUnchecked" : value ? yes : no)
     pushReport({
       tone: delta.unexpected ? "attention" : "success",
-      text: t("universalEditor.saveDelta", {
+      text: t("visualEditor.saveDelta", {
         fields: delta.fields.join(", "),
-        structure: moved(delta.structureMoved, "universalEditor.structureMoved", "universalEditor.structureSame"),
-        appearance: moved(delta.appearanceMoved, "universalEditor.appearanceMoved", "universalEditor.appearanceSame"),
-      }) + (delta.unexpected ? ` ${t("universalEditor.textMovedAppearance")}` : ""),
+        structure: moved(delta.structureMoved, "visualEditor.structureMoved", "visualEditor.structureSame"),
+        appearance: moved(delta.appearanceMoved, "visualEditor.appearanceMoved", "visualEditor.appearanceSame"),
+      }) + (delta.unexpected ? ` ${t("visualEditor.textMovedAppearance")}` : ""),
     }, "saves")
   }
 
@@ -1275,7 +1275,7 @@ export default function VisualEditorPage() {
 
     setSaving(true)
     // SH972 — the dock says a patch is in flight, and the words go with it when it lands.
-    setWorking(t("universalEditor.saving"))
+    setWorking(t("visualEditor.saving"))
     const fields = [...new Set([...byPost.values()].flatMap((attrs) => Object.keys(attrs)))]
     // SH1109 — the page's digests before the write, so the save can say what moved.
     const pageId = pageOfFrame
@@ -1293,17 +1293,17 @@ export default function VisualEditorPage() {
       // SH1393 — a widget's edit is drawn by the template, not by the bridge: show the page again.
       if (saved.some((change) => change.type === "widget")) refresh()
       toast.success(publish
-        ? t("universalEditor.published")
+        ? t("visualEditor.published")
         : fields.length
-          ? t("universalEditor.draftSavedFields", { fields: fields.join(", ") })
-          : t("universalEditor.draftSaved"))
+          ? t("visualEditor.draftSavedFields", { fields: fields.join(", ") })
+          : t("visualEditor.draftSaved"))
       if (pageId && saved.length) {
         reportSaveDelta(saveDelta({ changes: saved, before, after: await editorService.digests(pageId) }))
       }
       return true
     } catch (error) {
       // SH972 — a refusal is the server's problem document in the dock, not the word Error.
-      reportRefusal(error, t("universalEditor.saveError"), { t: (key, options) => String(t(key, options)) })
+      reportRefusal(error, t("visualEditor.saveError"), { t: (key, options) => String(t(key, options)) })
       return false
     } finally {
       setWorking(null)
@@ -1332,13 +1332,13 @@ export default function VisualEditorPage() {
       setPublishTargets(null)
       setPublishGate(null)
       refresh()
-      toast.success(t("universalEditor.published"))
+      toast.success(t("visualEditor.published"))
     } catch (error) {
-      const problem = reportRefusal(error, t("universalEditor.saveError"),
+      const problem = reportRefusal(error, t("visualEditor.saveError"),
         { t: (key, options) => String(t(key, options)) })
       // SH998 — a gate is the one refusal the dialog can answer, so it stays open and asks why.
       if (problem.type?.endsWith("publish-gate-failed") || problem.type?.endsWith("waiver-needs-a-reason")) {
-        setPublishGate(headlineOf(problem, t("universalEditor.saveError")))
+        setPublishGate(headlineOf(problem, t("visualEditor.saveError")))
         return
       }
       setPublishTargets(null)
@@ -1383,7 +1383,7 @@ export default function VisualEditorPage() {
    */
   const discardAll = () => {
     if (!changes.size) return
-    if (!globalThis.confirm(t("universalEditor.discardConfirm", { count: changes.size }))) return
+    if (!globalThis.confirm(t("visualEditor.discardConfirm", { count: changes.size }))) return
     for (const change of [...changes.values()].reverse()) {
       if (change.was !== undefined) {
         postToIframe("sh:field-set", {
@@ -1392,7 +1392,7 @@ export default function VisualEditorPage() {
       }
     }
     setChanges(new Map())
-    toast.success(t("universalEditor.discarded"))
+    toast.success(t("visualEditor.discarded"))
   }
 
   /** Leaving the editor with work pending asks — in useUnsavedGuard's blocker since SH1090. */
@@ -1408,10 +1408,10 @@ export default function VisualEditorPage() {
       {/* Sticky save bar */}
       <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 px-4 py-3 border-b">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
+          <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => leave(ROUTES.VISUAL_EDITOR)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="font-semibold">{t("universalEditor.title")}</span>
+          <span className="font-semibold">{t("visualEditor.title")}</span>
           {/*
             SH1037 — the toggle is an affordance the PAGE has to honour: it turns into a
             `sh:mode-change`, and a bridge that does not implement inline editing answers it with
@@ -1423,22 +1423,22 @@ export default function VisualEditorPage() {
             <Switch id="edit-mode" checked={editMode && claims("edit-inline")}
               disabled={!claims("edit-inline")} onCheckedChange={setEditMode} />
             <Label htmlFor="edit-mode" className="text-sm"
-              title={claims("edit-inline") ? undefined : t("universalEditor.noInlineEditing")}>
+              title={claims("edit-inline") ? undefined : t("visualEditor.noInlineEditing")}>
               {!claims("edit-inline")
-                ? t("universalEditor.previewOnly")
-                : editMode ? t("universalEditor.editMode") : t("universalEditor.previewMode")}
+                ? t("visualEditor.previewOnly")
+                : editMode ? t("visualEditor.editMode") : t("visualEditor.previewMode")}
             </Label>
           </div>
           {changes.size > 0 && (
             <>
-              <Badge variant="secondary">{changes.size} {t("universalEditor.changes")}</Badge>
+              <Badge variant="secondary">{changes.size} {t("visualEditor.changes")}</Badge>
               {/*
                 SH1041 — the pending set could be cleared only by a successful save, so the only way
                 out of an edit somebody regretted was to make it again backwards. This walks the log
                 and puts every field back where it was, in the page as well as in the count.
               */}
               <Button variant="ghost" size="sm" onClick={discardAll}>
-                <Undo2 className="h-4 w-4 mr-1" /> {t("universalEditor.discardAll")}
+                <Undo2 className="h-4 w-4 mr-1" /> {t("visualEditor.discardAll")}
               </Button>
             </>
           )}
@@ -1447,15 +1447,15 @@ export default function VisualEditorPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon-sm" title={t("universalEditor.desktop")}
+          <Button variant="ghost" size="icon-sm" title={t("visualEditor.desktop")}
             onClick={() => setMobile(false)}>
             <Monitor className={`h-4 w-4 ${!mobile ? "text-orange-600" : ""}`} />
           </Button>
-          <Button variant="ghost" size="icon-sm" title={t("universalEditor.mobile")}
+          <Button variant="ghost" size="icon-sm" title={t("visualEditor.mobile")}
             onClick={() => setMobile(true)}>
             <Smartphone className={`h-4 w-4 ${mobile ? "text-orange-600" : ""}`} />
           </Button>
-          <Button variant="ghost" size="icon-sm" title={t("universalEditor.refresh")} onClick={refresh}>
+          <Button variant="ghost" size="icon-sm" title={t("visualEditor.refresh")} onClick={refresh}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           {/*
@@ -1465,19 +1465,19 @@ export default function VisualEditorPage() {
             a link to another screen, so the page and the selection stay where they are.
           */}
           {fieldsTarget && (
-            <Button variant={fieldsMode ? "secondary" : "outline"} size="sm" title={t("universalEditor.fieldsTitle")}
+            <Button variant={fieldsMode ? "secondary" : "outline"} size="sm" title={t("visualEditor.fieldsTitle")}
               aria-pressed={fieldsMode ? "true" : "false"} onClick={() => setFieldsMode((on) => !on)}>
               <ListTree className="h-4 w-4 mr-1" />
-              {t("universalEditor.fields")}
+              {t("visualEditor.fields")}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={() => { void requestPublish() }} disabled={saving || publishing}>
             <Upload className="h-4 w-4 mr-1" />
-            {t("universalEditor.publish")}
+            {t("visualEditor.publish")}
           </Button>
           <Button size="sm" onClick={() => persist(false)} disabled={changes.size === 0} loading={saving}>
             {!saving && <Save className="h-4 w-4 mr-1" />}
-            {saving ? t("universalEditor.saving") : t("universalEditor.save")}
+            {saving ? t("visualEditor.saving") : t("visualEditor.save")}
           </Button>
         </div>
       </div>
@@ -1488,8 +1488,8 @@ export default function VisualEditorPage() {
           {siteError && (
             <div className="flex flex-col items-center justify-center gap-3 text-center">
               <p className="max-w-md text-sm text-muted-foreground">{siteError}</p>
-              <Button variant="outline" size="sm" onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
-                {t("universalEditor.selectSite")}
+              <Button variant="outline" size="sm" onClick={() => leave(ROUTES.VISUAL_EDITOR)}>
+                {t("visualEditor.selectSite")}
               </Button>
             </div>
           )}
@@ -1508,7 +1508,7 @@ export default function VisualEditorPage() {
             <iframe
               ref={iframeRef}
               src={src}
-              title={t("universalEditor.title")}
+              title={t("visualEditor.title")}
               onLoad={() => {
                 setFrameLoaded(true)
                 loadsRef.current += 1
@@ -1533,8 +1533,8 @@ export default function VisualEditorPage() {
             {editMode && selectedSection && sectionRect && (
               <SectionOverlay
                 rect={sectionRect}
-                label={selectedSection.section || t("universalEditor.section")}
-                position={t("universalEditor.sectionPosition", {
+                label={selectedSection.section || t("visualEditor.section")}
+                position={t("visualEditor.sectionPosition", {
                   position: selectedSection.index + 1, of: selectedSection.of,
                 })}
                 index={selectedSection.index}
@@ -1569,7 +1569,7 @@ export default function VisualEditorPage() {
           )}
           {!siteError && !src && (
             <div className="flex items-center justify-center text-muted-foreground">
-              <Spinner labelled className="h-5 w-5 mr-2" /> {t("universalEditor.connecting")}
+              <Spinner labelled className="h-5 w-5 mr-2" /> {t("visualEditor.connecting")}
             </div>
           )}
           {/*
@@ -1580,16 +1580,16 @@ export default function VisualEditorPage() {
           */}
           {!siteError && bridge === "absent" && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 max-w-xl rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 shadow-sm">
-              <p className="text-sm font-medium">{t("universalEditor.bridgeAbsent")}</p>
+              <p className="text-sm font-medium">{t("visualEditor.bridgeAbsent")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {t("universalEditor.bridgeAbsentHint")}
+                {t("visualEditor.bridgeAbsentHint")}
               </p>
               <div className="flex gap-2 mt-2">
                 <Button variant="outline" size="sm" onClick={refresh}>
-                  <RefreshCw className="h-4 w-4 mr-1" /> {t("universalEditor.refresh")}
+                  <RefreshCw className="h-4 w-4 mr-1" /> {t("visualEditor.refresh")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
-                  {t("universalEditor.selectSite")}
+                <Button variant="ghost" size="sm" onClick={() => leave(ROUTES.VISUAL_EDITOR)}>
+                  {t("visualEditor.selectSite")}
                 </Button>
               </div>
             </div>
@@ -1612,24 +1612,24 @@ export default function VisualEditorPage() {
             ) : selectedSection ? (
               <div className="space-y-3">
                 <div>
-                  <div className="font-semibold">{selectedSection.section || t("universalEditor.section")}</div>
+                  <div className="font-semibold">{selectedSection.section || t("visualEditor.section")}</div>
                   <div className="text-xs text-muted-foreground">
-                    {t("universalEditor.sectionPosition", {
+                    {t("visualEditor.sectionPosition", {
                       position: selectedSection.index + 1, of: selectedSection.of,
                     })}
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {t("universalEditor.sectionSelected")}
+                  {t("visualEditor.sectionSelected")}
                 </p>
                 {sectionArray.state === "unavailable" && (
                   <p className="text-sm text-amber-600 dark:text-amber-500">
-                    {t("universalEditor.sectionsNotWritable")}
+                    {t("visualEditor.sectionsNotWritable")}
                   </p>
                 )}
                 {sectionArray.state === "ready" && (
                   <p className="text-xs text-muted-foreground">
-                    {t("universalEditor.duplicateHint")}
+                    {t("visualEditor.duplicateHint")}
                   </p>
                 )}
                 {soleContainer && sectionArray.state === "ready" && (
@@ -1673,9 +1673,9 @@ export default function VisualEditorPage() {
                         */}
                         {pendingFor(f.prop)?.was !== undefined && (
                           <Button variant="ghost" size="sm" className="px-1.5 text-xs"
-                            title={t("universalEditor.revertField")}
+                            title={t("visualEditor.revertField")}
                             onClick={() => revert(pendingFor(f.prop)!)}>
-                            <Undo2 className="h-3 w-3 mr-1" /> {t("universalEditor.revert")}
+                            <Undo2 className="h-3 w-3 mr-1" /> {t("visualEditor.revert")}
                           </Button>
                         )}
                       </div>
@@ -1723,7 +1723,7 @@ export default function VisualEditorPage() {
                       <div className="flex items-baseline justify-between gap-2">
                         <div className="text-xs font-medium text-muted-foreground">{entry.labels.label}</div>
                         <div className="text-xs text-muted-foreground">
-                          {t("universalEditor.relatorItems", { count: entry.items.length })}
+                          {t("visualEditor.relatorItems", { count: entry.items.length })}
                         </div>
                       </div>
                       <ol className="mt-1.5 space-y-1.5">
@@ -1745,8 +1745,8 @@ export default function VisualEditorPage() {
                                     </span>
                                     {pendingFor(f.prop)?.was !== undefined && (
                                       <Button variant="ghost" size="icon-sm"
-                                        title={t("universalEditor.revertField")}
-                                        aria-label={t("universalEditor.revertField")}
+                                        title={t("visualEditor.revertField")}
+                                        aria-label={t("visualEditor.revertField")}
                                         onClick={() => revert(pendingFor(f.prop)!)}>
                                         <Undo2 className="h-3 w-3" />
                                       </Button>
@@ -1766,8 +1766,8 @@ export default function VisualEditorPage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <h3 className="font-semibold mb-1">{t("universalEditor.noSelection")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("universalEditor.noSelectionDescription")}</p>
+                  <h3 className="font-semibold mb-1">{t("visualEditor.noSelection")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("visualEditor.noSelectionDescription")}</p>
                 </div>
                 {/*
                   SH1039 — and the rail is here too, with nothing selected. That is the case insertion

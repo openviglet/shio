@@ -14,7 +14,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
 /**
- * SH1410 — the Universal Editor's Open External URL hint names what a page needs.
+ * SH1410 — the Visual Editor's Open External URL hint names what a page needs.
  *
  * It told a curator to instrument a page "with data-sh-* attributes", the prefix of the second,
  * unspecified bridge SH304 deleted. A page following it carried nothing the one bridge reads. An
@@ -36,7 +36,7 @@ test("SH1410: no console string tells a curator to use the retired data-sh-* att
 
 test("SH1410: the hint names the bridge package and the editor-origin meta tag, in both languages", () => {
   for (const lang of ["en", "pt"]) {
-    const hint = JSON.parse(readFileSync(join(LOCALES, lang, "universal-editor.json"), "utf8"))["universalEditor.urlHint"]
+    const hint = JSON.parse(readFileSync(join(LOCALES, lang, "visual-editor.json"), "utf8"))["visualEditor.urlHint"]
     assert.match(hint, /@viglet\/shio-editor-cors/u, `SH1410: the ${lang} hint does not name the bridge`)
     assert.match(hint, /urn:shio:system:editor-origin/u, `SH1410: the ${lang} hint does not name the meta tag`)
   }

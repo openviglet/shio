@@ -145,7 +145,7 @@ A layout marks a slot with `sh-region`, naming the Region post by title:
 ```
 
 - **`sh-region` survives the render**, joined by `data-shio-region` and
-  `data-shio-region-post`. Keep it: the [Universal Editor](/docs/universal-editor/) reads it to
+  `data-shio-region-post`. Keep it: the [Visual Editor](/docs/visual-editor/) reads it to
   map each node to its post. A slot whose Region post does not exist is marked
   `data-shio-region-missing` rather than left empty.
 - **`{{theme.css}}` is raw** and inlined by the layout, not linked. CSS decodes no HTML
@@ -460,7 +460,7 @@ transform URLs are in
 ## Editing the rendered page
 
 Annotate a template with `sh-field` and the fields become editable on the page in the
-[Universal Editor](/docs/universal-editor/), which documents the annotations. Adding
+[Visual Editor](/docs/visual-editor/), which documents the annotations. Adding
 `?editor=true` to a preview URL injects `/preview/_shio/editor.js`; an ordinary preview carries
 no editor code.
 
@@ -519,6 +519,6 @@ from a 2018-era instance renders with no migration beyond the template language:
 |---|---|
 | [Core Concepts](/docs/getting-started/core-concepts/) | Sites, folders, posts and post types |
 | [Content Modeling](/docs/content-modeling/) | Post types, fields and the publishing workflow |
-| [The Universal Editor](/docs/universal-editor/) | Editing the rendered page, and the template annotations |
+| [The Visual Editor](/docs/visual-editor/) | Editing the rendered page, and the template annotations |
 | [Content Delivery API](/docs/headless/content-delivery-api/) | Serving this content to your own front end |
 | [Configuration Reference](/docs/configuration-reference/) | Application properties |

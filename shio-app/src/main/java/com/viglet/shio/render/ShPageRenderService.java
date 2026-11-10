@@ -72,7 +72,7 @@ import tools.jackson.databind.ObjectMapper;
  * </table>
  *
  * <p>A region is therefore the unit of <b>reuse</b> (a header authored once appears on
- * every layout that slots it), of <b>editing</b> (which is what makes the Universal Editor
+ * every layout that slots it), of <b>editing</b> (which is what makes the Visual Editor
  * mean something — a curator edits a region, not a whole page), and of <b>caching</b>.</p>
  *
  * <h2>Everything it reads is content</h2>

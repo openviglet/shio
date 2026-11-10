@@ -317,7 +317,7 @@ Full page with grid of post types:
 
 #### Publishing from the edit screen (SH654)
 
-Until SH654 the console had exactly **one** publish call site (the Universal Editor) so a
+Until SH654 the console had exactly **one** publish call site (the Visual Editor) so a
 curator editing a page had to leave for the visual editor or wait for an agent run to be
 approved. Nothing on the server was missing: `ShPostUnifiedAPI` already answered
 `POST /{id}/publish` and `POST /{id}/unpublish`, under the SH107 gate. Three decisions:
@@ -436,7 +436,7 @@ cannot double as an identity.
   `shio-react/test/i18n-parity.test.mjs`, which asserts both locales carry the same namespaces and
   the same keys, in both directions. It was a convention with no instrument, and the failure it
   prevents is quiet: i18next falls back to the key itself, so a missing `pt` entry renders
-  `universalEditor.bridgeAbsent` to a Portuguese curator and is invisible to whoever added it.
+  `visualEditor.bridgeAbsent` to a Portuguese curator and is invisible to whoever added it.
 - **A string that is not a key at all is the case parity cannot see (SH823).** `i18n-parity` asks
   whether the locales agree; it has nothing to say about a component that never calls `t()`, and
   that is the failure SH50's hand sweep fixed and left unguarded.
@@ -450,7 +450,19 @@ cannot double as an identity.
   correct `t(...)` call sites cost no whitelist. It found twelve on its first run, the HTML
   editor's whole toolbar among them, all now routed through `content.editor*`.
 
-## Universal Editor: it saves on the session, not on a token (SH335)
+## The editor's name is Visual Editor, never Universal Editor (SH1419)
+
+"Universal Editor" is Adobe AEM's product name for its in-context editor, and Shio is in the
+same market, so the shared name invited confusion and sent searches to Adobe. Every live surface
+says Visual Editor: the route `/bento/visual-editor/:siteId`, the i18n namespace
+`visual-editor.json` (keys `visualEditor.*`), the manifest feature `visualEditor`, the docs page
+`visual-editor`. The old route (`LegacyEditorRedirect` in `App.tsx`) and the old docs URL
+(`redirects` in `shio-site/docs/astro.config.mjs`) still land. History keeps the old name: the
+ledger, the specs and their file names, applied Liquibase changesets, block SWEEP entries.
+`visual-editor-name.test.mjs` fails on the old name in console source, and the docs-style
+glossary lists "universal editor" as the term to avoid.
+
+## Visual Editor: it saves on the session, not on a token (SH335)
 
 The editor used to save through the **CDA** behind a `WRITE`-scope API token the curator had to mint
 in Admin and pick from a dropdown. That is **P10 read backwards**, a console feature reaching its
@@ -472,7 +484,7 @@ in `ShAgentBatchService` on the premise that "a console caller has no token and 
   to resolve from the post only for whoever had minted a token and silently from the page's type for
   everyone else, degrading by credential rather than by what the selection said.
 
-## Universal Editor: the iframe has three states, not two (SH333)
+## Visual Editor: the iframe has three states, not two (SH333)
 
 `visual-editor.page.tsx` frames the page and waits for SH185's `sh:ready`. It had no `onLoad`, no
 `onError` and no deadline, so the badge read `Connecting…` **forever** when the handshake could
@@ -492,12 +504,12 @@ the reader cannot run). "Still loading" and "this will never load" were the same
   behaviour, degrading to a plain iframe. The banner keeps the frame visible and says editing is
   unavailable; it never claims the site is broken.
 
-## Universal Editor: it is driven now, and two conditions had to be discovered (SH659)
+## Visual Editor: it is driven now, and two conditions had to be discovered (SH659)
 
 SH238 closed the one fact the save-back rests on and recorded the drive as blocked on "a front end
 to embed, which is Block P". **The blocker was already stale**: SH183/SH184 make a site with no
 configured `url` fall back to Shio's own renderer, and `?editor=true` asks it for the SH185 bridge,
-so the thing to embed ships with the product. `console-check.mjs`' `universal-editor-drive` now
+so the thing to embed ships with the product. `console-check.mjs`' `visual-editor-drive` now
 asserts the three messages nothing observed, `sh:ready` (the bridge turned edit mode on),
 `sh:element-selected` (a click fills the properties panel) and `sh:content-changed` (typing becomes
 a pending change). Until it existed, a bridge that never loaded and one that works were the same
@@ -518,7 +530,7 @@ site whose home is absent frames the teaching 404, which answers **200** and car
 page. The probe requires both the props and the bridge tag, and skips when no site on the instance
 has them, a fixture gap is not a defect.
 
-The round trip stops at the pending change: `universal-editor-save-back` already proves the PATCH it
+The round trip stops at the pending change: `visual-editor-save-back` already proves the PATCH it
 becomes, and a smoke check must not edit anybody's content.
 
 **Publish is driven too, and only on a site this repository made (SH659).** The reason it was left
@@ -645,7 +657,7 @@ every surface a curator navigates to is inside it. Old `/console/**` bookmarks, 
 tenant-prefixed, redirect into it (SH909); `bento-is-the-default.test.mjs` refuses a second shell
 and a route constant pointing anywhere else. Outside the shell there are six mounts, named in
 `outside-shell-chrome.test.mjs`: login, setup, the design system's vocabulary harness, the legacy
-redirect, the 404 at App.tsx's bare `*`, and the Universal Editor, which **owns the viewport**, so
+redirect, the 404 at App.tsx's bare `*`, and the Visual Editor, which **owns the viewport**, so
 inside the shell's 64px sticky header its iframe measured 48px below the fold (SH907). Nothing
 mounted outside the shell may need a provider only the shell mounts: `useCurrentUser()` throws
 without `UserProvider`, a white screen behind the error boundary (SH908).
@@ -1475,7 +1487,7 @@ nothing said which resource. The check now also listens for `requestfailed` and 
 skipped because the console aborts superseded and unmounted reads on purpose (SH1047, SH1116). Across
 72 probes the listener added no false failures. `console-check-shape.test.mjs` holds both halves.
 
-## The Universal Editor drive hears what Publish answered (SH1174)
+## The Visual Editor drive hears what Publish answered (SH1174)
 
 Against a jar, the drive failed on "the editor's Publish reported nothing" and printed "publish
 skipped: undefined". Neither was true. The write succeeded, and the success was shown twice: once
@@ -1485,7 +1497,7 @@ silence. The drive now matches with `.first()`. It also listens for the `post-un
 POST around the click and records each response's status and problem `type`, because a real refusal
 goes to the dock rather than a toast and is recorded nowhere else. The summary line reports
 "published", "publish refused: <status type>" or "publish skipped: <reason>". A failed publish also
-saves `universal-editor-drive-publish.png`, and that screenshot is what exposed SH1175.
+saves `visual-editor-drive-publish.png`, and that screenshot is what exposed SH1175.
 
 ## The check was walking another product's console (SH927, probe half)
 
@@ -1951,7 +1963,7 @@ unsaved work silently. `App.tsx` now builds the same `<Route>` JSX into a data r
 holding the theme, query and toast providers) and renders `<RouterProvider>`. `ErrorBoundary` and
 `BackendStatusProvider` stay above it in `main.tsx`; neither uses a router hook. `useUnsavedGuard`
 arms `useBlocker` while dirty and asks with `confirm`, in the page's own words when it passes a
-message (the Universal Editor names how many edits). It blocks only a change of **path**, so a list
+message (the Visual Editor names how many edits). It blocks only a change of **path**, so a list
 writing its filters to the URL is never interrupted. The pages' own hand-written confirms before
 Cancel and before leaving the editor are gone, because the blocker asks for those exits too and two
 dialogs for one click is the defect. The route scanners in `spa-contexts.test.mjs` and
@@ -2632,7 +2644,7 @@ either: 16 of 57 probes fail, all on `missing: no hero heading` / `no frosted su
 **admin list mosaics** and on fixture gaps (no CDA token, no editable props). That set is *unstable*,
 across five runs of identical pre-slice code the failures moved between 11 and 16, and every single
 route that differs after the slice (`bento-webhooks`, `bento-exchange-providers`, `graphql`,
-`post-new:Page`, `legacy-console-post`, `bento-universal-editor`) had already failed in at least one
+`post-new:Page`, `legacy-console-post`, `bento-visual-editor`) had already failed in at least one
 run before it. The probe reads `backdrop-filter` off computed style, which is timing-sensitive, and
 this is the same instability that made `probe.ok` the wrong costing predicate for SH1113's budget.
 
@@ -3499,7 +3511,7 @@ attribute. The switch is the dialog's last row, **Animate the mascot**, on by de
 The same release deepened the accent label to orange-800 (`src/index.css`): VDS179 measures it on
 the accent's own tints, where orange-700 read 4.49:1.
 
-## The Universal Editor docks the assistant itself (SH972)
+## The Visual Editor docks the assistant itself (SH972)
 
 SH907 put the visual editor outside the shell, so the shell's corner and dock are not there.
 `visual-editor.page.tsx` mounts `<BentoStatusDock inline />` in flow at the foot of its properties
@@ -3529,7 +3541,7 @@ remounts the region and drops the toast on screen. Login and setup mount no dock
 toasts. `toast(...)` stays the way a page reports an outcome: nothing calling it changes. With
 `saves` muted, a successful save is now silent, since the toast that used to carry it is hidden.
 A browser locator for an outcome's text matches the hidden toast first, so it needs
-`.filter({ visible: true })` (the Universal Editor drive in `e2e/console-check.mjs` does).
+`.filter({ visible: true })` (the Visual Editor drive in `e2e/console-check.mjs` does).
 
 ## One diff, answered by the server (SH988, first half)
 
@@ -4247,7 +4259,7 @@ button heights were native buttons the source lint never read. Two were controls
 activity log's actor name, a 20 px inline text button, is now a `Button` with `variant="link"` and
 `size="sm"`, and the files page's category chips read `h-(--vg-control-dense)` and say `aria-pressed`,
 since they toggle. The rest are cards that happen to be buttons: file tiles, marketplace entries,
-the Universal Editor's site rows. Their content decides their height, so they set none, and whether
+the Visual Editor's site rows. Their content decides their height, so they set none, and whether
 the census should count something taller than the touch step as a control is VDS202's question in
 the design system. `visual-scale.test.mjs` now also fails a native `<button>` with a fixed height,
 and asserts it read at least twenty of them. The census read 18 button heights down to 16.
@@ -4390,12 +4402,12 @@ confirmation and one gate for a page, however recently it was saved; `create-pag
 Publish is three clicks by design: Actions, Publish, then the confirmation (P7). And `/agent/read`
 answers one address with an array of one.
 
-## One way to edit a page: the Universal Editor is the primary (SH1319)
+## One way to edit a page: the Visual Editor is the primary (SH1319)
 
 A page could be edited in two places that save the same post: the post form (fields beside a live
-preview), and the Universal Editor (the rendered page, click to edit, a composer since Block BF).
+preview), and the Visual Editor (the rendered page, click to edit, a composer since Block BF).
 Different entry points, different save models (SH335), different review affordances, and nothing
-telling a curator which one to use. **Decided 2026-11-09 by the maintainer: the Universal Editor is
+telling a curator which one to use. **Decided 2026-11-09 by the maintainer: the Visual Editor is
 the primary**, with the form as its side panel for what the page does not draw (SEO, dates,
 references), and the form-first editor kept as the builder's default for types with no rendered
 page (menus, strings, sections edited on their own).
@@ -4405,7 +4417,7 @@ in the editor too (`change-headline-ue`, `replace-image-ue`, `preview-draft-ue`)
 from `/bento`, on a clean instance served from **one origin** (`--base` equal to `--api`; behind the
 Vite proxy the bridge never hand-shakes, SH659, and the three are skipped by name):
 
-| Task | Post form | Universal Editor |
+| Task | Post form | Visual Editor |
 |---|---|---|
 | change a headline and publish | 4 clicks, 1 key, 1 screen | 6 clicks, 1 key, 4 screens |
 | replace an image | 7 clicks, 1 key, 1 screen | blocked: the panel shows the image and cannot change it (SH1393) |
@@ -4426,12 +4438,12 @@ done when every `-ue` task costs no more than its post-form twin. Until then the
 everywhere it is today: making the editor the only door before it can replace an image would take a
 job away from the curator (P7).
 
-## The Universal Editor opens a named page (SH1392)
+## The Visual Editor opens a named page (SH1392)
 
-`/bento/universal-editor/<site>?path=<friendly url>` frames `/preview/<site>/<path>?editor=true`;
+`/bento/visual-editor/<site>?path=<friendly url>` frames `/preview/<site>/<path>?editor=true`;
 the home is the bare route. `src/lib/editor-path.ts` holds the three rules: `framePath` (one
 leading slash, so never a protocol-relative src), `editorHref` (what the entries link to; it takes
-`ROUTES.UNIVERSAL_EDITOR` as an argument so node's tests can load it), and `followedAddress`. **The
+`ROUTES.VISUAL_EDITOR` as an argument so node's tests can load it), and `followedAddress`. **The
 address follows the frame by `history.replaceState`, not the router**: `?path=` is read for the
 frame's first src only, and each `sh:ready` whose url changed replaces the history entry, because
 writing the router's search params would change `src` and reload the page being edited. A frame that
@@ -4471,7 +4483,7 @@ With SH1392 that makes all three of SH1319's tasks at or under the form's clicks
 the pending badge before Publish, as a curator does: pressed in the same instant the picker
 closes, Publish ran before the change had reached the pending set.
 
-## A page opens in the Universal Editor; its form is a mode of it (SH1394, first slice)
+## A page opens in the Visual Editor; its form is a mode of it (SH1394, first slice)
 
 The default flipped where SH1319's gate allowed it: every `-ue` task now costs no more than its
 form twin. In the palette a page's own row (title, type, state) opens `editorHref`, and an **Edit

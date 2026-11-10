@@ -1340,7 +1340,7 @@ public class ShPostUnifiedWriteService {
      * Clean every rich-text field this data carries (SH956).
      *
      * <p>Runs here because this service is the one place the console, REST, the agent batch and the
-     * Universal Editor's draft merge all pass through — a sanitizer in the rich-text widget would
+     * Visual Editor's draft merge all pass through — a sanitizer in the rich-text widget would
      * defend the single writer that is easiest to go around.</p>
      *
      * <p><b>{@code HTML Editor} only.</b> {@code Ace Editor - HTML} is what {@code PageLayout} and

@@ -12,13 +12,13 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 /**
- * SH1398 — the Universal Editor's page says how the editor saves today.
+ * SH1398 — the Visual Editor's page says how the editor saves today.
  *
  * SH335 moved the editor onto the console session and removed its token picker, and the page went
  * on telling readers that "the token authenticates, not your session cookie": a reader followed it
  * looking for a token setting that no longer existed.
  */
-const PAGE = readFileSync(join(import.meta.dirname, "..", "docs", "src", "content", "docs", "universal-editor.mdx"), "utf8");
+const PAGE = readFileSync(join(import.meta.dirname, "..", "docs", "src", "content", "docs", "visual-editor.mdx"), "utf8");
 
 test("SH1398: the editor saves through the console-session merge, and the page says so", () => {
   assert.match(PAGE, /PATCH \/api\/v2\/post-unified\/\{id\}/u,
@@ -35,10 +35,10 @@ test("SH1398: the editor saves through the console-session merge, and the page s
  */
 test("SH1403: every console label the page bolds is a string the console's English locale has", () => {
   const LOCALES = join(import.meta.dirname, "..", "..", "shio-react", "src", "i18n", "locales", "en");
-  const strings = new Set(["universal-editor.json", "content.json", "sidebar.json"]
+  const strings = new Set(["visual-editor.json", "content.json", "sidebar.json"]
     .flatMap((file) => Object.values(JSON.parse(readFileSync(join(LOCALES, file), "utf8")))));
   // Bold that is not a console label: concepts the page defines, and the two save outcomes.
-  const NOT_LABELS = new Set(["Universal Editor", "draft", "structure", "appearance", "pattern",
+  const NOT_LABELS = new Set(["Visual Editor", "draft", "structure", "appearance", "pattern",
     "write", "`DRAFT`"]);
   const howTos = PAGE.slice(PAGE.indexOf("## Open a page"), PAGE.indexOf("## Template annotations"));
   const named = [...howTos.matchAll(/\*\*([^*]+)\*\*/gu)].map((m) => m[1])

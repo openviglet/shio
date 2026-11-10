@@ -27,7 +27,7 @@
       "keys": 1,
       "screens": 1,
       "ms": 953,
-      "why": "Ctrl+K, the title, and the page's own row, which since SH1394 opens it in the Universal Editor on itself: the floor every other task's first step is measured against. Its form is the Edit fields row beside it."
+      "why": "Ctrl+K, the title, and the page's own row, which since SH1394 opens it in the Visual Editor on itself: the floor every other task's first step is measured against. Its form is the Edit fields row beside it."
     },
     "create-page": {
       "clicks": 3,
@@ -48,7 +48,7 @@
       "keys": 1,
       "screens": 1,
       "ms": 1055,
-      "why": "SH1394: Ctrl+K, Pricing's own row (a page opens in the Universal Editor), the heading replaced the way the form task replaces its field, Publish and its confirmation, on one screen: one click fewer than the form. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319). Publish asks with the form's own confirmation since SH1400, so the comparison is like for like."
+      "why": "SH1394: Ctrl+K, Pricing's own row (a page opens in the Visual Editor), the heading replaced the way the form task replaces its field, Publish and its confirmation, on one screen: one click fewer than the form. It was 6 clicks over 4 screens while the editor opened only on a site's home (SH1319). Publish asks with the form's own confirmation since SH1400, so the comparison is like for like."
     },
     "replace-image-ue": {
       "clicks": 7,
@@ -62,7 +62,7 @@
       "keys": 1,
       "screens": 1,
       "ms": 648,
-      "why": "SH1394: Ctrl+K and the draft's own row, which opens the Universal Editor on it as the visitor will see it: one click and one screen fewer than the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from (SH1392)."
+      "why": "SH1394: Ctrl+K and the draft's own row, which opens the Visual Editor on it as the visitor will see it: one click and one screen fewer than the form's preview. It was blocked while the editor opened only on a site's home, which no draft is linked from (SH1392)."
     },
     "change-description": {
       "clicks": 4,

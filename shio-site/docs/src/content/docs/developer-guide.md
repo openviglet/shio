@@ -29,7 +29,7 @@ drive:
 | **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back. See [Content as files](/docs/content-as-files/). |
 | **CLI** (`@viglet/shio`) | `pull`, `push`, `apply`, `publish`, `verify`, `clone`, `convert`, `types`, `dev`, `deploy`, and more. See [The `shio` CLI](/docs/cli/). |
 | **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with TypeScript SDKs. See [Content Delivery API](/docs/headless/content-delivery-api/). |
-| **React console** | The curator's half: content browser, form widgets, Universal Editor, review queue, preview links. See [The content console](/docs/content-console/). |
+| **React console** | The curator's half: content browser, form widgets, Visual Editor, review queue, preview links. See [The content console](/docs/content-console/). |
 
 If you are adding a feature, the order to land it in is **MCP → files/CLI → REST →
 console**.

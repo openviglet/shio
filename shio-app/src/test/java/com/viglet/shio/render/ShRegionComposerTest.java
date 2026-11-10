@@ -65,7 +65,7 @@ class ShRegionComposerTest {
         assertThat(page)
                 .as("""
                         sh-region survives the render on purpose: the rendered DOM is the only \
-                        place the Universal Editor can learn which node is which region, which \
+                        place the Visual Editor can learn which node is which region, which \
                         is SH185's whole problem. Stripping it would be tidier and would take \
                         the annotation contract with it.""")
                 .contains("sh-region=\"BOOTSTRAP_NAV_REGION\"")

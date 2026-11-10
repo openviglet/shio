@@ -16,7 +16,7 @@ import { stripComments } from "./support/source-text.mjs"
 /**
  * SH1390 — a read of one post names the state it wants.
  *
- * `GET /v2/post-unified/{id}` with no `state` means PUBLISHED on the server. The Universal Editor
+ * `GET /v2/post-unified/{id}` with no `state` means PUBLISHED on the server. The Visual Editor
  * read a selected post's type that way, so a post an agent wrote and nobody published answered 404
  * with a teaching error meant for an agent, and the query cache toasted it to the curator; the
  * content picker did the same to find a post's folder and silently started at the site list. The
@@ -64,9 +64,9 @@ test("SH1390: the editor's type read and the picker's folder read take the row t
   const service = read(SERVICE)
   assert.match(service, /async current\([\s\S]*?get\(id, "DRAFT", read\)[\s\S]*?isCancelled\(error\)\) throw error[\s\S]*?get\(id, "PUBLISHED", read\)/,
     "SH1390: current() no longer reads the draft first and falls back to the live row, cancellation aside")
-  const editor = read("services/universal-editor/universal-editor.service.ts")
+  const editor = read("services/visual-editor/visual-editor.service.ts")
   assert.match(editor, /async postTypeOf\([^)]*\)[^{]*\{[^}]*this\.posts\.current\(postId, read\)/,
-    "SH1390: the Universal Editor reads a selected post's type from a state a draft may not have")
+    "SH1390: the Visual Editor reads a selected post's type from a state a draft may not have")
   assert.match(read("components/widgets/content-browser-dialog.tsx"), /postService\.current\(nearPostId, \{ signal \}\)/,
     "SH1390: the content picker reads the edited post's folder from a state a draft may not have")
 })

@@ -5,7 +5,7 @@ import type { ShSite } from "@/models/site/site"
  * `ShSiteFrontEnd`.
  *
  * Three console surfaces asked this question and each answered it inline: the site list's
- * **View Site**, the object browser's **View Site**, and the Universal Editor's iframe. All
+ * **View Site**, the object browser's **View Site**, and the Visual Editor's iframe. All
  * three read `site.url` directly and all three gave up when it was empty — a toast in two
  * places and a sentence in the third.
  *

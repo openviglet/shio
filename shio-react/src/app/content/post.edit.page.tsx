@@ -617,10 +617,10 @@ export default function PostUnifiedEditPage() {
                   {t("content.preview")}
                 </Button>
               )}
-              {/* SH1392 — a page opens in the Universal Editor on itself, not on the site's home. */}
+              {/* SH1392 — a page opens in the Visual Editor on itself, not on the site's home. */}
               {renderable === true && siteId && (
                 <Button asChild type="button" size="sm" variant="outline" title={t("content.editOnPageTitle")}>
-                  <Link to={editorHref(ROUTES.UNIVERSAL_EDITOR, siteId, post.furl)}>
+                  <Link to={editorHref(ROUTES.VISUAL_EDITOR, siteId, post.furl)}>
                     <MousePointerClick className="size-4" />
                     {t("content.editOnPage")}
                   </Link>

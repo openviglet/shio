@@ -163,7 +163,7 @@ async function login(page) {
 async function openFromSearch(page, title, type) {
   await page.keyboard.press("Control+k")
   await page.getByRole("combobox").first().fill(title)
-  // SH1394 — a page's own row opens the Universal Editor, so its form is the "Edit fields" row. Any
+  // SH1394 — a page's own row opens the Visual Editor, so its form is the "Edit fields" row. Any
   // other option reads "<title><type> <state>" with no separator, so the type is matched after it.
   const option = type === "Page"
     ? new RegExp(`^(editar campos|edit fields): ${title}`, "i")
@@ -205,11 +205,11 @@ async function editorFrame(page, matches) {
     if (frame && await frame.locator("[data-shio-editing='true']").count().catch(() => 0)) return frame
     await page.waitForTimeout(250)
   }
-  throw new Error("the Universal Editor never framed an editing page")
+  throw new Error("the Visual Editor never framed an editing page")
 }
 
 /**
- * SH1392 — a page opens in the Universal Editor on itself: Ctrl+K, the title, and the page's own row,
+ * SH1392 — a page opens in the Visual Editor on itself: Ctrl+K, the title, and the page's own row,
  * which opens the editor since SH1394. Returns the frame once the bridge is editing that page.
  */
 async function openPageInEditor(page, title, path) {
@@ -220,7 +220,7 @@ async function openPageInEditor(page, title, path) {
 }
 
 /**
- * SH1400 — Publish in the Universal Editor asks, as the form's does: it saves the pending changes,
+ * SH1400 — Publish in the Visual Editor asks, as the form's does: it saves the pending changes,
  * opens the same confirmation, and the write to wait for is the publish itself.
  */
 async function publishInEditor(page) {
@@ -235,7 +235,7 @@ const SAME_ORIGIN = new URL(BASE).origin === new URL(API).origin
 /**
  * The jobs. `setup` runs before the meter (fixture, and anything the job assumes is already
  * there); `run` is the curator's path from `/bento`; `check` asks the instance whether it happened.
- * A name ending in `-ue` is the same job in the Universal Editor (SH1319).
+ * A name ending in `-ue` is the same job in the Visual Editor (SH1319).
  */
 const TASKS = [
   {
@@ -309,12 +309,12 @@ const TASKS = [
   {
     name: "find-page",
     what: "find a page by its title and open it",
-    // SH1394 — opening a page lands in the Universal Editor on it, so that is what finding one costs.
+    // SH1394 — opening a page lands in the Visual Editor on it, so that is what finding one costs.
     async run(page, ctx) {
       ctx.frame = await openPageInEditor(page, "Pricing", "/pricing")
     },
     async check(ctx, page) {
-      return /\/universal-editor\//.test(page.url()) && (await ctx.frame.content()).includes("Pricing")
+      return /\/visual-editor\//.test(page.url()) && (await ctx.frame.content()).includes("Pricing")
     },
   },
   {
@@ -368,11 +368,11 @@ const TASKS = [
     // A draft left behind is a run left waiting, which the next approve-run would find first.
     cleanup: (ctx) => trash(`post:${SITE}/draft-${RUN}`),
   },
-  // SH1319 — tasks 1, 3 and 6 again, in the Universal Editor, so "which editor is primary" is
+  // SH1319 — tasks 1, 3 and 6 again, in the Visual Editor, so "which editor is primary" is
   // answered by the same meter as everything else rather than by an opinion.
   {
     name: "change-headline-ue",
-    what: "change a page's headline and publish it, in the Universal Editor",
+    what: "change a page's headline and publish it, in the Visual Editor",
     ue: true,
     async run(page, ctx) {
       ctx.heading = `Pricing, plainly ${RUN}`
@@ -392,7 +392,7 @@ const TASKS = [
   },
   {
     name: "replace-image-ue",
-    what: "replace a page's image with one from the library, in the Universal Editor",
+    what: "replace a page's image with one from the library, in the Visual Editor",
     ue: true,
     async setup(page, ctx) {
       const sections = await api(`/agent/resolve?address=${encodeURIComponent(`folder:${SITE}/sections`)}`)
@@ -424,7 +424,7 @@ const TASKS = [
   },
   {
     name: "preview-draft-ue",
-    what: "preview a draft as the visitor will see it, in the Universal Editor",
+    what: "preview a draft as the visitor will see it, in the Visual Editor",
     ue: true,
     async setup(_page, ctx) {
       ctx.title = `Draft ${RUN}`
@@ -461,7 +461,7 @@ const TASKS = [
   },
   {
     name: "change-description-ue",
-    what: "change a page's description, which the page does not draw, and publish it, in the Universal Editor",
+    what: "change a page's description, which the page does not draw, and publish it, in the Visual Editor",
     ue: true,
     async run(page, ctx) {
       ctx.text = `What Acme costs, on the page ${RUN}`

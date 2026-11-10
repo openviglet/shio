@@ -37,7 +37,7 @@ import jakarta.persistence.PersistenceContext;
 /**
  * SH181 — the site read answers the key it is given.
  *
- * <p>The Universal Editor asked this id-keyed endpoint for a site's <em>furl</em> and got a
+ * <p>The Visual Editor asked this id-keyed endpoint for a site's <em>furl</em> and got a
  * pair of 404s behind a spinner. That is the third instance of one confusion (SH117 settled
  * it for post-types), so the guard is a test rather than a patched call site: id, furl and
  * name all resolve, and a key that names nothing is still a 404 — a read that resolved

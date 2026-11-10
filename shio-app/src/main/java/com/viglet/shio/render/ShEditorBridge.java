@@ -19,7 +19,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /**
- * SH185 — the Universal Editor's missing other half.
+ * SH185 — the Visual Editor's missing other half.
  *
  * <h2>What was wrong</h2>
  *

@@ -72,6 +72,6 @@ test("SH1108: a placeholder with no default is not placed from the rail, and say
 test("SH1108: the rail places through the agent apply, not a write path of its own", () => {
   const page = stripComments(readFileSync(join(SRC, "app", "editor", "visual-editor.page.tsx"), "utf8"))
   assert.match(page, /placementDocument\(/, "SH1108: the rail builds the CLI's document")
-  const service = stripComments(readFileSync(join(SRC, "services", "universal-editor", "universal-editor.service.ts"), "utf8"))
+  const service = stripComments(readFileSync(join(SRC, "services", "visual-editor", "visual-editor.service.ts"), "utf8"))
   assert.match(service, /"\/v2\/agent\/apply"/, "SH1108: and sends it where the CLI sends it")
 })

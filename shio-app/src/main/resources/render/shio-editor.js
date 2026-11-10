@@ -1,5 +1,5 @@
 /*
- * shio-editor.js — the page half of the Universal Editor bridge (SH185).
+ * shio-editor.js — the page half of the Visual Editor bridge (SH185).
  *
  * The console's visual-editor page has posted `sh:*` messages into an iframe and listened
  * for replies since SH10, and its own comment said the replies came from "shio-editor.js".

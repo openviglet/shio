@@ -243,7 +243,10 @@ const SWEEP = {
       + "sample, and nothing it claims about the editor or preview changed. Reopened for SH1410 and "
       + "re-closed with it: the Open External URL hint names the editor bridge and its origin meta tag "
       + "instead of the retired data-sh-* prefix. COVERAGE's universalEditor row names it and the "
-      + "mirror moved; README and shio-site are NOT moved, neither quotes the hint",
+      + "mirror moved; README and shio-site are NOT moved, neither quotes the hint. Reopened for "
+      + "SH1419 and re-closed with it: the editor is renamed Visual Editor, since Universal Editor is "
+      + "Adobe AEM's product name. README, shio-site, the docs page (now visual-editor, the old URL "
+      + "redirects) and COVERAGE's visualEditor row all moved with it",
   },
   BE: {
     swept: true,

@@ -51,7 +51,7 @@ export function useBrowserOpen({ objectId, siteId, refreshList, t }: BrowserOpen
     try {
       const site = await siteService.get(siteId)
       // SH184: a site with no deployed front end falls back to Shio's own renderer, which
-      // is the same rule the site list and the Universal Editor follow — one function, so
+      // is the same rule the site list and the Visual Editor follow — one function, so
       // the three cannot drift.
       window.open(siteDestination(site).url, "_blank", "noopener")
     } catch {

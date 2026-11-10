@@ -1,6 +1,6 @@
 # Viglet Shio Examples
 
-Example sites demonstrating Viglet Shio features, including the Universal Editor.
+Example sites demonstrating Viglet Shio features, including the Visual Editor.
 
 ## Examples
 
@@ -29,11 +29,11 @@ Each example contains an `export.json` file in the Shio Exchange format:
 3. Upload the ZIP file
 4. The site, folders, posts, and post types will be created
 
-## Using the Universal Editor
+## Using the Visual Editor
 
 After importing a site:
 
-1. Go to **Universal Editor** in the Shio Console sidebar
+1. Go to **Visual Editor** in the Shio Console sidebar
 2. Select the imported site
 3. Click **Edit** to switch to edit mode
 4. Click on any highlighted element to edit it inline
@@ -42,7 +42,7 @@ After importing a site:
 ## HTML Pages
 
 Each example includes standalone HTML files (`index.html`, etc.) that demonstrate
-how to instrument pages with `data-sh-*` attributes for the Universal Editor.
+how to instrument pages with `data-sh-*` attributes for the Visual Editor.
 
 ### Required Data Attributes
 
@@ -59,7 +59,7 @@ how to instrument pages with `data-sh-*` attributes for the Universal Editor.
 Add at the bottom of your page:
 
 ```html
-<script src="/universal-editor/shio-editor.js"></script>
+<script src="/visual-editor/shio-editor.js"></script>
 ```
 
 The script automatically detects when the page is loaded inside the Shio Universal

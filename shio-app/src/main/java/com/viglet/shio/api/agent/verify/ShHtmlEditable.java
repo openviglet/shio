@@ -20,7 +20,7 @@ import org.jsoup.nodes.Element;
  * <h2>The gap this closes</h2>
  *
  * <p>{@code ShAgentP1ConformanceTest} holds the honest inventory of capabilities the manifest
- * advertises that the product's own primary operator cannot reach. {@code universalEditor} was on
+ * advertises that the product's own primary operator cannot reach. {@code visualEditor} was on
  * it, classified {@code CONSOLE_ONLY}, with the note that SH185's bridge is a browser protocol and
  * the console is its only client — <em>`true` is honest to a human and not to an agent</em>.</p>
  *

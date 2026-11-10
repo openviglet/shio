@@ -199,7 +199,7 @@ meets the refusal.
 ### Rich text is cleaned when it is saved
 
 A field using the **HTML Editor** widget is cleaned against an allow-list on every save,
-from the console, the REST API, an agent's batch or the Universal Editor. Scripts, event
+from the console, the REST API, an agent's batch or the Visual Editor. Scripts, event
 handlers and `javascript:`/`data:` URLs are removed; ordinary formatting, links, relative URLs,
 images and HTML5 sections (`header`, `main`, `section`, `footer`) stay, and clean markup is
 stored exactly as written.

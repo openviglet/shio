@@ -324,7 +324,7 @@ class ShAgentP1ConformanceTest {
                 + "because this flag was a half-truth for exactly the clients the manifest informs"));
 
         // --- Declared in the endpoint index ---------------------------------------------------
-        byFeature.put("universalEditor", route("/agent/editable",
+        byFeature.put("visualEditor", route("/agent/editable",
                 "SH809 — the bridge is still a browser protocol, and this is the reading of it "
                 + "an agent needs: which fields a curator could edit, off the rendered page. It "
                 + "was the one CONSOLE_ONLY entry naming a route it did not have"));
@@ -422,7 +422,7 @@ class ShAgentP1ConformanceTest {
     private static Map<String, Delivery> p1Exceptions() {
         Map<String, Delivery> byFeature = new TreeMap<>();
 
-        // SH809 — `universalEditor` was here, CONSOLE_ONLY, naming `/agent/editable` as what would
+        // SH809 — `visualEditor` was here, CONSOLE_ONLY, naming `/agent/editable` as what would
         // resolve it. That route exists now, so the entry is gone rather than corrected: SH142's
         // rule is that an exception which has become unnecessary fails the build, and this list
         // asserts its targets absent precisely so shipping one cannot be forgotten.

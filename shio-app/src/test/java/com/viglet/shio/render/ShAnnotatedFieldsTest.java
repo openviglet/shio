@@ -20,7 +20,7 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <p>The storage SH868 proposed is the markup, and what shipped stored the values in fields on
  * {@code Page} as well — a field per captured block on the type every page in the instance uses.
- * Giving the storage back leaves one question: a curator's edit through the Universal Editor
+ * Giving the storage back leaves one question: a curator's edit through the Visual Editor
  * <em>does</em> store a key, and {@code ShAgentVerifyService} and {@code ShAgentBatchService} would
  * both call it undeclared. This is what they ask instead.</p>
  *

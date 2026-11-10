@@ -1950,7 +1950,7 @@ public class ShRenderHelpers {
     /**
      * SH1298 — whether this render leaves out what its reader may not read.
      *
-     * <p>Only the published render does: {@code /preview}, the Universal Editor and the agent's
+     * <p>Only the published render does: {@code /preview}, the Visual Editor and the agent's
      * digest render drafts, and an editor must see a gated page there to edit it. Keyed on the
      * state rather than the route, because the state is what the helpers already receive. On an
      * instance with no gate this is one count that loads no entity, which is why

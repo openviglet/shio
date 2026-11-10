@@ -737,7 +737,7 @@ public class ShAgentAPI {
     /**
      * SH809 — which fields on a page a curator could edit.
      *
-     * <p>The one P1 exception that named a route and did not have it. {@code universalEditor} was
+     * <p>The one P1 exception that named a route and did not have it. {@code visualEditor} was
      * advertised {@code true} and reachable only from the console, because SH185's bridge is a
      * browser protocol — <em>honest to a human and not to an agent</em>, as the inventory put it.
      * So an agent could read a post, render it, and diff draft against live, and still not answer

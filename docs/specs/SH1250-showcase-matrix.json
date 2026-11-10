@@ -49,7 +49,7 @@
     "assetUsage": { "page": "/tour/media" },
     "postTypesAsCode": { "page": "/tour/files" },
     "serverRender": { "page": "/" },
-    "universalEditor": { "page": "/tour/curator" },
+    "visualEditor": { "page": "/tour/curator" },
     "teachingErrors": { "page": "/tour/agent" },
     "agentContext": { "page": "/tour/agent" },
     "terseResponses": { "page": "/tour/agent" },
@@ -108,7 +108,7 @@
     "shio_marketplace": { "page": "/tour" }
   },
   "curatorSurfaces": {
-    "universal-editor": { "page": "/tour/curator" },
+    "visual-editor": { "page": "/tour/curator" },
     "releases": { "page": "/tour/curator" },
     "revisions": { "page": "/tour/curator" },
     "review-queue": { "page": "/tour/curator" },

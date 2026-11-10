@@ -1,7 +1,7 @@
 import axios from "@/lib/axios"
 import { isCancelled, type ShRead } from "@/lib/read-options"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
-import type { InsertableContainer } from "@/models/universal-editor/universal-editor.model"
+import type { InsertableContainer } from "@/models/visual-editor/visual-editor.model"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { Pattern, PlacementPage } from "@/app/editor/pattern-placement"
 import type { PageDigests } from "@/lib/save-delta"
@@ -18,7 +18,7 @@ export type PatternSummary = {
 }
 
 /**
- * Universal Editor save-back service — on the console surface, on the curator's session.
+ * Visual Editor save-back service — on the console surface, on the curator's session.
  *
  * **SH335 — it used to talk to the CDA behind a WRITE-scope token.** A console feature reaching its
  * own content through a third contract is P10 read backwards, and it cost three things: the editor
@@ -34,7 +34,7 @@ export type PatternSummary = {
  * writes. `ShPostDraftMergeService` is the merge, once, with the CDA's allow-list and the console's
  * ACL as two guards over it.
  */
-export class ShUniversalEditorService {
+export class ShVisualEditorService {
   /** The console's own post service, so there is one caller of each post endpoint (SH985). */
   private readonly posts = new ShPostUnifiedService()
 

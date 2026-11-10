@@ -23,7 +23,7 @@ import { stripComments } from "./support/source-text.mjs"
  *
  * ## Why source text and not a rendered component
  *
- * This workspace's convention, and the reason is the same one `bento-universal-editor.test.mjs`
+ * This workspace's convention, and the reason is the same one `bento-visual-editor.test.mjs`
  * gives: there is no component harness here, and the things worth holding are *structural* — which
  * call happens before which, and which branch a control is rendered in. A jsdom render would prove
  * the markup and not the ordering, which is the half that corrupts content when it is wrong.
@@ -32,7 +32,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const PAGE = stripComments(
   readFileSync(join(HERE, "..", "src", "app", "editor", "visual-editor.page.tsx"), "utf8"))
 const SERVICE = stripComments(readFileSync(
-  join(HERE, "..", "src", "services", "universal-editor", "universal-editor.service.ts"), "utf8"))
+  join(HERE, "..", "src", "services", "visual-editor", "visual-editor.service.ts"), "utf8"))
 
 test("SH1039: the catalogue is read from the agent surface, as the opt-in it is", () => {
   assert.match(SERVICE, /\/v2\/agent\/editable/,
@@ -128,16 +128,16 @@ test("SH1041: a refresh replays the pending edits instead of diverging from them
 })
 
 test("SH1041: throwing work away is confirmed, and leaving with it pending asks", () => {
-  assert.match(PAGE, /universalEditor\.discardConfirm/,
+  assert.match(PAGE, /visualEditor\.discardConfirm/,
     "Discard is the one control here that destroys work rather than writing it (P7)")
-  assert.match(PAGE, /universalEditor\.leaveConfirm/)
+  assert.match(PAGE, /visualEditor\.leaveConfirm/)
   // SH1090 — the guard now blocks the router's exits too, asking in this editor's own words.
-  assert.match(PAGE, /useUnsavedGuard\(changes\.size > 0, t\("universalEditor\.leaveConfirm"/,
+  assert.match(PAGE, /useUnsavedGuard\(changes\.size > 0, t\("visualEditor\.leaveConfirm"/,
     "SH1011's guard covers the three exits the router never sees - the tab closes, the page "
     + "reloads, a link leaves the console - and, since SH1090, every exit the router does see, and "
     + "registers only while something is pending, because a handler that always fires is a dialog "
     + "everybody clicks through")
-  assert.equal(PAGE.includes("onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}"), false,
+  assert.equal(PAGE.includes("onClick={() => navigate(ROUTES.VISUAL_EDITOR)}"), false,
     "every one of this screen's own exits goes through the guard, or the one that does not is "
     + "the one a curator will find")
 })

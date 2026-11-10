@@ -78,7 +78,7 @@ so a task that would be a dozen round trips is three or four calls.
 
 ### A curator's correction
 
-![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/docs/img/diagrams/shio-curation-flow.svg)
+![Curation: a draft, the review queue, the Visual Editor, publishing, the trash](/docs/img/diagrams/shio-curation-flow.svg)
 
 Every arrow into `PUBLISHED` passes through a person. See
 [Letting an agent in](/docs/agent-safety/).

@@ -12,7 +12,7 @@ import type {
  *
  * The shared `@/lib/axios` singleton, never a private `axios.create()`: a private instance opts
  * out of every shared interceptor including CSRF, which a session-bearing caller must send
- * (SH167). That was the Universal Editor save bug (SH233), and these two writes would have
+ * (SH167). That was the Visual Editor save bug (SH233), and these two writes would have
  * repeated it.
  */
 export class ShMarketplaceService {

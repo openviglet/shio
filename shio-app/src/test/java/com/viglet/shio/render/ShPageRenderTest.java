@@ -54,7 +54,7 @@ import jakarta.persistence.PersistenceContext;
  *
  * <p>Before this, applying the {@code marketing-site} blueprint produced thirteen correct
  * pages and no way to look at one: preview minted a URL against {@code site.url} and 400'd
- * without it, and the Universal Editor is an {@code <iframe src={site.url}>}. Both
+ * without it, and the Visual Editor is an {@code <iframe src={site.url}>}. Both
  * human-facing surfaces pointed outward at a front end this repository cannot start. This
  * test builds a site the way an agent does — a layout post, two region posts, a page post
  * — and asserts a person can see the result.</p>
@@ -791,7 +791,7 @@ class ShPageRenderTest {
     }
 
     @Test
-    @DisplayName("the rendered DOM tells the Universal Editor which node is which region")
+    @DisplayName("the rendered DOM tells the Visual Editor which node is which region")
     void theRenderIsAnnotated() {
         String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
 
@@ -1211,7 +1211,7 @@ class ShPageRenderTest {
     void aLinkAlreadyInThePreviewCarriesTheMode() {
         ShRenderedPage page = renderedPageOfMainFixture();
         // The home link a template writes from `ShSiteFrontEnd.of` arrives already prefixed. It was
-        // skipped as an instance route, so it never carried `editor=true`: the Universal Editor's
+        // skipped as an instance route, so it never carried `editor=true`: the Visual Editor's
         // click-through landed there with no bridge.
         String home = "<a href=\"" + previewPrefix() + "/\">home</a>";
         assertThat(previewLinks.rewriteInto(home, previewPrefix(), page, "/", "editor=true"))

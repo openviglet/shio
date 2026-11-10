@@ -129,7 +129,7 @@
       "id": "b1c2d3e4-0001-4000-b000-000000000001",
       "name": "Viglet Corporate",
       "date": "2026-04-11T00:00Z",
-      "description": "Corporate website example with Universal Editor support",
+      "description": "Corporate website example with Visual Editor support",
       "url": "http://localhost:2710",
       "owner": "admin",
       "furl": "viglet-corporate",
@@ -168,7 +168,7 @@
         "TITLE": "Welcome to Viglet",
         "SUBTITLE": "Building the future of content management",
         "HERO_IMAGE": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop",
-        "BODY": "<p>Viglet is a modern content management platform that empowers teams to create, manage, and deliver exceptional digital experiences. Our platform combines powerful content modeling with an intuitive visual editor.</p><p>With our Universal Editor, content authors can edit directly on the rendered page, seeing changes in real-time without switching between a form-based backend and the live site.</p>",
+        "BODY": "<p>Viglet is a modern content management platform that empowers teams to create, manage, and deliver exceptional digital experiences. Our platform combines powerful content modeling with an intuitive visual editor.</p><p>With our Visual Editor, content authors can edit directly on the rendered page, seeing changes in real-time without switching between a form-based backend and the live site.</p>",
         "CTA_TEXT": "Get Started",
         "CTA_URL": "/services"
       }
@@ -185,7 +185,7 @@
         "TITLE": "About Viglet",
         "SUBTITLE": "Our mission is to simplify content management",
         "HERO_IMAGE": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=600&fit=crop",
-        "BODY": "<p>Founded with a vision to democratize content management, Viglet brings enterprise-grade CMS capabilities to teams of all sizes. Our open-source platform is built on modern technologies like Spring Boot and React.</p><p>We believe that content management should be accessible, flexible, and enjoyable. That's why we built the Universal Editor — an inline editing experience that puts content authors in control.</p>",
+        "BODY": "<p>Founded with a vision to democratize content management, Viglet brings enterprise-grade CMS capabilities to teams of all sizes. Our open-source platform is built on modern technologies like Spring Boot and React.</p><p>We believe that content management should be accessible, flexible, and enjoyable. That's why we built the Visual Editor — an inline editing experience that puts content authors in control.</p>",
         "CTA_TEXT": "View Services",
         "CTA_URL": "/services"
       }
@@ -228,7 +228,7 @@
       "postType": "a1b2c3d4-0001-4000-a000-000000000002",
       "fields": {
         "TITLE": "Visual Editing",
-        "DESCRIPTION": "Edit content directly on the live page with our Universal Editor. No context switching needed.",
+        "DESCRIPTION": "Edit content directly on the live page with our Visual Editor. No context switching needed.",
         "ICON": "layers"
       }
     }

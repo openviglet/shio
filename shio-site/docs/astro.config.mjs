@@ -24,6 +24,8 @@ export default defineConfig({
   base: BASE,
   outDir: OUT_DIR,
   trailingSlash: "always",
+  // The Visual Editor's page was `universal-editor/` before the rename; keep old links working.
+  redirects: { "/universal-editor/": "/docs/visual-editor/" },
   integrations: [
     starlight({
       title: "Viglet Shio",
@@ -64,7 +66,7 @@ export default defineConfig({
         {
           label: "The human curates it",
           items: ["curator-approves-it", "content-console", "content-lifecycle", "agent-safety",
-            "universal-editor", "content-modeling", "content-i18n", "administration-guide", "import-export"],
+            "visual-editor", "content-modeling", "content-i18n", "administration-guide", "import-export"],
         },
         {
           label: "The CDA delivers it",

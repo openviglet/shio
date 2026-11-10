@@ -21,8 +21,8 @@ import com.viglet.shio.persistence.model.site.ShSite;
  *
  * <p>{@code site.url} is the field that turns content into something a human can open, and
  * both visual surfaces read it directly: {@code ShPreviewTokenAPI} answered
- * {@code 400 site has no url}, and the Universal Editor rendered
- * {@code universalEditor.siteNoUrl}. Empty is the normal state of a site an agent just
+ * {@code 400 site has no url}, and the Visual Editor rendered
+ * {@code visualEditor.siteNoUrl}. Empty is the normal state of a site an agent just
  * built — SH170's {@code site.upsert} creates a blank one — so the product's two ways of
  * seeing a page were both unavailable at exactly the moment there was something new to
  * see.</p>
@@ -104,7 +104,7 @@ public final class ShSiteFrontEnd {
      * <p>Three call sites built this with {@code URLEncoder.encode}, which is <em>form</em>
      * encoding: a space becomes {@code +}, and in a path a {@code +} is a literal plus. Every link on
      * a site named "Console Check" pointed at {@code /preview/Console+Check/}, a 404, and the
-     * Universal Editor's click-through landed there with no bridge.</p>
+     * Visual Editor's click-through landed there with no bridge.</p>
      */
     public static String previewPrefix(String siteKey) {
         return PREVIEW_BASE + pathSegment(siteKey);

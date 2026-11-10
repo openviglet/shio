@@ -112,7 +112,7 @@ public class ShApiToken implements Serializable {
      *
      * <p>It gates the <b>agent surface</b> (batch/apply publish ops, {@code shio_publish}).
      * A console-authenticated caller has no token and is unaffected; the SH10 CDA write
-     * path is the Universal Editor's, where a human is already the one clicking.</p>
+     * path is the Visual Editor's, where a human is already the one clicking.</p>
      *
      * <p><b>Nullable on purpose, and read through {@link #isMayPublish()} (SH188).</b>
      * {@code v2026.3.11} added the column with no default and no backfill, stating the

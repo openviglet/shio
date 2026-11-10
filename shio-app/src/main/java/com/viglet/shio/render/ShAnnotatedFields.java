@@ -34,7 +34,7 @@ import tools.jackson.databind.JsonNode;
  *
  * <h2>What is left to answer, and why it needs a shared rule</h2>
  *
- * <p>A curator's edit through the Universal Editor <em>does</em> store one — {@code
+ * <p>A curator's edit through the Visual Editor <em>does</em> store one — {@code
  * ShPostDraftMergeService} writes {@code data.<field>} and asks no post-type anything. Two readers
  * would then call that key a defect: {@code ShAgentVerifyService}'s {@code unknown-field}, which is
  * an <b>error</b>, and {@code ShAgentBatchService}'s SH168 check, which would refuse a

@@ -17,7 +17,7 @@ covered, is this page.
 
 ---
 
-![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/docs/img/diagrams/shio-curation-flow.svg)
+![Curation: a draft, the review queue, the Visual Editor, publishing, the trash](/docs/img/diagrams/shio-curation-flow.svg)
 
 ## The invariant
 

@@ -1,7 +1,7 @@
 /**
- * SH1392 — the page the Universal Editor opens on, named in its address.
+ * SH1392 — the page the Visual Editor opens on, named in its address.
  *
- * `/bento/universal-editor/<site>?path=<friendly url>`: the part of `post:<site>/<path>` after the
+ * `/bento/visual-editor/<site>?path=<friendly url>`: the part of `post:<site>/<path>` after the
  * site, so a page reaches the editor without a link drawn on another one (a draft nothing links to,
  * most of all), and the address follows the frame, so a reload or a shared link keeps the page.
  */
@@ -17,7 +17,7 @@ export function framePath(requested: string | null): string {
 }
 
 /**
- * Where to open a site's page in the editor. `editorRoute` is `ROUTES.UNIVERSAL_EDITOR`, passed in so
+ * Where to open a site's page in the editor. `editorRoute` is `ROUTES.VISUAL_EDITOR`, passed in so
  * this module loads outside Vite; `furl` is the page's friendly url, `/` or empty for the home.
  */
 export function editorHref(editorRoute: string, siteId: string, furl?: string | null): string {

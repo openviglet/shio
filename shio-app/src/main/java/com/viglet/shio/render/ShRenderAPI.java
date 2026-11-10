@@ -44,7 +44,7 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  * <p>Applying the {@code marketing-site} blueprint produces thirteen correct pages and,
  * until this route existed, no way to see one: the preview minted a URL against
- * {@code site.url} and 400'd without one, and the Universal Editor is an
+ * {@code site.url} and 400'd without one, and the Visual Editor is an
  * {@code <iframe src={site.url}>}. Both human-facing visual surfaces pointed outward at a
  * front end only {@code shio init} can scaffold and only a developer's machine can run.
  * This renders the page from content the instance already holds, with no client setup at
@@ -347,7 +347,7 @@ public class ShRenderAPI {
      * own</b> parameters, so passing them through would let a page read the flags that control how
      * it is being rendered — a template that branches on {@code param.editor} is a page that looks
      * different in the editor from the way it looks to a reader, which is the whole thing the
-     * Universal Editor is trying not to be. And a repeated parameter is flattened to its
+     * Visual Editor is trying not to be. And a repeated parameter is flattened to its
      * <b>first</b> value rather than a list: the frame is strings, `?q=a&amp;q=b` is a caller
      * mistake rather than a shape templates should have to handle, and picking the first is the
      * only choice that is stable (P5).</p>

@@ -79,8 +79,8 @@ function PageRowLink({ node, depth, newPage, siteId }: Readonly<{
     <li>
       <div className="flex items-center gap-3 px-4 py-2.5" style={{ paddingLeft: `${1 + depth * 1.25}rem` }}>
         {page?.id ? (
-          // SH1394 — a page opens on itself, in the Universal Editor; its form is the icon beside it.
-          <Link to={siteId ? editorHref(ROUTES.UNIVERSAL_EDITOR, siteId, node.path) : `${ROUTES.CONTENT_ROOT}/post/${page.id}`}
+          // SH1394 — a page opens on itself, in the Visual Editor; its form is the icon beside it.
+          <Link to={siteId ? editorHref(ROUTES.VISUAL_EDITOR, siteId, node.path) : `${ROUTES.CONTENT_ROOT}/post/${page.id}`}
             className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
             {label}
           </Link>

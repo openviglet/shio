@@ -2038,6 +2038,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1110** — A share link renders only the page it was minted for: a path prefix on the token, checked in the preview route, with the site's assets still served so the page renders whole.
 - **SH1111** — Live share links are listed and revoked on the mint's authenticated route, by row id, and shio share prints a link, lists them and revokes one (design §LXXI.14 superseded: the listing's own route, GET /api/v2/preview-share, is permitAll for the anonymous exchange) (design §LXXI.14 recorded in `docs/agents/security.md`).
 - **SH1410** — The Open External URL hint names what an external page needs, the @viglet/shio-editor-cors bridge and the editor-origin meta tag, in English and Portuguese, and a test fails on the retired data-sh-* prefix in any locale.
+- **SH1419** — The page editor is the Visual Editor everywhere a curator, agent or reader meets it; old console route and docs URL redirect, and history keeps its name.
 
 ## Block BG — The console as an application: cost, resilience and access
 

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url"
 import { attrFromDeclared, valueFromWidget } from "../src/app/editor/field-labels.ts"
 
 /**
- * SH1393 — the Universal Editor's panel writes every field kind.
+ * SH1393 — the Visual Editor's panel writes every field kind.
  *
  * Selecting the hero's image drew the post form's image widget under `pointer-events-none` with an
  * `onChange` that did nothing, so a curator saw the file and had to leave for the form to replace it.

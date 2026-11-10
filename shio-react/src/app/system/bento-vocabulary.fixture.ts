@@ -108,7 +108,7 @@ export const SPECIMENS: VocabularySpecimen[] = [
   {
     id: "region",
     title: "Region",
-    description: "One sh-region slot, addressed by the Universal Editor bridge",
+    description: "One sh-region slot, addressed by the Visual Editor bridge",
     icon: IconSitemap,
     meta: "unused",
     enabled: 0,

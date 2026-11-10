@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  *
  * <h2>The gap</h2>
  *
- * <p>{@code universalEditor} was the one entry in {@code ShAgentP1ConformanceTest}'s inventory that
+ * <p>{@code visualEditor} was the one entry in {@code ShAgentP1ConformanceTest}'s inventory that
  * named a route and did not have it. It was advertised {@code true} and classified
  * {@code CONSOLE_ONLY}, because SH185's bridge is a browser protocol the console alone speaks —
  * <em>honest to a human and not to an agent</em>. So an agent could read a post, render it, and diff

@@ -41,7 +41,7 @@ that are genuinely a person's.
 | | Does | Through |
 |---|---|---|
 | **The agent** | Builds the model, writes the pages, wires the templates, checks its own work | MCP, the REST agent surface, content projected to files, the `shio` CLI |
-| **The curator** | Reviews, corrects wording, decides what goes live | The console, the Universal Editor, preview links |
+| **The curator** | Reviews, corrects wording, decides what goes live | The console, the Visual Editor, preview links |
 | **The delivery API** | Serves published content to readers | REST + GraphQL, a TypeScript client, React hooks, a Next.js starter |
 
 The division is enforced, not suggested: **an agent's writes land as drafts**, and
@@ -126,7 +126,7 @@ Three rules that save an afternoon:
 A post can exist in two states at once: a **draft** and a **published** version. Readers
 see the published one. The draft is where work happens.
 
-- Every write from an agent, and every save in the Universal Editor, goes to the **draft**.
+- Every write from an agent, and every save in the Visual Editor, goes to the **draft**.
 - **Publishing is an explicit act**, and it can be scheduled.
 - A **preview** shows the draft exactly as it will look, before anyone else can see it.
 - **Unpublishing** withdraws the live version and keeps the draft.

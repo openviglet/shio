@@ -314,7 +314,7 @@ class ShAgentVerifyTest {
     void aMarkupAnnotatedKeyIsNotAnUnknownField() {
         // The assertion that would have caught it, at the boundary it crossed. SH872 gives the
         // annotated values back to the markup that carries them, so `Page` stops gaining a field
-        // per captured block — and a curator's first edit through the Universal Editor then stores
+        // per captured block — and a curator's first edit through the Visual Editor then stores
         // a key the type does not declare. `unknown-field` is an ERROR, so without this rule an
         // annotated replica goes red on every block anybody touches.
         assertThat(findings("content", "unknown-field")).singleElement().satisfies(finding -> {

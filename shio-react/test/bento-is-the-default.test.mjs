@@ -66,7 +66,7 @@ test("SH909: the console shell is not mounted", () => {
     "SH909: App.tsx mounts the console shell again. Block AR migrated every surface to the bento "
       + "tree and this task made it the default; a second shell beside it is the state §LV.12 is "
       + "about — one that nobody chose, that works, and that becomes permanent because it works.")
-  assert.doesNotMatch(APP, /\{(Content|Admin|GraphQL|UniversalEditor)Routes\}/,
+  assert.doesNotMatch(APP, /\{(Content|Admin|GraphQL|VisualEditor)Routes\}/,
     "SH909: a console route fragment is mounted again. Those trees render the migrated components "
       + "in the chrome this block retires, and every fix would then need landing twice.")
 })

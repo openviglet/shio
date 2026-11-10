@@ -456,7 +456,7 @@ export class ConsoleSession {
   }
 
   /**
-   * `PATCH /api/v2/post-unified/{id}` — the curator's edit, as the Universal Editor makes it.
+   * `PATCH /api/v2/post-unified/{id}` — the curator's edit, as the Visual Editor makes it.
    *
    * <p>SH335's verb, and the one a concurrency scenario wants: it merges a few fields into the
    * draft rather than declaring the whole state, so a curator changing one field while an agent

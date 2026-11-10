@@ -36,7 +36,7 @@ import com.viglet.shio.lint.ShSourceText;
  *
  * <p>Nine {@code data-shio-*} attributes accumulated across four blocks, defined as constants in
  * three classes and explained in four changelog entries, with no single statement of what they mean
- * — while being read by the Universal Editor bridge, by anyone debugging a preview, and (SH299) by
+ * — while being read by the Visual Editor bridge, by anyone debugging a preview, and (SH299) by
  * the digest. The gap SH272 closed for helpers, on the other side of the renderer.</p>
  *
  * <p>A table alone would drift, and <b>silently</b>: the failure direction is an attribute that

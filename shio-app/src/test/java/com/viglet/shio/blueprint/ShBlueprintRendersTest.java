@@ -169,7 +169,7 @@ class ShBlueprintRendersTest {
         assertThat(html)
                 .as("""
                         and it is EDITABLE: `sh-field` becomes `data-shio-prop`, which is what the \
-                        Universal Editor attaches to. A page that renders and cannot be edited \
+                        Visual Editor attaches to. A page that renders and cannot be edited \
                         puts the curator back in the console form the visual editor exists to \
                         remove (SH518).""")
                 .contains("data-shio-prop");

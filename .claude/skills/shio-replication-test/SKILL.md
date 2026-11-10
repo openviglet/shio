@@ -1,6 +1,6 @@
 ---
 name: shio-replication-test
-description: Drive and judge a replication run against a live instance — capture an external site, convert it, publish it, and prove the replica. Read before validating a Block Q or Block P change by hand, before answering "does the replica work", and whenever a conformance run is red. Triggers on shio clone, propose, convert, /sites/** delivery, --render, --scripts, fidelity vs authorable mode, the Universal Editor on a replica, snapshot --against, pnpm run conformance, a stale instance, and any question about whether a replicated page looks or behaves like its source.
+description: Drive and judge a replication run against a live instance — capture an external site, convert it, publish it, and prove the replica. Read before validating a Block Q or Block P change by hand, before answering "does the replica work", and whenever a conformance run is red. Triggers on shio clone, propose, convert, /sites/** delivery, --render, --scripts, fidelity vs authorable mode, the Visual Editor on a replica, snapshot --against, pnpm run conformance, a stale instance, and any question about whether a replicated page looks or behaves like its source.
 ---
 
 # Judging a replication run

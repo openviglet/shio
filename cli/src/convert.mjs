@@ -682,7 +682,7 @@ function withoutChrome(row, chrome, dropped, kept, declined) {
  * layout itself states forty lines up: a row is addressed by its **position** —
  * `sh-field="features.{{@index}}.title"`, which `ShPostDraftMergeService` resolves into
  * `data.features[0].title`. A layout that skipped a row would renumber every row after it, so a
- * curator editing the third card through the Universal Editor would write into the second. Filtering
+ * curator editing the third card through the Visual Editor would write into the second. Filtering
  * has to happen where the array is *written*, or not at all — and Handlebars cannot express "this row
  * has something in it" without a helper, the capability set being closed by SH183.</p>
  *

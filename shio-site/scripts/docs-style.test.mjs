@@ -60,7 +60,7 @@ const IMPLEMENTATION_CLAIMS = [/\basserted by a test\b/i, /\ba test (asserts|fai
 const GLOSSARY_SKIP = /\b(bytes|size|file name|MIME|header)\b/i;
 const GLOSSARY_AVOID = [
   [/\bcontent types?\b/i, "post type"],
-  [/\bvisual editor\b/i, "Universal Editor"],
+  [/\buniversal editor\b/i, "Visual Editor"],
 ];
 
 const PUBLIC_DOCS = "https://shio.viglet.org/docs";

@@ -138,7 +138,7 @@ class ShAgentCsrfExemptionTest {
      * <p>{@code ShApiTokenFilterTest} asserts the filter's own decision; this asserts the chain
      * *order* that made the defect possible: {@code SecurityContextHolderFilter} restores the
      * session before {@code ShApiTokenFilter} runs, so a filter that returned early on an existing
-     * authentication never read the {@code Key} header. That is the Universal Editor's save-back,
+     * authentication never read the {@code Key} header. That is the Visual Editor's save-back,
      * and it is the arrangement no unit test can see.</p>
      *
      * <p>The assertion is "<b>not 403</b>" rather than a specific success code, on purpose: 403 is

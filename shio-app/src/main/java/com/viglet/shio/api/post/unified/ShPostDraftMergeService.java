@@ -31,7 +31,7 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <h2>Why this exists</h2>
  *
- * <p>The Universal Editor edits two or three fields of a page, which is a <b>merge</b>. The console
+ * <p>The Visual Editor edits two or three fields of a page, which is a <b>merge</b>. The console
  * write surface offers whole state ({@code PUT} a complete {@code data} map, SH168's rule that an
  * upsert declares everything), so the editor was pointed at the CDA's {@code PATCH} instead — and
  * that is <b>P10 read backwards</b>: a console feature reaching its own content through a third

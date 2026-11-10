@@ -27,7 +27,7 @@ widget colours, i18n, theme) and
   "Outdated Optimize Dep".
 - **Use the shared `@/lib/axios` singleton.** A private `axios.create()` silently
   opts out of every shared interceptor — including CSRF, which is required of a
-  session-bearing caller (SH167). That was the Universal Editor save bug (SH233).
+  session-bearing caller (SH167). That was the Visual Editor save bug (SH233).
 - **Add i18n keys to `en` *and* `pt` simultaneously.**
 
 ## Security rules that are guarded

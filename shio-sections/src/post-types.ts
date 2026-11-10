@@ -11,7 +11,7 @@
  * post-types with its own field names for the same four ideas. A known set of sections
  * makes "add a testimonial section to the pricing page" a single operation over a shared
  * language instead of a design exercise — and the same language is what the console
- * renders, what the Universal Editor (SH10) manipulates and what SH101's render digest
+ * renders, what the Visual Editor (SH10) manipulates and what SH101's render digest
  * can check structurally.
  *
  * The composition rule, which is the one design decision here worth arguing about: a

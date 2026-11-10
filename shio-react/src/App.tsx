@@ -1,5 +1,6 @@
 import {
   createBrowserRouter, createRoutesFromElements, Navigate, Outlet, Route, RouterProvider,
+  useLocation, useParams,
 } from "react-router-dom"
 import BentoHomePage from "./app/system/home.page"
 import BentoFolderEditPage from "./app/content/folder.edit.page"
@@ -107,6 +108,13 @@ function AppLayout() {
   )
 }
 
+/** `/bento/universal-editor/:siteId` → `/bento/visual-editor/:siteId`, query and hash kept. */
+function LegacyEditorRedirect() {
+  const { siteId } = useParams()
+  const { search, hash } = useLocation()
+  return <Navigate to={`/bento/visual-editor/${siteId ?? ""}${search}${hash}`} replace />
+}
+
 /** Created once, at module load, the way a data router is meant to be (never per render). */
 const router = createBrowserRouter(createRoutesFromElements(
             <Route element={<AppLayout />}>
@@ -120,7 +128,7 @@ const router = createBrowserRouter(createRoutesFromElements(
               */}
               <Route path={ROUTES.BENTO_VOCABULARY} element={<BentoVocabularyPage />} />
               {/*
-                SH907 — the Universal Editor is mounted OUTSIDE the shell, by measurement.
+                SH907 — the Visual Editor is mounted OUTSIDE the shell, by measurement.
 
                 `visual-editor.page.tsx` is `flex flex-col h-screen`: it owns the viewport, draws
                 its own toolbar and splits the rest between a preview iframe and a properties
@@ -128,7 +136,9 @@ const router = createBrowserRouter(createRoutesFromElements(
                 so — measured in a browser at 1600x1000 — the iframe's bottom goes from 992
                 (visible) to 1048 (**below the fold**), while two sticky bars stack at the top.
               */}
-              <Route path="/bento/universal-editor/:siteId" element={<VisualEditorPage />} />
+              <Route path="/bento/visual-editor/:siteId" element={<VisualEditorPage />} />
+              {/* The editor's old name; bookmarks and links from before the rename still land. */}
+              <Route path="/bento/universal-editor/:siteId" element={<LegacyEditorRedirect />} />
               {/*
                 The shell and every page inside it. `bento-is-the-default.test.mjs` is what stops a
                 second shell from arriving in a diff that had a good local reason.
@@ -297,7 +307,7 @@ const router = createBrowserRouter(createRoutesFromElements(
                   element={<MarketplaceListPage />}
                 />
                 <Route
-                  path="universal-editor"
+                  path="visual-editor"
                   element={<EditorSitesPage />}
                 />
                 {/*

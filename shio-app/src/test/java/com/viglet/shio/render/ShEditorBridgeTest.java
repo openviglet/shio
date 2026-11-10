@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import com.viglet.shio.render.ShRegionComposer.ShRenderedRegion;
 
 /**
- * SH185 — the Universal Editor's counterpart, and the annotations it reads.
+ * SH185 — the Visual Editor's counterpart, and the annotations it reads.
  *
  * <p>The console has posted {@code sh:*} messages into an iframe since SH10 and there was no
  * {@code shio-editor.js} anywhere in this repository to receive them — not one
@@ -387,7 +387,7 @@ class ShEditorBridgeTest {
      *
      * <p>Both halves of this were stated as load-bearing and neither was asserted, which is how the
      * repository ended up serving <b>two</b> bridges: this one (specified, 182 lines,
-     * {@code data-shio-*}) and an unspecified 550-line script at {@code /universal-editor/}
+     * {@code data-shio-*}) and an unspecified 550-line script at {@code /visual-editor/}
      * ({@code data-sh-*}, written by hand by whatever front end included it). That is P10's own
      * warning — two contracts for one feature — and the unspecified one was the one exposed to
      * external front ends. It also broke the single security rule the protocol states, in both
@@ -443,7 +443,7 @@ class ShEditorBridgeTest {
     @Test
     @DisplayName("SH304: the console's half does not post to \"*\" either")
     void theConsoleHalfPinsItsOriginToo() throws IOException {
-        // SH961 moved the console's pages into trees by domain; the Universal Editor is editor/.
+        // SH961 moved the console's pages into trees by domain; the Visual Editor is editor/.
         Path editor = Path.of("..", "shio-react", "src", "app", "editor", "visual-editor.page.tsx");
 
         assertThat(Files.readString(editor, StandardCharsets.UTF_8))

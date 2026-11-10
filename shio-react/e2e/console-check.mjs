@@ -178,7 +178,7 @@ async function timeToFirstRow(page, startedAt) {
 }
 
 /**
- * A skipped `universal-editor-drive` is a **failure** (SH238/SH659).
+ * A skipped `visual-editor-drive` is a **failure** (SH238/SH659).
  *
  * <p>A skip is the right answer on a laptop, where the topology and the fixtures are whatever
  * they happen to be. It is the wrong answer in CI, where both are provisioned by this
@@ -256,7 +256,7 @@ async function discoverRoutes(siteName) {
     { name: "search", path: "/console/content/search", mustSee: [] },
     { name: "files", path: "/console/content/files", mustSee: [] },
     { name: "post-type-select", path: `/console/content/folder/${rootFolderId}/post-type-select`, mustSee: [] },
-    { name: "universal-editor", path: `/console/universal-editor/${site.id}`, mustSee: [] },
+    { name: "visual-editor", path: `/console/visual-editor/${site.id}`, mustSee: [] },
     // The review queue (SH109) is the curator's primary workflow under the product's
     // orientation, so it is worth a probe even on an instance where no agent has run: an
     // empty queue must render its empty state, not a blank page.
@@ -427,7 +427,7 @@ async function discoverRoutes(siteName) {
   }
 
   /*
-   * SH907 — the Universal Editor, and the one bento route deliberately NOT probed as a bento
+   * SH907 — the Visual Editor, and the one bento route deliberately NOT probed as a bento
    * surface.
    *
    * `visual-editor.page.tsx` is `h-screen`: it owns the viewport and draws its own toolbar, so it
@@ -437,11 +437,11 @@ async function discoverRoutes(siteName) {
    * that must render: an editor that 404s or throws is what this walk is for.
    */
   routes.push({
-    name: "bento-universal-editor",
-    path: `/bento/universal-editor/${site.id}`,
+    name: "bento-visual-editor",
+    path: `/bento/visual-editor/${site.id}`,
     mustSee: [],
   })
-  routes.push({ name: "bento-editor-sites", path: "/bento/universal-editor", bento: true, mustSee: [] })
+  routes.push({ name: "bento-editor-sites", path: "/bento/visual-editor", bento: true, mustSee: [] })
 
   /*
    * SH908 — the explorer and the 404, both probed at both addresses.
@@ -449,7 +449,7 @@ async function discoverRoutes(siteName) {
    * The explorer is the only page in the console whose body is a third-party editor sized to its
    * container: `graphiql-height` below reads the frame's geometry, which is the half no source
    * scan can answer and the half SH907
-   * measured for the Universal Editor.
+   * measured for the Visual Editor.
    *
    * The not-found page is the one nobody navigates to on purpose, which is exactly why it is
    * probed: `mustSee: ["404"]` on a path under `/bento` that no route declares. Without the
@@ -692,7 +692,7 @@ async function checkSaveBarMorph(page) {
  *
  * GraphiQL sizes itself to its container, so the container names a height, and that height is the
  * viewport minus whatever sits above it — a number the page cannot read off the shell. SH907
- * measured the same question for the Universal Editor by hand and found its iframe 48px **below
+ * measured the same question for the Visual Editor by hand and found its iframe 48px **below
  * the fold** inside the shell; this asks it on every run instead.
  *
  * The geometry is reported whether or not it is wrong. A number nobody prints is a number nobody
@@ -1102,7 +1102,7 @@ async function countFields(page) {
 }
 
 /**
- * SH238 — the one fact the Universal Editor rests on, checked in a browser.
+ * SH238 — the one fact the Visual Editor rests on, checked in a browser.
  *
  * The editor is an `<iframe src={site.url}>`, so driving it end to end needs a front end this
  * repository does not have yet (Block P). Its save-back, though, rests on a single fact that needs
@@ -1118,7 +1118,7 @@ async function countFields(page) {
  * trips on a missing fixture is a gate people bypass.
  */
 async function checkEditorSaveBack(context, postId) {
-  const probe = { name: "universal-editor-save-back", path: "/api/v2/cda/post/{id}", ok: true,
+  const probe = { name: "visual-editor-save-back", path: "/api/v2/cda/post/{id}", ok: true,
     errors: [], warnings: [], failedRequests: [] }
   if (!postId) {
     probe.skipped = "no post discovered to patch"
@@ -1177,7 +1177,7 @@ async function checkEditorSaveBack(context, postId) {
 }
 
 /**
- * SH238 — the Universal Editor, driven end to end at last.
+ * SH238 — the Visual Editor, driven end to end at last.
  *
  * ## What was open, and why it stayed open
  *
@@ -1457,7 +1457,7 @@ async function checkFailedReads(context, routes) {
 }
 
 async function checkEditorDrive(context, sites) {
-  const probe = { name: "universal-editor-drive", path: "/console/universal-editor/{site}", ok: true,
+  const probe = { name: "visual-editor-drive", path: "/console/visual-editor/{site}", ok: true,
     errors: [], warnings: [], failedRequests: [] }
 
   if (new URL(BASE).origin !== new URL(API).origin) {
@@ -1495,7 +1495,7 @@ async function checkEditorDrive(context, sites) {
   const page = await context.newPage()
   page.on("pageerror", (e) => probe.errors.push(String(e)))
   try {
-    await page.goto(`${BASE}/console/universal-editor/${target.id}`,
+    await page.goto(`${BASE}/console/visual-editor/${target.id}`,
       { waitUntil: "domcontentloaded", timeout: 30_000 })
 
     // 1. The handshake. `sh:ready` is what the whole protocol rests on, and until now nothing
@@ -1670,14 +1670,14 @@ async function checkEditorDrive(context, sites) {
       if (!published) {
         // What the curator was looking at when nothing said "published" — the one view of this
         // failure the network cannot give.
-        probe.shot = join(OUT, "universal-editor-drive-publish.png")
+        probe.shot = join(OUT, "visual-editor-drive-publish.png")
         await page.screenshot({ path: probe.shot }).catch(() => {})
         probe.ok = false
         probe.publishRefused = refused
           ? `${refused.status} ${refused.type ?? "(no problem type)"}`
           : probe.publishWrites.length ? "the write succeeded and no toast followed" : "no write was sent"
         probe.errors.push(`SH659: the editor's Publish reported nothing — ${probe.publishRefused}. `
-          + "`persist(true)` is the one path `universal-editor-save-back` does not cover, since it "
+          + "`persist(true)` is the one path `visual-editor-save-back` does not cover, since it "
           + "patches with `publish:true` rather than saving a draft")
       } else {
         probe.published = true

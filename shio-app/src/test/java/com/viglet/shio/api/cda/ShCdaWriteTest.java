@@ -48,7 +48,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * SH10 CDA write surface ({@link ShCdaWriteService}) — the Universal Editor
+ * SH10 CDA write surface ({@link ShCdaWriteService}) — the Visual Editor
  * save-back. Edits land on the {@code DRAFT} row; publishing promotes it; the
  * SH2 per-site allow-list is enforced on the write path; and {@code getEditable}
  * exposes the post-type field schema.

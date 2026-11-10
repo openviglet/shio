@@ -18,7 +18,7 @@
  *
  * <ul>
  *   <li>`siteDestination` reads a non-empty `url` as an <b>external front end</b>, so the console's
- *       open-site link and the Universal Editor's iframe both point at the instance. `GET /` answers
+ *       open-site link and the Visual Editor's iframe both point at the instance. `GET /` answers
  *       302 to `/login`, so the editor framed the console's login page inside the console.</li>
  *   <li>`checkEditorDrive` excludes every site with a `url` <em>before</em> it asks the renderer
  *       anything, so the one site CI provisions on purpose was never the drive's target. The probe
@@ -83,7 +83,7 @@ test("SH664: the fixture site declares no front end of its own", () => {
 
   assert.ok(
     !/^\s*url\s*:/m.test(body),
-    "SH664: a `url` on the console-check fixture makes the Universal Editor frame an external "
+    "SH664: a `url` on the console-check fixture makes the Visual Editor frame an external "
       + "front end. It was the instance itself, so the editor framed `GET /` — a 302 to the "
       + "console's own login page. Empty is what a site an agent just built looks like",
   );

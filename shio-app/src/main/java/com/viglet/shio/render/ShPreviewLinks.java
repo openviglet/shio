@@ -38,7 +38,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
  *
  * <p>{@code {{link}}} is a post's friendly URL — {@code /contato} — and the page is served at
  * {@code /preview/Demo/contato}. So every internal link in a previewed page pointed <em>outside</em>
- * the preview and answered 404. It compounded SH334: the Universal Editor frames the preview, so
+ * the preview and answered 404. It compounded SH334: the Visual Editor frames the preview, so
  * with no picker <em>and</em> no working links exactly one page of a site was reachable by any
  * means.</p>
  *

@@ -29,7 +29,7 @@ published version until something publishes the new one. That is why nothing you
 the console reaches the site by accident, and it is the premise all five tools below rest
 on.
 
-Today publishing happens through the **Universal Editor**'s Publish button, or by
+Today publishing happens through the **Visual Editor**'s Publish button, or by
 **approving an agent run** in Agent Review. See
 [Letting an agent in](/docs/agent-safety/) for how a run is approved.
 
@@ -303,6 +303,6 @@ trash) are on
 
 - [The content console](/docs/content-console/): the browser, the post form, the trash
 - [Letting an agent in](/docs/agent-safety/): draft-default, the review queue, reverting a run
-- [Universal Editor](/docs/universal-editor/): editing and publishing on the rendered page
+- [Visual Editor](/docs/visual-editor/): editing and publishing on the rendered page
 - [Administration](/docs/administration-guide/): activity, agent review, API tokens
 - [Content Modeling](/docs/content-modeling/): the post types the form is generated from

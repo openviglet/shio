@@ -1,6 +1,6 @@
 ---
 name: shio-renderer
-description: Read before touching Shio's preview renderer, page layouts, regions, themes, Handlebars templates, template helpers, or the section vocabulary. Triggers on ShPageRenderService, ShTemplateEngine, ShRenderHelpers, ShTemplateGraph, PageLayout/Region/Theme post-types, sh-region, data-shio-*, /preview/**, /agent/render, the Universal Editor bridge, render digests, unused-region/unused-layout/missing-theme/duplicate-template-title findings, and @viglet/shio-sections.
+description: Read before touching Shio's preview renderer, page layouts, regions, themes, Handlebars templates, template helpers, or the section vocabulary. Triggers on ShPageRenderService, ShTemplateEngine, ShRenderHelpers, ShTemplateGraph, PageLayout/Region/Theme post-types, sh-region, data-shio-*, /preview/**, /agent/render, the Visual Editor bridge, render digests, unused-region/unused-layout/missing-theme/duplicate-template-title findings, and @viglet/shio-sections.
 ---
 
 # Shio renderer
@@ -39,7 +39,7 @@ anything in this area.** It is the authoritative account of:
 ## The two rules most often broken here
 
 1. **`sh-region`, `sh-field`, `sh-post` survive the render.** Do not "tidy up" by
-   stripping them — the rendered DOM is the only place the Universal Editor can
+   stripping them — the rendered DOM is the only place the Visual Editor can
    learn which node maps to which post.
 2. **Ownership is the template's job and the engine never infers it.** A region
    renders against the *page's* model; inside a `{{#query}}` block the row's. The

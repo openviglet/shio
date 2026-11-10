@@ -347,7 +347,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
   },
   {
     action: "Look at it, and fix the headline where you can see it",
-    screen: "Preview  ·  Universal Editor",
+    screen: "Preview  ·  Visual Editor",
     result: "the real rendered page, and the field edited on the page itself",
     artefact: {
       label: "/preview/acme/launch",
@@ -413,7 +413,7 @@ export const PATHS: UsePath[] = [
     needs: "a browser and a login",
     body:
       "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team. All in a browser, with no agent, no terminal and no file to hand-edit anywhere in it.",
-    surface: ["React console", "Universal Editor", "Preview links"],
+    surface: ["React console", "Visual Editor", "Preview links"],
     start: { label: "Viglet Shio without an agent", href: withBase("/console/") },
   },
   {
@@ -545,7 +545,7 @@ export const ROLES: Role[] = [
     verb: "creates, and decides",
     description:
       "Sites, content models, folders, pages, media, publishing, scheduling, the rest of the team: all of it in the console, and none of it needing an agent to have happened first. When there is an agent, this seat also holds the approve button.",
-    surface: ["React console", "Universal Editor", "Preview links"],
+    surface: ["React console", "Visual Editor", "Preview links"],
   },
   {
     icon: Bot,
@@ -861,7 +861,7 @@ export const PACKAGES: Pkg[] = [
   {
     name: "@viglet/shio-editor-cors",
     gloss:
-      "The Universal Editor bridge: inline editing on any front end that emits the data attributes.",
+      "The Visual Editor bridge: inline editing on any front end that emits the data attributes.",
     href: "https://www.npmjs.com/package/@viglet/shio-editor-cors",
   },
   {
@@ -1069,7 +1069,7 @@ export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
     items: [
       "Draft, preview, publish, schedule, unpublish",
       "Preview links that open the real rendered page from an expiring token",
-      "Inline editing on that page through the Universal Editor",
+      "Inline editing on that page through the Visual Editor",
       "A review queue and an activity log: who changed what, and when",
     ],
   },

@@ -47,7 +47,7 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <p>{@code ShHtmlSanitizerTest} asserts the rule. This asserts <b>where</b> it runs, which is the
  * half that decides whether the defence is complete: the console, REST, the agent batch and the
- * Universal Editor's draft merge all write through {@code ShPostUnifiedWriteService}, so a payload
+ * Visual Editor's draft merge all write through {@code ShPostUnifiedWriteService}, so a payload
  * that cannot survive {@code create} or {@code update} cannot survive any of them. A sanitizer in
  * the rich-text widget would have defended the one writer easiest to go around — and the analysis
  * found the editor's draft merge about to grow a second one of its own.</p>

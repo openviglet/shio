@@ -155,7 +155,7 @@ public class ShPostUnifiedAPI {
     /**
      * SH335 — merge a few fields into the draft, as a session-authenticated curator.
      *
-     * <p>The Universal Editor edits two or three fields of a page and had no console verb for it:
+     * <p>The Visual Editor edits two or three fields of a page and had no console verb for it:
      * {@link #update} is whole state (SH168 — an upsert declares everything), so the editor was
      * pointed at the CDA's {@code PATCH} and made a curator mint a {@code WRITE} token to save
      * content the session cookie already authorizes. That is P10 read backwards, and the two ways
@@ -182,7 +182,7 @@ public class ShPostUnifiedAPI {
             shContentAclService.requirePublish(id);
         }
         // The draft is the subject: a merge writes the draft row, which is also what the editor and
-        // the Universal Editor are looking at when they compose one.
+        // the Visual Editor are looking at when they compose one.
         shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
         ShConsolePost written = shConsolePostReadService.written(shPostDraftMergeService
                 .merge(id, payload.attrs() == null ? Map.of() : payload.attrs(), publish,

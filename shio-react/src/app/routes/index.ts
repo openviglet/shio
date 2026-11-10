@@ -1,7 +1,7 @@
 /*
  * SH910 — one export left, and the file stays for it.
  *
- * `ContentRoutes`, `AdminRoutes`, `GraphQLRoutes` and `UniversalEditorRoutes` were the console
+ * `ContentRoutes`, `AdminRoutes`, `GraphQLRoutes` and `VisualEditorRoutes` were the console
  * route tree, and they went with the shell that rendered them. `BentoGraphQLRoute` is declared in
  * `graphql.routes.tsx` rather than in `App.tsx` because the page is `lazy()` — naming the
  * component in `App.tsx` would import Monaco eagerly and put multiple megabytes back into the main

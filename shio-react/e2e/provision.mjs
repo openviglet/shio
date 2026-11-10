@@ -79,7 +79,7 @@ async function createSite() {
       description: "Site the console smoke check walks",
       // No `url` — and that is the fixture's whole point since SH664. A non-empty `url`
       // declares an **external front end**: `siteDestination` sends the console's open-site
-      // link there, and the Universal Editor frames it. This said `url: API`, so the editor
+      // link there, and the Visual Editor frames it. This said `url: API`, so the editor
       // framed the instance itself — `GET /` answers 302 to `/login`, i.e. the console
       // rendered the console's login page inside its own iframe — and `checkEditorDrive`
       // skipped the one site CI provisions on purpose, because it excludes every site with

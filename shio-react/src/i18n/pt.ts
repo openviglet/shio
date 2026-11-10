@@ -16,7 +16,7 @@ import ptDialog from "./locales/pt/dialog.json";
 import ptContent from "./locales/pt/content.json";
 import ptAdmin from "./locales/pt/admin.json";
 import ptGraphql from "./locales/pt/graphql.json";
-import ptUniversalEditor from "./locales/pt/universal-editor.json";
+import ptVisualEditor from "./locales/pt/visual-editor.json";
 import ptApiToken from "./locales/pt/apiToken.json";
 import ptTenantAdmin from "./locales/pt/tenantAdmin.json";
 import ptAuthProvider from "./locales/pt/authProvider.json";
@@ -35,7 +35,7 @@ import ptMarketplace from "./locales/pt/marketplace.json";
 
 const pt = {
   ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
-  ...ptContent, ...ptAdmin, ...ptGraphql, ...ptUniversalEditor, ...ptApiToken,
+  ...ptContent, ...ptAdmin, ...ptGraphql, ...ptVisualEditor, ...ptApiToken,
   ...ptTenantAdmin, ...ptAuthProvider, ...ptExchangeProvider, ...ptEmailConfig,
   ...ptActivity, ...ptAcl, ...ptSiteWebhook, ...ptHome, ...ptStaticFile, ...ptReview, ...ptNote, ...ptMarketplace,
   ...ptInsights, ...ptBlocks,

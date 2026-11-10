@@ -1,4 +1,4 @@
-// Universal Editor (SH10) — types mirroring the CDA write contract
+// Visual Editor (SH10) — types mirroring the CDA write contract
 // (com.viglet.shio.api.cda.dto.*). The editor talks to /api/v2/cda with a
 // WRITE-scope token, so these mirror the backend DTOs, not the console model.
 

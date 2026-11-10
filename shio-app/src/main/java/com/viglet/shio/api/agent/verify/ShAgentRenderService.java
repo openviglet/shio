@@ -178,7 +178,7 @@ public class ShAgentRenderService {
     /**
      * SH809 — which fields on a page a curator could edit, and which regions it declares.
      *
-     * <p>The one P1 exception with a route already named. {@code universalEditor} sat in
+     * <p>The one P1 exception with a route already named. {@code visualEditor} sat in
      * {@code ShAgentP1ConformanceTest}'s inventory as {@code CONSOLE_ONLY} because SH185's bridge is
      * a browser protocol the console alone speaks — so an agent could read a post, render it, and
      * diff draft against live, and still not answer <em>which fields can somebody change</em>.</p>

@@ -5,7 +5,7 @@
 **Shio is an agent-ready CMS: every capability is built for a coding agent first,
 and a person can still do all of it from the console.** The agent builds and
 maintains the site (MCP tools + content as files + blueprints); the **curator
-approves**: corrects and tweaks (React console, Universal Editor, preview
+approves**: corrects and tweaks (React console, Visual Editor, preview
 links); the **CDA delivers** (REST/GraphQL + the TS SDKs). Every design decision is
 judged by *agent cycles and tokens*, not by clicks.
 

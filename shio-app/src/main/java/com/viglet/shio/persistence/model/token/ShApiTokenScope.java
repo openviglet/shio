@@ -14,7 +14,7 @@ package com.viglet.shio.persistence.model.token;
  *       {@code ROLE_CDA_PREVIEW} authority so the draft hook can flip the pinned
  *       state without changing the public URL contract.</li>
  *   <li>{@code WRITE} — read + (later, SH10) write back through the CDA, e.g. the
- *       Universal Editor save path. Carries {@code ROLE_CDA_WRITE} and is not
+ *       Visual Editor save path. Carries {@code ROLE_CDA_WRITE} and is not
  *       method-gated to GET.</li>
  *   <li>{@code AGENT} — the credential an agent runs on (SH106). Reads like
  *       {@code PREVIEW} (an agent works on drafts) and writes on the <b>agent surface
@@ -24,7 +24,7 @@ package com.viglet.shio.persistence.model.token;
  * </ul>
  *
  * <p>{@code AGENT} exists because the alternative was worse in both directions: an agent
- * either held a {@code WRITE} key — the Universal Editor's credential, which can patch
+ * either held a {@code WRITE} key — the Visual Editor's credential, which can patch
  * live content outside the agent protocol's guards — or a console username and password,
  * which is every capability the human has and cannot expire. A scope of its own is what
  * lets §XII's invariant hold: the agent path is never a privilege escalation, and now it

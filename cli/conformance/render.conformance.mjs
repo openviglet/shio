@@ -195,7 +195,7 @@ describe("SH448 conformance: the native render path, end to end over HTTP", () =
       html,
       new RegExp(`sh-region="${NAV_REGION}"`),
       "SH185: sh-region survives the render. It is a contract the content declares and has been "
-        + "in it since 2018; stripping it is how the Universal Editor loses the node→post map",
+        + "in it since 2018; stripping it is how the Visual Editor loses the node→post map",
     );
     assert.match(
       html,

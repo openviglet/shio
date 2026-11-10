@@ -78,7 +78,7 @@ outside a field. It searches descriptions as well as titles, so *credentials* fi
 
 | Area | Screens |
 |---|---|
-| **Content** | Sites · Search · Post Types · Media Library · Trash · Universal Editor |
+| **Content** | Sites · Search · Post Types · Media Library · Trash · Visual Editor |
 | **Administration** | Users (users, groups, roles) · API Tokens · Tenants · Authentication Providers · Exchange Providers · Email · Webhooks · Activity · Agent Review · GraphQL |
 
 | Pattern | Behaviour |
@@ -295,7 +295,7 @@ Sites are managed from **Content → Sites**.
 |---|---|
 | **Name** | The site's display name, and the name it is addressed by (`site:<name>`) |
 | **Description** | Free text |
-| **URL** | The base URL of the site's front end, which the Universal Editor frames and **Preview** and **View published site** open. Empty, **Preview** opens the draft preview at `/preview/<site>/` and **View published site** opens `/sites/<furl>/` |
+| **URL** | The base URL of the site's front end, which the Visual Editor frames and **Preview** and **View published site** open. Empty, **Preview** opens the draft preview at `/preview/<site>/` and **View published site** opens `/sites/<furl>/` |
 
 ### A site at its own address
 

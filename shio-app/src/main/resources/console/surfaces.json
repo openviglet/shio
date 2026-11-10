@@ -143,9 +143,9 @@
       }
     },
     {
-      "id": "universal-editor",
+      "id": "visual-editor",
       "section": "content",
-      "route": "/bento/universal-editor",
+      "route": "/bento/visual-editor",
       "capability": "edit a page where it is rendered",
       "agent": {
         "kind": "endpoint",
@@ -308,7 +308,7 @@
     {
       "id": "editor-bridge",
       "kind": "contract-leg",
-      "why": "the Universal Editor's in-browser bridge (SH907). Its other leg is /agent/editable, which answers the same question without a DOM — this half is the human end of that contract"
+      "why": "the Visual Editor's in-browser bridge (SH907). Its other leg is /agent/editable, which answers the same question without a DOM — this half is the human end of that contract"
     },
     {
       "id": "query-cache",

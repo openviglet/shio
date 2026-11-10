@@ -139,10 +139,10 @@ export default function SearchPage() {
     },
   ], [t])
   const openRow = (row: ShConsoleSearchRow) => {
-    // SH1394 — a page opens on itself in the Universal Editor, as it does from the palette; every
+    // SH1394 — a page opens on itself in the Visual Editor, as it does from the palette; every
     // other type opens its form. The sites are this page's own read, already loaded for its filter.
     const page = pageOnSite(row.address, row.type, sites)
-    if (page) navigate(editorHref(ROUTES.UNIVERSAL_EDITOR, page.siteId, page.path))
+    if (page) navigate(editorHref(ROUTES.VISUAL_EDITOR, page.siteId, page.path))
     else if (row.id) navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)
   }
 

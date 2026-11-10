@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Content Delivery API (CDA) editable post (SH10): the draft-preferred post
  * (frozen {@link ShCdaPost} contract) plus its post-type field schema. Backs the
- * Universal Editor properties panel, which needs both the current attribute
+ * Visual Editor properties panel, which needs both the current attribute
  * values and the per-field labels/widgets to render the full form.
  *
  * @author Alexandre Oliveira

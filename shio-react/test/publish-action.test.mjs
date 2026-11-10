@@ -14,7 +14,7 @@
  *
  * <p>`post.edit.page.tsx` carried Preview Draft, Translations, History, Schedule, Save,
  * Save & Close and Cancel, and no Publish. `POST /v2/post-unified/{id}/publish` was called
- * from exactly one place in the whole console — the Universal Editor — so a curator editing
+ * from exactly one place in the whole console — the Visual Editor — so a curator editing
  * a page had to leave for the visual editor or wait for an agent run to be approved.
  * Draft-default (P7) rests on publishing being a separate deliberate act by a person, and
  * the screen where that person works could not perform it.
@@ -47,7 +47,7 @@ test("SH654: the edit screen renders the publish labels somebody had already tra
     page,
     /t\("content\.publish"\)/,
     "SH654: `content.publish` is translated in both locales; a screen that does not render it "
-      + "leaves the Universal Editor as the console's only publish path",
+      + "leaves the Visual Editor as the console's only publish path",
   );
   assert.match(
     page,

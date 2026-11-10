@@ -95,13 +95,13 @@ decision (P5).
 
 **On the CDA, an explicitly presented `Key` beats an existing session (SH233).** `ShApiTokenFilter`
 used to return early whenever anything had authenticated, which read as conservative and was why
-the Universal Editor could not save: the console is **same-origin** with the API, so its session
+the Visual Editor could not save: the console is **same-origin** with the API, so its session
 cookie rides along whatever the client sets `withCredentials` to (that flag governs cross-origin
 requests only), `SecurityContextHolderFilter` restores the session first, the `Key` header was
 never read, and the PATCH authenticated as a curator with no `ROLE_CDA_WRITE`. Sending a key is a
 request to be *that* principal; the token's scope, allow-list, expiry and rate limit still bound
 it, and a key that cannot authenticate **leaves the context untouched** rather than clearing it.
-The client half is the same fix from the other end: `universal-editor.service.ts` uses the shared
+The client half is the same fix from the other end: `visual-editor.service.ts` uses the shared
 `@/lib/axios` singleton now, so the request carries CSRF (required of a session-bearing caller
 since SH167) instead of a private `axios.create()` that silently opted out of every shared
 interceptor.
@@ -190,7 +190,7 @@ registered after `BasicAuthenticationFilter` while CORS runs at the head of the 
   **every unpublished draft was readable by anyone who could reach the port**. Measured rather
   than reasoned: an anonymous GET answered **404** for an unknown site, meaning it had already
   reached the renderer, and **200** for `/preview/_shio/editor.js`. A curator's browser carries a
-  session, so the console and the Universal Editor never noticed. `ShPreviewIsNotPublicTest`
+  session, so the console and the Visual Editor never noticed. `ShPreviewIsNotPublicTest`
   refuses the next reopening, from the outside and with no credentials, because a test over the
   config would only restate it.
 - **A share link opens it for one credential, and the entry above did not move (SH1042).** A draft
@@ -854,7 +854,7 @@ design. So a paste carrying `<img onerror=…>`, or an agent's `post.upsert` wri
 put script on the published page.
 
 `ShHtmlSanitizer` runs in `ShPostUnifiedWriteService`, the one place the console, REST, the agent
-batch and the Universal Editor's draft merge all pass through. A sanitizer in the widget would
+batch and the Visual Editor's draft merge all pass through. A sanitizer in the widget would
 defend the writer easiest to go around, and the analysis found the editor's draft merge about to
 grow a second one of its own, two sanitizers disagreeing about one field is worse than one that is
 sometimes late. Cleaned **before it is stored**, not at the render: a sanitizer on the way out

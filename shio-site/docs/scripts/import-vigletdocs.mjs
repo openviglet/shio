@@ -37,7 +37,7 @@ const BASE = "/docs";
 const HUBS = {
   "agent-builds-it": ["mcp", "agent-surface", "content-as-files", "cli", "blueprints",
     "website-development", "design-tokens", "replication", "token-economy"],
-  "curator-approves-it": ["content-console", "content-lifecycle", "agent-safety", "universal-editor",
+  "curator-approves-it": ["content-console", "content-lifecycle", "agent-safety", "visual-editor",
     "content-modeling", "content-i18n", "administration-guide", "import-export"],
   "cda-delivers-it": ["headless/content-delivery-api", "headless/javascript-client",
     "headless/react-sdk", "headless/nextjs-starter", "graphql", "webhooks"],

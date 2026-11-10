@@ -7,7 +7,7 @@
  *
  * SH507 decided a converted page is presented by a **Shio** theme rather than a ruin of the source's,
  * and SH508 gave that theme a tree to lay out. This is the stylesheet: one small one, written against
- * SH508's roles, so a curator who opens the Universal Editor on a converted page sees a page.
+ * SH508's roles, so a curator who opens the Visual Editor on a converted page sees a page.
  *
  * ## Small on purpose
  *

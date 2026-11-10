@@ -30,7 +30,7 @@ export interface PageRow {
 
 /** A site's two fields that say which types are pages. */
 export interface PageSite {
-  /** SH1392 — what the Universal Editor is opened on; a page row offers it only when present. */
+  /** SH1392 — what the Visual Editor is opened on; a page row offers it only when present. */
   id?: string
   name: string
   postTypeLayout?: string | null

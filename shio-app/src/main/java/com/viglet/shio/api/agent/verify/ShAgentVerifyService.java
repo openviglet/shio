@@ -2371,7 +2371,7 @@ public class ShAgentVerifyService {
      *
      * <h2>Why this is a content finding and not a console feature</h2>
      *
-     * <p>The symptom appeared in the Universal Editor — it opens {@code ShSiteFrontEnd}'s answer,
+     * <p>The symptom appeared in the Visual Editor — it opens {@code ShSiteFrontEnd}'s answer,
      * which is the site <em>root</em>, so a site with no page there opens on a 404 and exactly one
      * page of it is editable. The obvious fix is a page picker, and it is the wrong one to build
      * first: <b>a page at furl {@code /} is a convention nothing enforces, defaults or reports.</b>
@@ -2419,7 +2419,7 @@ public class ShAgentVerifyService {
                     ShAddress.site(site.getName()).toString(), null,
                     "Site '" + site.getName() + "' publishes " + byUrl.size()
                             + " page(s) and none of them is at '/', so its front door is a 404 — "
-                            + "which is also the only page the Universal Editor can open.",
+                            + "which is also the only page the Visual Editor can open.",
                     "Give one page the friendly URL '/' with a post.move op "
                             + "(POST /api/v2/agent/batch): {\"op\":\"post.move\",\"address\":\"post:"
                             + site.getName() + "/<url>\",\"to\":\"post:" + site.getName() + "/\"}."));
@@ -3617,7 +3617,7 @@ public class ShAgentVerifyService {
         boolean system = post.getShPostType() != null && post.getShPostType().getSystem() == 1;
         String typeName = name(post.getShPostType());
         // SH872 — a key this post's OWN markup annotates is declared by that markup, which is the
-        // storage SH868 proposed. Without it a curator's first edit through the Universal Editor
+        // storage SH868 proposed. Without it a curator's first edit through the Visual Editor
         // turns an annotated page red here, on every annotated block they touch.
         Set<String> annotated = ShAnnotatedFields.of(data);
         for (String key : data.propertyNames()) {

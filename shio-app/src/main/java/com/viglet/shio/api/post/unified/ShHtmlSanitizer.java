@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
  * <h2>At the boundary, not in each writer</h2>
  *
  * <p>This runs in the unified write service, the one place the console, REST, the agent batch and
- * the Universal Editor's draft merge all pass through. A sanitizer in the widget would defend the
+ * the Visual Editor's draft merge all pass through. A sanitizer in the widget would defend the
  * writer that is easiest to go around, and the analysis found the editor's draft merge proposing
  * its own sanitize step separately — two sanitizers disagreeing about one field is worse than one
  * that is sometimes late.</p>

@@ -96,7 +96,7 @@
   "content.closeWithoutSaving": "Close without saving",
   "content.previewDraft": "Preview Draft",
   "content.editOnPage": "Edit on the page",
-  "content.editOnPageTitle": "Open this page in the Universal Editor, where it is edited as visitors see it",
+  "content.editOnPageTitle": "Open this page in the Visual Editor, where it is edited as visitors see it",
   "content.editFields": "Edit fields",
   "content.editFieldsTitle": "Every field of this page, in its form",
   "content.previewNoUrl": "This site has no front-end URL configured for preview.",

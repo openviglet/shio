@@ -133,7 +133,7 @@ class ShConsoleReadAclLintTest {
                             + " console-only under anyRequest().authenticated(), and the submissions"
                             + " the Forms page lists come through /content/search, which asks the ACL"),
             Map.entry("/api/v2/post/xp/{id}",
-                    "the Universal Editor bridge, which authenticates with its own short-lived "
+                    "the Visual Editor bridge, which authenticates with its own short-lived "
                             + "preview token rather than a console session (SH13)"),
             Map.entry("/api/v2/site", "the site list, which the console needs to draw navigation "
                     + "at all; a site the reader may not open still has to be nameable"),

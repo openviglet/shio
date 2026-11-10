@@ -510,7 +510,7 @@ class ShApiTokenFilterTest {
         // The defect this fixes: the console is same-origin with the API, so its session cookie
         // rides along whatever `withCredentials` says (that flag is cross-origin only), the
         // security context is restored before this filter runs, and the `Key` header was never
-        // read — so the Universal Editor's PATCH authenticated as a curator with no
+        // read — so the Visual Editor's PATCH authenticated as a curator with no
         // ROLE_CDA_WRITE and 403'd. Presenting a key is a request to be that principal.
         when(shApiTokenRepository.findByTokenAcrossTenants("the-key"))
                 .thenReturn(Optional.of(token(ShApiTokenScope.WRITE, Set.of())));

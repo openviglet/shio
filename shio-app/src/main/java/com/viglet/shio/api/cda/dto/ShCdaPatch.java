@@ -16,7 +16,7 @@ import tools.jackson.databind.JsonNode;
  * Content Delivery API (CDA) write payload (SH10). A partial set of post-type
  * attribute changes keyed by attribute name, merged into the post's draft
  * {@code data} document. When {@link #publish()} is true the draft is promoted
- * to {@code PUBLISHED} in the same request (the Universal Editor "save &amp;
+ * to {@code PUBLISHED} in the same request (the Visual Editor "save &amp;
  * publish" action).
  *
  * @author Alexandre Oliveira

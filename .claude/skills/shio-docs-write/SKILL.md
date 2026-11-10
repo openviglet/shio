@@ -54,7 +54,7 @@ Where a feature is documented, and whether it needs a page at all, is decided fi
 | draft / publish | The unpublished row, and the explicit act that makes it live | save live, push live |
 | curator | The person who reviews and approves | the human, the user (as an actor) |
 | agent | The coding agent driving MCP, files or the API | the AI, the bot |
-| Universal Editor | Editing on the rendered page | visual editor, WYSIWYG |
+| Visual Editor | Editing on the rendered page | Universal Editor (Adobe AEM's product name), WYSIWYG |
 | layout, region, theme | The page structure posts are rendered through | |
 | blueprint, pattern | An appliable starting point; a captured set of sections | recipe, snippet |
 | review queue | Where agent changes wait for a curator | inbox |

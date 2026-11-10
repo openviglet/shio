@@ -1,8 +1,8 @@
 /*!
  * @viglet/shio-editor-cors v2026.2.0
- * Viglet Shio Universal Editor Bridge
+ * Viglet Shio Visual Editor Bridge
  *
- * Include this script in any page to enable Shio Universal Editor support.
+ * Include this script in any page to enable Shio Visual Editor support.
  * Requires: <meta name="urn:shio:system:connection" content="shio:http://your-shio-server">
  *
  * Copyright (C) 2016-2026 Viglet Team
@@ -543,10 +543,10 @@ function highlightElement(data: Record<string, string> | undefined): void {
 // ── CSS Injection ───────────────────────────────────────────────────────
 
 function injectStyles(): void {
-  if (document.getElementById("sh-universal-editor-styles")) return;
+  if (document.getElementById("sh-visual-editor-styles")) return;
 
   const style = document.createElement("style");
-  style.id = "sh-universal-editor-styles";
+  style.id = "sh-visual-editor-styles";
   style.textContent = `
     /* Edit mode: show outlines on all editable elements */
     html.sh-edit-mode [data-sh-resource] {

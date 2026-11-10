@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
  * <p>It would be tidier to strip {@code sh-region} once the hole is filled. It is left in,
  * and each filled slot additionally carries {@code data-shio-region} and
  * {@code data-shio-region-post}, because <b>the rendered DOM is the only place the
- * Universal Editor can learn which node is which region</b>. SH185's whole problem is
+ * Visual Editor can learn which node is which region</b>. SH185's whole problem is
  * that {@code visual-editor.page.tsx} posts {@code {type, data}} into an iframe and
  * nothing on the other side knows what a given element maps to; an annotated render is
  * the answer, and it is free here. A region is the edit unit precisely because it is the
@@ -413,7 +413,7 @@ public class ShRegionComposer {
 
     /**
      * SH185 — turns the author's {@code sh-field}/{@code sh-post} into the {@code data-shio-*}
-     * pair the Universal Editor reads.
+     * pair the Visual Editor reads.
      *
      * <h3>Why the translation exists at all</h3>
      *

@@ -662,7 +662,7 @@ class ShAgentBatchTest {
         // The assertion that would have caught it, at the boundary it crossed. SH868 kept the
         // annotated values off the post-type by writing a field per captured block onto `Page`,
         // which put 44 fields on the type every page in the instance shares. SH872 gives the
-        // storage back to the markup — and a curator's edit through the Universal Editor then
+        // storage back to the markup — and a curator's edit through the Visual Editor then
         // stores a key the type does not declare, so a `shio push` of the content file that edit
         // produced would meet SH168 and be refused. It is the markup that declares it.
         String base = "/an-" + UUID.randomUUID().toString().substring(0, 8);

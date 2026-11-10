@@ -538,7 +538,7 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   `NAMES_SOMETHING_ABSENT` with the reason, one entry today, `no-home-page`, whose fix ends
   `"to":"post:<site>/"`, the page the finding exists because the site has not got.
 - **`no-home-page`, a site that publishes and has no page at `/` (SH334)**, a `routes` **warning**
-  carrying the `site:` address. The symptom was the Universal Editor opening on a 404 (it frames
+  carrying the `site:` address. The symptom was the Visual Editor opening on a 404 (it frames
   `ShSiteFrontEnd`'s answer, the site root), and the fix was deliberately *not* a page picker:
   **a page at furl `/` is a convention nothing enforced, defaulted or reported.** The SH71 starter
   and the fixtures have one, which is why it never surfaced; an agent following SH79 has no reason
@@ -1292,7 +1292,7 @@ target at all.
 
 ### The first row of that inventory worked rather than read (SH809)
 
-`universalEditor` was the one `CONSOLE_ONLY` entry that **named a route and did not have it**:
+`visualEditor` was the one `CONSOLE_ONLY` entry that **named a route and did not have it**:
 `/agent/editable`, asserted absent, with the note that SH185's bridge is a browser protocol and the
 console is its only client, *`true` is honest to a curator and not to an agent*.
 
@@ -1363,7 +1363,7 @@ naming the file. A lint that cries wolf on nine correct files is deleted within 
 
 **Three guards fired on the way, each correctly.** Removing the exception left the feature key
 unclassified, so it had to be declared `AGENT_ROUTE`; the manifest's `elsewhere` still pointed
-`universalEditor` at the console, which would now send a caller away from the route that answers
+`visualEditor` at the console, which would now send a caller away from the route that answers
 them; and the new endpoint took the manifest **90 tokens over its ceiling**. P3 says lean first, so
 the description was cut to the decision it informs (~53 tokens), and only then was the ceiling raised,
 to the 4% headroom SH743 requires rather than to the measurement, which in turn made `manifest`'s

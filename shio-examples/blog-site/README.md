@@ -1,6 +1,6 @@
 # Blog Site Example
 
-A modern blog example for Viglet Shio demonstrating the Universal Editor capabilities.
+A modern blog example for Viglet Shio demonstrating the Visual Editor capabilities.
 
 ## Structure
 
@@ -14,10 +14,10 @@ A modern blog example for Viglet Shio demonstrating the Universal Editor capabil
 2. In Viglet Shio, go to **Content > Import Site**
 3. Upload the ZIP file
 
-## How to Use with Universal Editor
+## How to Use with Visual Editor
 
 1. Import the site into Viglet Shio
-2. Navigate to **Universal Editor** in the sidebar
+2. Navigate to **Visual Editor** in the sidebar
 3. Select the "Tech Blog" site
 4. Switch to **Edit Mode** and click on any highlighted element
 

@@ -185,7 +185,7 @@ public class ShAgentManifestService {
         // side, so this flag claimed a capability no caller could use. An unshipped
         // capability reports `false` and never overstates; this was the first one to break
         // its own rule, and the fix was to ship the counterpart rather than to demote it.
-        features.put("universalEditor", true);
+        features.put("visualEditor", true);
         features.put("teachingErrors", true);
         features.put("agentContext", true);
         features.put("terseResponses", true);
@@ -419,7 +419,7 @@ public class ShAgentManifestService {
         // SH648 added `site.restore`. A pointer that says "console" for something three ops do is
         // worse than no pointer: it costs a caller the one read that would have told them
         // otherwise, and P2 makes this document the read a session makes first.
-        // SH809 — `universalEditor` pointed here at "console", which was honest while the bridge was
+        // SH809 — `visualEditor` pointed here at "console", which was honest while the bridge was
         // a browser protocol with no agent counterpart. `/agent/editable` is that counterpart, so
         // the capability is no longer elsewhere and a pointer would send a caller away from the
         // route that answers them.

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
 
 /**
- * SH907 — the Universal Editor, the one surface where a shell swap breaks *behaviour*.
+ * SH907 — the Visual Editor, the one surface where a shell swap breaks *behaviour*.
  *
  * §LV.10's warning was specific: "the bridge depends on what surrounds the frame — the sizing, the
  * scroll container, the overlay stacking — and the bento shell changes all three."
@@ -43,7 +43,7 @@ import { stripComments } from "./support/source-text.mjs"
  * ## What is NOT proven here
  *
  * §LV.10 also says "a digest is least sufficient and a real click-through is required". The
- * click-through — `universal-editor-drive` in `console-check.mjs` — **skipped**: on a dev box the
+ * click-through — `visual-editor-drive` in `console-check.mjs` — **skipped**: on a dev box the
  * console is `:5173` and the renderer answers as `:2710`, so the bridge posts to an origin this
  * window is not. That is a real gap in this task's evidence, not a formality. What did run: both
  * routes rendered with the same iframe `src`, the same edit-mode switch and the same properties
@@ -64,12 +64,12 @@ test("SH907: the visual editor is mounted outside the bento shell", () => {
    * 64px, and the bottom of the preview goes below the fold with no scrollbar that reaches it.
    */
   const shell = APP.slice(APP.indexOf("<Route path={ROUTES.BENTO}"), APP.indexOf("<Route path={ROUTES.CONSOLE}"))
-  assert.doesNotMatch(shell, /path="universal-editor\/:siteId"/,
+  assert.doesNotMatch(shell, /path="visual-editor\/:siteId"/,
     "SH907: the visual editor is nested under the bento shell again. It is `h-screen` and draws"
       + " its own toolbar, so inside a shell with a 64px sticky header it is one viewport plus a"
       + " header tall — measured: the iframe's bottom moves from 984 to 1048 at a 1000px viewport,"
       + " and two sticky bars stack. Mount it as a sibling, the way /bento-vocabulary is.")
-  assert.match(APP, /path="\/bento\/universal-editor\/:siteId"/,
+  assert.match(APP, /path="\/bento\/visual-editor\/:siteId"/,
     "SH907: the bento route for the visual editor is gone, so /bento has no way into the editor"
       + " at all — which is worse than the wrong chrome.")
 })

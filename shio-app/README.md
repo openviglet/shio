@@ -56,7 +56,7 @@ docker run -p 2710:2710 ghcr.io/openviglet/shio:latest
 | **Agent gateway** | `/api/v2/agent/**` | Manifest, context pack, planned batches, teaching errors, review queue, diagnostics, render digests |
 | **Content Delivery API** | `/api/v2/cda/**` | Stable read-only REST + GraphQL, token-scoped — what the TypeScript SDKs talk to |
 | **Console API** | `/api/v2/**` | Sites, folders, posts, post-types, static files, import/export |
-| **Renderer** | `/sites/**`, `/preview/**` | Page → layout → region rendering, Handlebars templates, themes, the Universal Editor bridge |
+| **Renderer** | `/sites/**`, `/preview/**` | Page → layout → region rendering, Handlebars templates, themes, the Visual Editor bridge |
 
 Addressing (used everywhere): `post:<site>/<friendly-url>` ·
 `folder:<site>/<name-chain>` · `site:<name>` · `id:<uuid>`. A site's home page is

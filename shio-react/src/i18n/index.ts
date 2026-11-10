@@ -11,7 +11,7 @@ import enDialog from "./locales/en/dialog.json";
 import enContent from "./locales/en/content.json";
 import enAdmin from "./locales/en/admin.json";
 import enGraphql from "./locales/en/graphql.json";
-import enUniversalEditor from "./locales/en/universal-editor.json";
+import enVisualEditor from "./locales/en/visual-editor.json";
 import enApiToken from "./locales/en/apiToken.json";
 import enTenantAdmin from "./locales/en/tenantAdmin.json";
 import enAuthProvider from "./locales/en/authProvider.json";
@@ -31,7 +31,7 @@ import enMarketplace from "./locales/en/marketplace.json";
 
 const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
-  ...enContent, ...enAdmin, ...enGraphql, ...enUniversalEditor, ...enApiToken,
+  ...enContent, ...enAdmin, ...enGraphql, ...enVisualEditor, ...enApiToken,
   ...enTenantAdmin, ...enAuthProvider, ...enExchangeProvider, ...enEmailConfig,
   ...enActivity, ...enAcl, ...enSiteWebhook, ...enHome, ...enStaticFile, ...enReview, ...enNote, ...enMarketplace,
   ...enInsights, ...enBlocks,

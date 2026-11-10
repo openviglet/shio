@@ -249,12 +249,12 @@ function BentoShellRoot() {
       route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
       confirm: false,
     }
-    // SH1394 — a page opens on itself, in the Universal Editor, which is where a page is edited
+    // SH1394 — a page opens on itself, in the Visual Editor, which is where a page is edited
     // (SH1319); its form is the row after it. Every other type keeps opening its form (SH1392 had
     // offered the editor as the second row; the default is what flipped).
     const page = pageOnSite(row.address, row.type, sites ?? [])
     return page
-      ? [{ ...form, route: editorHref(ROUTES.UNIVERSAL_EDITOR, page.siteId, page.path) }, {
+      ? [{ ...form, route: editorHref(ROUTES.VISUAL_EDITOR, page.siteId, page.path) }, {
           ...form,
           id: `${row.address}|fields`,
           label: t("palette.editFields", { title: row.title || row.address }),

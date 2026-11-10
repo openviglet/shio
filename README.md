@@ -13,7 +13,7 @@
 A person can run all of it from the console, or hand it to an AI coding agent such as
 [Claude Code](https://claude.com/claude-code), which builds and maintains the site
 through **MCP tools, content as files and blueprints**; the **curator approves** in
-a React console with a Universal Editor and preview links; and a **Content
+a React console with a Visual Editor and preview links; and a **Content
 Delivery API** (REST + GraphQL, with TypeScript SDKs) delivers the content to
 Next.js, Astro, React, Vue, Svelte or any front end you like.
 
@@ -62,8 +62,8 @@ one of those capabilities on a surface an agent can actually drive:
 | **Agent gateway** (`/api/v2/agent/**`) | A manifest, a context pack, planned batches, teaching errors, a review queue, a diagnostics endpoint, and which fields a curator could edit |
 | **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back, so `Edit`, `Write` and `Grep` are all an agent needs to author |
 | **CLI** (`@viglet/shio`) | 48 verbs: `pull`, `push`, `apply`, `publish`, `find`, `verify`, `preview`, `clone`, `convert`, `types`, `dev`, `deploy`, `patterns`, `status`, `index`, `redirects`, `export`, … |
-| **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with zero-dependency TypeScript SDKs, plus two narrow writes: the Universal Editor's save-back, and form submissions landing as drafts |
-| **React console** | The curator's half: content browser, 15 form widgets, Universal Editor, review queue, preview links |
+| **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with zero-dependency TypeScript SDKs, plus two narrow writes: the Visual Editor's save-back, and form submissions landing as drafts |
+| **React console** | The curator's half: content browser, 15 form widgets, Visual Editor, review queue, preview links |
 
 Keywords, so you can find this again: *agent-ready CMS, headless CMS, agent-native CMS, AI CMS,
 MCP server, Model Context Protocol, Claude Code, content management system, Java
@@ -223,7 +223,7 @@ All published to **[npm](https://www.npmjs.com/org/viglet)** under the
 | [`@viglet/shio-react-sdk`](https://www.npmjs.com/package/@viglet/shio-react-sdk) | **React SDK**: hooks and render components on top of the client ([source](shio-react-sdk/)) |
 | [`@viglet/shio-model`](https://www.npmjs.com/package/@viglet/shio-model) | Typed **DSL** for authoring the content model as code ([source](shio-model/)) |
 | [`@viglet/shio-sections`](https://www.npmjs.com/package/@viglet/shio-sections) | The **page-section vocabulary**: section post-types plus matching React components ([source](shio-sections/)) |
-| [`@viglet/shio-editor-cors`](https://www.npmjs.com/package/@viglet/shio-editor-cors) | The **Universal Editor bridge**: inline visual editing for any front end ([source](shio-js-sdk/)) |
+| [`@viglet/shio-editor-cors`](https://www.npmjs.com/package/@viglet/shio-editor-cors) | The **Visual Editor bridge**: inline visual editing for any front end ([source](shio-js-sdk/)) |
 | [`@viglet/create-shio-app`](https://www.npmjs.com/package/@viglet/create-shio-app) | **Next.js starter generator** ([source](create-shio-app/)) |
 
 The Java backend ships as a **Docker image**,
@@ -258,7 +258,7 @@ shio-client/       @viglet/shio-client      zero-dependency CDA client (TypeScri
 shio-react-sdk/    @viglet/shio-react-sdk   React hooks and components
 shio-model/        @viglet/shio-model       content-model DSL
 shio-sections/     @viglet/shio-sections    page-section vocabulary
-shio-js-sdk/       @viglet/shio-editor-cors Universal Editor bridge
+shio-js-sdk/       @viglet/shio-editor-cors Visual Editor bridge
 create-shio-app/   @viglet/create-shio-app  Next.js starter generator
 cli/               @viglet/shio             the CLI and the MCP stdio bridge
 claude-plugin/     The Shio plugin for Claude Code

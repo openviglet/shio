@@ -1026,7 +1026,7 @@ test("SH1159: the visual editor's three hand-written cache keys become query key
   const editor = stripComments(readFileSync(
     join(ROOT, "src/app/editor/visual-editor.page.tsx"), "utf8"));
   const service = stripComments(readFileSync(
-    join(ROOT, "src/services/universal-editor/universal-editor.service.ts"), "utf8"));
+    join(ROOT, "src/services/visual-editor/visual-editor.service.ts"), "utf8"));
 
   /*
    * SH1159 — the heaviest file on the declared list, and the three things it was doing by hand were all

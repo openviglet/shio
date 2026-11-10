@@ -116,7 +116,7 @@ test("SH524/SH638: every rendered field carries an editing annotation", () => {
   });
 
   // Was 25 of 25 when SH524 counted it: rendered, stored, and inert on the page — a conversion's
-  // authorable mode delivering a model the Universal Editor could not reach, which puts the curator
+  // authorable mode delivering a model the Visual Editor could not reach, which puts the curator
   // back in the console form the visual editor exists to remove. SH638 closed it.
   assert.deepEqual(
     unannotated,

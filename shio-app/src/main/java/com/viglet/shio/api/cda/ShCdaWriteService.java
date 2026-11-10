@@ -28,7 +28,7 @@ import tools.jackson.databind.JsonNode;
 
 /**
  * Content Delivery API (CDA) write service (SH10) — the save-back half of the
- * Universal Editor bridge. Mutating requests reach this service only with a
+ * Visual Editor bridge. Mutating requests reach this service only with a
  * {@code WRITE}-scope token ({@code ROLE_CDA_WRITE}), enforced in
  * {@code ShSecurityConfig} + {@code ShApiTokenFilter}.
  *
@@ -103,7 +103,7 @@ public class ShCdaWriteService {
         return draftMergeService.merge(postId, attrChanges, publish, actor).map(mapper::toPost);
     }
 
-    /** Promote the post's draft to {@code PUBLISHED} (Universal Editor "publish"). */
+    /** Promote the post's draft to {@code PUBLISHED} (Visual Editor "publish"). */
     public Optional<ShCdaPost> publish(String postId, String actor) {
         // SH995 — the delivery API's write path publishes too, and asked for nothing above write.
         shContentAclService.requirePublish(postId);

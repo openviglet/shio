@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url"
 import { editorHref, followedAddress, framePath, pageOnSite } from "../src/lib/editor-path.ts"
 
 /**
- * SH1392 — the Universal Editor opens a named page, and its address follows the frame.
+ * SH1392 — the Visual Editor opens a named page, and its address follows the frame.
  *
  * It framed a site's home and nothing else, so a page reached it only through a link drawn on
  * another one, and a draft (linked from nowhere) could not be opened there at all.
@@ -27,18 +27,18 @@ test("SH1392: ?path= names the page to frame, and the home is the bare route", (
   assert.equal(framePath(""), "/")
   assert.equal(framePath("pricing"), "/pricing")
   assert.equal(framePath("//blog/hello"), "/blog/hello", "SH1392: one leading slash, never a protocol-relative src")
-  assert.equal(editorHref("/bento/universal-editor", "s1", "/"), "/bento/universal-editor/s1")
-  assert.equal(editorHref("/bento/universal-editor", "s1", "/blog/hello world"),
-    "/bento/universal-editor/s1?path=blog%2Fhello%20world")
+  assert.equal(editorHref("/bento/visual-editor", "s1", "/"), "/bento/visual-editor/s1")
+  assert.equal(editorHref("/bento/visual-editor", "s1", "/blog/hello world"),
+    "/bento/visual-editor/s1?path=blog%2Fhello%20world")
 })
 
 test("SH1392: the address follows the frame within the site, and nowhere else", () => {
-  const current = "https://shio.test/bento/universal-editor/s1?path=pricing"
+  const current = "https://shio.test/bento/visual-editor/s1?path=pricing"
   const base = "/preview/Console%20Check/"
   assert.equal(followedAddress("https://shio.test/preview/Console%20Check/about?editor=true", base, current),
-    "https://shio.test/bento/universal-editor/s1?path=about")
+    "https://shio.test/bento/visual-editor/s1?path=about")
   assert.equal(followedAddress("https://shio.test/preview/Console%20Check/?editor=true", base, current),
-    "https://shio.test/bento/universal-editor/s1", "SH1392: back on the home, the parameter goes")
+    "https://shio.test/bento/visual-editor/s1", "SH1392: back on the home, the parameter goes")
   assert.equal(followedAddress("https://elsewhere.test/preview/Console%20Check/about", base, current), null,
     "SH1392: a frame that left for another origin names no page here")
   assert.equal(followedAddress("https://shio.test/preview/Other/about", base, current), null,
@@ -69,20 +69,20 @@ test("SH1392: the editor frames the requested page, and the page entries offer i
     "SH1392: each bridged load the frame reports moves the address with it")
   assert.match(editor, /history\.replaceState/u,
     "SH1392: by replacing the history entry, so following never reloads the page being edited")
-  assert.match(read("app", "content", "post.edit.page.tsx"), /editorHref\(ROUTES\.UNIVERSAL_EDITOR, siteId, post\.furl\)/u,
+  assert.match(read("app", "content", "post.edit.page.tsx"), /editorHref\(ROUTES\.VISUAL_EDITOR, siteId, post\.furl\)/u,
     "SH1392: a page's post editor opens it in the editor on itself")
-  assert.match(read("app", "content", "content-browser", "site-pages.tsx"), /editorHref\(ROUTES\.UNIVERSAL_EDITOR, siteId, node\.path\)/u,
+  assert.match(read("app", "content", "content-browser", "site-pages.tsx"), /editorHref\(ROUTES\.VISUAL_EDITOR, siteId, node\.path\)/u,
     "SH1392: and so does each page row of the site's pages view")
 })
 
-test("SH1394: a page opens in the Universal Editor by default, and its form is a mode of it", () => {
+test("SH1394: a page opens in the Visual Editor by default, and its form is a mode of it", () => {
   const palette = read("app", "system", "bento.root.page.tsx")
-  assert.match(palette, /\[\{ \.\.\.form, route: editorHref\(ROUTES\.UNIVERSAL_EDITOR, page\.siteId, page\.path\) \}/u,
+  assert.match(palette, /\[\{ \.\.\.form, route: editorHref\(ROUTES\.VISUAL_EDITOR, page\.siteId, page\.path\) \}/u,
     "SH1394: a page's own palette row opens the editor, not the form")
   assert.match(palette, /id: `\$\{row\.address\}\|fields`/u,
     "SH1394: and its form is the Edit fields row after it")
   const pages = read("app", "content", "content-browser", "site-pages.tsx")
-  assert.match(pages, /<Link to=\{siteId \? editorHref\(ROUTES\.UNIVERSAL_EDITOR, siteId, node\.path\) : /u,
+  assert.match(pages, /<Link to=\{siteId \? editorHref\(ROUTES\.VISUAL_EDITOR, siteId, node\.path\) : /u,
     "SH1394: a page's title in the Pages view opens the editor")
   const editor = read("app", "editor", "visual-editor.page.tsx")
   assert.match(editor, /const fieldsTarget = selected\?\.postId \?\? selectedSection\?\.postId \?\? pageOfFrame/u,
@@ -91,7 +91,7 @@ test("SH1394: a page opens in the Universal Editor by default, and its form is a
 
 test("SH1394: the search page opens a page in the editor; notes, insights and home's drafts keep the form", () => {
   assert.match(read("app", "content", "search.page.tsx"),
-    /if \(page\) navigate\(editorHref\(ROUTES\.UNIVERSAL_EDITOR, page\.siteId, page\.path\)\)/u,
+    /if \(page\) navigate\(editorHref\(ROUTES\.VISUAL_EDITOR, page\.siteId, page\.path\)\)/u,
     "SH1394: a page found on the search page opens on itself, as it does from the palette")
   const home = read("app", "system", "home.page.tsx")
   // Deliberate: a note and a page's insights are drawn by the form (the note rail, the Insights

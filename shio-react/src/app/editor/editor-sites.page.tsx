@@ -23,7 +23,7 @@ export default function EditorSitesPage() {
 
   const openExternal = () => {
     if (!externalUrl.trim()) return
-    navigate(`${ROUTES.UNIVERSAL_EDITOR}/external?url=${encodeURIComponent(externalUrl.trim())}`)
+    navigate(`${ROUTES.VISUAL_EDITOR}/external?url=${encodeURIComponent(externalUrl.trim())}`)
   }
 
   return (
@@ -33,21 +33,21 @@ export default function EditorSitesPage() {
         *editor* it navigates to is the one this task is really about, and it is not here.
       */}
       <PageHero
-        title={t("universalEditor.title")}
+        title={t("visualEditor.title")}
         eyebrow={t("sidebar.content")}
-        subtitle={t("universalEditor.description")}
+        subtitle={t("visualEditor.description")}
         urlBase={ROUTES.HOME}
         backLabel={t("home.title")}
       />
       <div className="space-y-6">
         {/* Sites */}
         <div>
-          <h3 className="text-sm font-semibold mb-2">{t("universalEditor.selectSite")}</h3>
+          <h3 className="text-sm font-semibold mb-2">{t("visualEditor.selectSite")}</h3>
           {sites.length === 0 ? (
             <EmptyState
               icon={IconLayersIntersect}
-              title={t("universalEditor.noSites")}
-              description={t("universalEditor.noSitesDescription")}
+              title={t("visualEditor.noSites")}
+              description={t("visualEditor.noSitesDescription")}
             />
           ) : (
             <Panel contentClassName="p-0 divide-y">
@@ -55,7 +55,7 @@ export default function EditorSitesPage() {
                   <button
                     type="button"
                     key={site.id}
-                    onClick={() => navigate(`${ROUTES.UNIVERSAL_EDITOR}/${site.id}`)}
+                    onClick={() => navigate(`${ROUTES.VISUAL_EDITOR}/${site.id}`)}
                     className="flex w-full items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors text-left"
                   >
                     <div className="min-w-0">
@@ -77,21 +77,21 @@ export default function EditorSitesPage() {
         {/* External URL */}
         <Panel contentClassName="p-4 space-y-2">
             <Label htmlFor="external-url" className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" /> {t("universalEditor.openUrl")}
+              <ExternalLink className="h-4 w-4" /> {t("visualEditor.openUrl")}
             </Label>
             <div className="flex gap-2 max-w-2xl">
               <Input
                 id="external-url"
                 value={externalUrl}
-                placeholder={t("universalEditor.urlPlaceholder")}
+                placeholder={t("visualEditor.urlPlaceholder")}
                 onChange={(e) => setExternalUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && openExternal()}
               />
               <Button onClick={openExternal} disabled={!externalUrl.trim()}>
-                {t("universalEditor.open")}
+                {t("visualEditor.open")}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">{t("universalEditor.urlHint")}</p>
+            <p className="text-xs text-muted-foreground">{t("visualEditor.urlHint")}</p>
         </Panel>
       </div>
     </>

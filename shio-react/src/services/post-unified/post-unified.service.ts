@@ -247,7 +247,7 @@ export class ShPostUnifiedService {
   /**
    * Merge a few fields into the draft (SH335), conditional the same way.
    *
-   * The Universal Editor's path, and the one where the collision is likeliest: two or three fields
+   * The Visual Editor's path, and the one where the collision is likeliest: two or three fields
    * written from a page a curator has had open while an agent worked on the same post.
    */
   async patch(

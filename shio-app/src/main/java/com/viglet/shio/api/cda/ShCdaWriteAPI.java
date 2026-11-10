@@ -32,7 +32,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Content Delivery API (CDA) write surface (SH10) — the save-back endpoints of
- * the Universal Editor bridge, living in the same {@code /api/v2/cda} namespace
+ * the Visual Editor bridge, living in the same {@code /api/v2/cda} namespace
  * as the SH1 read contract. Distinct from the read controller because these
  * mutate: they are gated to {@code ROLE_CDA_WRITE} (a {@code WRITE}-scope token)
  * in {@code ShSecurityConfig}, and CSRF-exempt because token auth is stateless
@@ -53,7 +53,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  */
 @RestController
 @RequestMapping("/api/v2/cda")
-@Tag(name = "CDA Write", description = "Content Delivery API — Universal Editor save-back (WRITE scope)")
+@Tag(name = "CDA Write", description = "Content Delivery API — Visual Editor save-back (WRITE scope)")
 public class ShCdaWriteAPI {
 
     private final ShCdaWriteService shCdaWriteService;

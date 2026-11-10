@@ -12,7 +12,7 @@ REM   shio-model        -^> @viglet/shio-model        (post-types DSL; no deps)
 REM   shio-sections     -^> @viglet/shio-sections     (section vocabulary; on the DSL)
 REM   shio-client       -^> @viglet/shio-client       (framework-agnostic CDA core)
 REM   shio-react-sdk    -^> @viglet/shio-react-sdk    (React hooks/components)
-REM   shio-js-sdk       -^> @viglet/shio-editor-cors  (Universal Editor bridge)
+REM   shio-js-sdk       -^> @viglet/shio-editor-cors  (Visual Editor bridge)
 REM   create-shio-app   -^> @viglet/create-shio-app   (Next.js starter generator)
 REM   cli               -^> @viglet/shio              (the CLI)
 REM

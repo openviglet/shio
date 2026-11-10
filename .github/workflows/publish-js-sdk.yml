@@ -5,7 +5,7 @@ name: Publish JS packages (npm)
 #   2. @viglet/shio-sections    (the page-section vocabulary; depends on the DSL)
 #   3. @viglet/shio-client      (framework-agnostic core)
 #   4. @viglet/shio-react-sdk   (depends on the core via workspace:*)
-#   5. @viglet/shio-editor-cors (Universal Editor bridge; standalone)
+#   5. @viglet/shio-editor-cors (Visual Editor bridge; standalone)
 #   6. @viglet/create-shio-app  (Next.js starter generator)
 #   7. @viglet/shio             (CLI; depends on the core + the generator)
 #

@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p><b>A presented {@code Key} wins over an existing session (SH233).</b> The filter used to
  * return immediately whenever anything had already authenticated, which read as conservative
  * and meant a caller holding both a session cookie and a token got the session — the case that
- * broke the Universal Editor's save-back, because a browser sends a same-origin cookie whatever
+ * broke the Visual Editor's save-back, because a browser sends a same-origin cookie whatever
  * the client asks for. Sending a key is a request to be that principal; nothing about the
  * token's own bounds changes, and a key that cannot authenticate leaves the context untouched.
  * </p>
@@ -193,7 +193,7 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
         // An explicitly presented `Key` wins over an authentication already in the context
         // (SH233). This used to return here whenever anything had authenticated, which sounds
-        // conservative and was in fact the reason the Universal Editor could not save: the
+        // conservative and was in fact the reason the Visual Editor could not save: the
         // console is same-origin with the API, so its session cookie rides along whatever the
         // client sets `withCredentials` to (that flag governs cross-origin requests only),
         // `SecurityContextHolderFilter` restores the session before this filter runs, and the

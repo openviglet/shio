@@ -90,12 +90,12 @@ renderer over one body of content at a second address. See the section on it bel
   are addressed **by title**, because that is what `sh-region="NAME"` and a binding both name.
 - **`sh-region` survives the render**, joined by `data-shio-region` and
   `data-shio-region-post`. Do not "tidy up" by stripping it: the rendered DOM is the only place
-  the Universal Editor can learn which node maps to which post, and the attribute has been in
+  the Visual Editor can learn which node maps to which post, and the attribute has been in
   the content since 2018. A slot with no Region post is **marked**
   (`data-shio-region-missing` + a constant comment), because a missing region and an empty one
   are different mistakes, SH169's rule. The marker never interpolates the region name: a name
   is content, HTML comments decode no entities, and `-->` inside one would close it.
-- **The Universal Editor has a counterpart, and the protocol is a document (SH185)**,
+- **The Visual Editor has a counterpart, and the protocol is a document (SH185)**,
   [docs/specs/SH185-universal-editor-protocol.md](docs/specs/SH185-universal-editor-protocol.md).
   `visual-editor.page.tsx` had posted `sh:*` messages into an iframe since SH10 with nothing in
   this repository on the other side. `shio-editor.js` is that side, served at
@@ -115,7 +115,7 @@ renderer over one body of content at a second address. See the section on it bel
   `sh-*` is a contract the content declares (SH192 lints it, SH193 will graph it), `data-*` is
   what the browser consumes. **Neither side of the bridge uses `"*"`, and since SH304 that is a test
   rather than a sentence** (`ShEditorBridgeTest`, over this script and the console's page), it was
-  false for the second, unspecified script the server used to serve at `/universal-editor/`, which
+  false for the second, unspecified script the server used to serve at `/visual-editor/`, which
   posted to `"*"` and never read `event.origin`; that script was a copy of the published
   `@viglet/shio-editor-cors` and is gone, along with the permitted path. **One bridge per producer**:
   this one for the markup the renderer emits, the npm package for a front end that writes its own
@@ -385,7 +385,7 @@ renderer over one body of content at a second address. See the section on it bel
   iterative loop most needs, so they are prefixed `d:` and `a:` and cannot be confused in a report.
   And **a capability flag is added, never repurposed**: `visualSnapshot` stays `false` because there
   is still no raster here and `appearanceDigest: true` joins it, an agent reading
-  `visualSnapshot: true` would hunt for a PNG that does not exist, which is what `universalEditor`
+  `visualSnapshot: true` would hunt for a PNG that does not exist, which is what `visualEditor`
   did once. The honest scope is also the design: there is no layout engine, so the digest covers the
   appearance failure an **agent** creates (markup written against class names the theme lacks) and
   not the ones a person notices (SH265).
@@ -425,7 +425,7 @@ renderer over one body of content at a second address. See the section on it bel
   raw `HttpServletRequest` in scope, the thing that made the 2019 engine a sandboxing liability.
   Sorted, so two readers sending the same parameters in a different order cannot produce two SH101
   digests. `state` and `editor` are **excluded**: they are the renderer's own, and a template
-  branching on `param.editor` renders differently inside the Universal Editor than for a reader.
+  branching on `param.editor` renders differently inside the Visual Editor than for a reader.
   A repeated parameter flattens to its **first** value. **`{{{param.q}}}` is refused at write time**
   (`param-unescaped`, SH192's machinery), every other value a template reaches is content written
   by somebody with an account, and this one is written by anybody with the URL, so the unescaped
@@ -638,7 +638,7 @@ renderer over one body of content at a second address. See the section on it bel
   the conversion provisions, on `<body>`, since `{{#getRelation sections}}` is a block and not an
   element, so `<body>` *is* the container, and both blueprints declare their eight.
 - **And a curator places one (SH1039)**: the console reads that catalogue through
-  `ShUniversalEditorService.insertable`, on the session and by `id:` address, the way SH996's
+  `ShVisualEditorService.insertable`, on the session and by `id:` address, the way SH996's
   publish routes already read `/agent/read`. The rail shows each accepted type by *its own title and
   description* rather than as a post-type name, which is the whole difference between a list and
   something to place. **An insert is two writes in that order**: create the section as a DRAFT, then
@@ -1140,7 +1140,7 @@ renderer over one body of content at a second address. See the section on it bel
   page's values live: **the field is the address**. `ShPostDraftMergeService` writes `data.<field>`
   on the post exactly as it does everywhere else, so the write path needed nothing; what was missing
   is the render half. A fidelity page's markup is stored verbatim, so a value written through the
-  Universal Editor landed in the post and the page went on showing the source's own text, the editor
+  Visual Editor landed in the post and the page went on showing the source's own text, the editor
   accepting an edit the page denies, which is worse than refusing it. `ShRenderModel` now fills an
   annotated element's text from the post's own field before a template ever sees the value.
   **In the model and not in `ShRegionComposer`, which is what scopes it**: that class already selects
@@ -2137,7 +2137,7 @@ component at a time is then a diff that visibly shrinks a list.
 ## A section is editable on the page (SH638)
 
 SH524's instrument counted it: **25 of 25** section fields carried no editing annotation, so every
-page composed from `@viglet/shio-sections` was content the Universal Editor could not reach. That
+page composed from `@viglet/shio-sections` was content the Visual Editor could not reach. That
 matters because the package is what a conversion writes, SH464's authorable mode turns captured
 markup into fields a curator edits, and if the component annotates none of them the mode delivers a
 model nobody can use *from the page*, putting the curator back in the console form the visual editor
@@ -2291,7 +2291,7 @@ keys before counting, so the pager's total stays exact, and a reader who fails a
 database-windowed branch for that reason; `navigation` drops a gated child folder.
 
 **Only on the published render.** The helpers already receive the state, and only `PUBLISHED`
-filters: `/preview`, the Universal Editor and the agent's render digest are authoring reads, and an
+filters: `/preview`, the Visual Editor and the agent's render digest are authoring reads, and an
 editor outside the group still sees and edits the gated page there. On an instance with no gate the
 check is one `count()` that loads no entity, which is what `ShRenderListingPageBenchmarkTest`
 measures. `ShSitesMembersOnlyTest` renders one public page for a visitor, a member, and in preview.

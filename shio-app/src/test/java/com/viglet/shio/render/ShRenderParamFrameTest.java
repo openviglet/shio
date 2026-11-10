@@ -42,7 +42,7 @@ class ShRenderParamFrameTest {
 
     /**
      * The renderer's own two, and the reason is not tidiness: a template that branches on
-     * {@code param.editor} renders differently inside the Universal Editor from the way it renders
+     * {@code param.editor} renders differently inside the Visual Editor from the way it renders
      * for a reader, which is the one thing an inline editor must never make possible.
      */
     @Test

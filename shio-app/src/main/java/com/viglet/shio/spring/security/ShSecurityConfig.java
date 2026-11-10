@@ -548,7 +548,7 @@ public class ShSecurityConfig {
                                 // 200 for `/preview/_shio/editor.js`.
                                 //
                                 // A curator's browser carries a session, so the console and the
-                                // Universal Editor are unaffected. `ShPreviewIsNotPublicTest`
+                                // Visual Editor are unaffected. `ShPreviewIsNotPublicTest`
                                 // refuses the next reopening.
                                 mvc.matcher("/console/**"),
                                 mvc.matcher("/*/console/**"),

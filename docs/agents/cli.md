@@ -248,7 +248,7 @@ against what actually arrived, since a server that under-declares would otherwis
 the ceiling whose whole job is not filling a disk.
 
 **The authorable mode presents with a Shio theme, and stops promising the source's appearance
-(SH507).** Measured on an authorable replica of `www.viglet.org`: the Universal Editor showed a wall
+(SH507).** Measured on an authorable replica of `www.viglet.org`: the Visual Editor showed a wall
 of unstyled text over a page of **1,066,436 bytes, 99% of it the inlined captured theme**, ~2,894
 rules meeting 19 class attributes on 8 `shio-*` names, with no source class surviving. Two cheaper
 repairs were measured and **rejected**. Emitting the source's classes per field recovers 7 of the
@@ -1533,7 +1533,7 @@ it. Four decisions worth keeping:
   the rationale proposed as the cheaper side.** A row is addressed by position,
   `sh-field="features.{{@index}}.title"`, which `ShPostDraftMergeService` resolves into
   `data.features[0].title`: so a layout that skipped a row would renumber every row after it and a
-  curator editing the third card through the Universal Editor would write into the second. Filtering
+  curator editing the third card through the Visual Editor would write into the second. Filtering
   belongs where the array is *written*, and Handlebars cannot express "this row has something in it"
   without a helper, the capability set being closed since SH183.
 - **The overlay that cannot be dismissed (SH858).** The replica served `www.viglet.org`'s cookie

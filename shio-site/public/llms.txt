@@ -108,7 +108,7 @@ this server sends nothing unprompted.
 - `@viglet/shio-react-sdk`: hooks and render components over that core
 - `@viglet/shio-sections`: the page-section vocabulary shared by agent, console and front end
 - `@viglet/create-shio-app`: generates a Next.js App Router site wired to a site's content
-- `@viglet/shio-editor-cors`: the Universal Editor bridge for inline editing
+- `@viglet/shio-editor-cors`: the Visual Editor bridge for inline editing
 
 ## The ten design laws
 

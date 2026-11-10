@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url"
  *
  * The console's own guidance states the rule, and nothing checked it. The failure is quiet in the
  * worst way: i18next falls back to the key itself, so a missing `pt` entry renders
- * `universalEditor.bridgeAbsent` to a Portuguese curator — visible only to somebody reading the
+ * `visualEditor.bridgeAbsent` to a Portuguese curator — visible only to somebody reading the
  * console in that language, which is not the person who added the key.
  *
  * A lint rather than a translation check: this asserts the two files describe the same *set of

@@ -100,7 +100,7 @@ export const ROUTES = {
   ADMIN_REVIEW: `${CONSOLE_BASE}/admin/review`,
   ADMIN_WEBHOOKS: `${CONSOLE_BASE}/admin/webhooks`,
   ADMIN_MARKETPLACE: `${CONSOLE_BASE}/admin/marketplace`,
-  UNIVERSAL_EDITOR: `${CONSOLE_BASE}/universal-editor`,
+  VISUAL_EDITOR: `${CONSOLE_BASE}/visual-editor`,
   /** SH909 — the old prefix, kept for the redirect and for nothing else. */
   LEGACY_CONSOLE: scoped(consolePath),
   /** SH887 — unscoped on purpose: a harness with no tenant, mounted outside the console shell. */

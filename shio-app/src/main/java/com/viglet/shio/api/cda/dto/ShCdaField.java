@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
  * Content Delivery API (CDA) editable-field descriptor (SH10). One per top-level
- * post-type attribute, so the Universal Editor's properties panel can render and
+ * post-type attribute, so the Visual Editor's properties panel can render and
  * label every field of a post — not only those instrumented with
  * {@code data-sh-*} attributes in the rendered DOM (the "field mapping" half of
  * the editor bridge).
