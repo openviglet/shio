@@ -157,7 +157,7 @@ The coverage column is the page's verdict and matches the cluster row above that
 | `multiTenant` | this instance serves more than one tenant | [multi-tenancy](./multi-tenancy.md) | ✅ |
 | `oidc` | sign-in goes through an OpenID Connect provider | [security](./security.md) | ✅ |
 | `webhooks` | publishes, unpublishes and deletes are sent to subscribers | [webhooks](./webhooks.md) | ✅ |
-| `scheduledPublish` | a publish or unpublish can be set for a time | [content-lifecycle](./content-lifecycle.md) | ✅ |
+| `scheduledPublish` | a publish or unpublish can be set for a time; `shio.schedule.background` keeps the sweep's timer to one instance of several on one database (SH1424) | [content-lifecycle](./content-lifecycle.md) · [configuration-reference](./configuration-reference.md) | ✅ |
 | `previewTokens` | short-lived preview keys can be minted | [content-lifecycle](./content-lifecycle.md) | ✅ |
 | `rateLimit` | delivery keys are rate limited | [security](./security.md) | 🧩 |
 | `signedImageUrls` | image transform URLs must carry a signature | [search-caching § Image transforms](./search-caching.md#image-transforms-the-operators-half) | ✅ |

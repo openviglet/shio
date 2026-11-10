@@ -17,10 +17,6 @@
 
 - ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — Every launch channel lacks a demo that opens without installing, and no production site exists. → §XCV.4
 
-## Block BA — Releases, scheduling and the publish gate
-
-- 📋 **SH1424** (deps: —) **A scheduled-release test saw two incidents for one release: a background sweep from another cached context raced it** — The scheduler defaults on, so every context that leaves it on sweeps the fork's shared database and flakes the gate. → §XCVIII.1
-
 ## Priority
 
 ## Done when — SH1245

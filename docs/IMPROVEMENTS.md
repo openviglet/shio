@@ -1177,28 +1177,3 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 ## XCVII End-user documentation for 2026.3 (docs-shio)
 
 ## XCVIII Releases, scheduling and the publish gate
-
-### XCVIII.1 Concurrent sweeps in the test suite, and in production (from SH1423's gate run) (SH1424)
-
-Seen once in the full Java gate while SH1423 was validated, and not reproduced on the
-next run:
-`ShScheduledGateTest.sh1138AScheduledReleaseWithAPageTheGateStopsStaysScheduledAndNothingGoesLive`
-expected one incident about its release and got two, 0.5 ms apart, one reporting a
-warning the other did not. Two sweeps judged the same release at the same moment: the
-test's own `scheduler.sweep()`, and a background sweep.
-
-Where the second one comes from: `shio.schedule.enabled` defaults to on, and every
-`@SpringBootTest` that does not set it to false boots a context whose scheduled sweep
-keeps running for as long as Spring's context cache holds it. Contexts in one surefire
-fork share the in-memory H2 database, so that sweep reads the release the test just
-scheduled in the past.
-
-Two halves, the instrument first. A lint that every `@SpringBootTest` sets
-`shio.schedule.enabled=false` unless it names a reason (an exemption comment, the way
-`ShFolderSite-exempt:` works), since a background writer in a shared database is a
-hidden input to every other test in the fork. Then the test itself should not depend on
-being the only sweeper: two sweepers is also what two instances behind one database look
-like, so the second question is whether a release sweep is safe to run twice at once,
-and whether two incidents for one stopped release is a defect of the incident log (one
-entry per subject and cause would be the expected shape) or the honest record of two
-attempts.

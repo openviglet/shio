@@ -28,6 +28,15 @@ public class ShScheduleProperties {
     private boolean enabled = true;
 
     /**
+     * SH1424 — whether this process sweeps on its own timer. Off, the sweep still runs when it is
+     * called (a test, an operator's trigger) but never in the background. Two uses: several
+     * instances behind one database, where one timer is enough and two judge the same release at
+     * the same moment; and the test suite, where a cached context's timer is a hidden writer into
+     * the database every other test in its fork is asserting about.
+     */
+    private boolean background = true;
+
+    /**
      * Delay between sweeps. Also wired into the {@code @Scheduled} fixed-delay via
      * the {@code shio.schedule.sweep-interval-millis} placeholder, so a change here
      * must match the property used at startup.

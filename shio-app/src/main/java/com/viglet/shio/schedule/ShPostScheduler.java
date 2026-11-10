@@ -176,6 +176,14 @@ public class ShPostScheduler {
      * not read at all in that mode, so the common install pays nothing for this.</p>
      */
     @Scheduled(fixedDelayString = "${shio.schedule.sweep-interval-millis:60000}")
+    public void scheduledSweep() {
+        // SH1424 — the timer, apart from the work: off, only an explicit call sweeps.
+        if (properties.isBackground()) {
+            sweep();
+        }
+    }
+
+    /** One sweep, now: the timer's work, and what a test or an operator calls directly. */
     public void sweep() {
         if (!properties.isEnabled()) {
             return;

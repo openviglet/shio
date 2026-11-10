@@ -177,7 +177,9 @@ const SWEEP = {
       + "endpoint) and SH1082 (the Scheduled page's calendar). docs-shio moved: content-lifecycle "
       + "gained the calendar and COVERAGE's Block BA and Block C rows name both, with the mirror "
       + "regenerated. shio-site is NOT moved: it already said a curator can schedule from the "
-      + "browser, which SH1179 made true rather than changed. README makes no scheduling claim",
+      + "browser, which SH1179 made true rather than changed. README makes no scheduling claim. "
+      + "Reopened for SH1424 (the sweep's timer apart from its work, off in the test suite) and "
+      + "re-closed with COVERAGE's scheduledPublish row naming it and the mirror regenerated",
   },
   AX: {
     swept: true,

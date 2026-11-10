@@ -270,3 +270,11 @@ or measure in a context with `shio.schedule.enabled=false`.
 one of the two guards; it prints the population. Measured when it landed: nine classes, seven already
 in a scheduler-off context, `ShSiteListingCostTest` pausing, and `ShWorkflowTaskFetchCostTest` exposed,
 now pausing like SH1276. A new scheduled job belongs to the same rule; its pause goes beside the sweep's.
+
+**SH1424 then took the timer out of the test suite altogether.** The same background sweep, in any
+cached context that left it on, once judged `ShScheduledGateTest`'s release at the same instant as
+the test's own `sweep()`: two incidents where one was asserted, seen once in the full gate and never
+alone. `shio.schedule.background` now gates only the `@Scheduled` entry (`scheduledSweep()`), and the
+test `application.properties` sets it `false`, beside SH967's `shio.events.enabled=false`. `enabled`
+stays on, so a test that calls `sweep()` still sweeps; `ShScheduleBackgroundTest` holds both halves.
+The two guards above still apply, because a test can set the timer back on.

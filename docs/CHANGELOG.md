@@ -1939,6 +1939,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1138** — The sweep asks the site's gates before each scheduled publish and release; a stopped one stays scheduled and the feed carries an incident naming the gate, with a retry for a post (design §LXVI.15 superseded: it had the release runner report the stopped page and go on; a release stops whole, since a half-live launch is what it exists to prevent) (design §LXVI.15 recorded in `docs/agents/agent-surface.md`).
 - **SH1179** — The schedule endpoint takes each instant as ISO-8601 or epoch millis, so the console's schedule dialog saves again; anything else is a teaching 400 naming the field (design §LXVI.16 recorded in `docs/agents/content-api.md`).
 - **SH1082** — The Scheduled page has a month and week calendar; dragging an entry or moving it from the keyboard reschedules the post, keeping its time of day and its other instant (design §LXVI.11 recorded in `docs/agents/console-ui.md`).
+- **SH1424** — The scheduler's timer is shio.schedule.background, apart from the sweep itself; the test suite runs with it off, so no cached context sweeps a shared database under another test (design §XCVIII.1 superseded: it proposed a lint over every SpringBootTest, but the test properties file sets the default for all contexts in one line without changing a context key) (design §XCVIII.1 recorded in `docs/agents/troubleshooting.md`).
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
