@@ -49,6 +49,12 @@
     "screenshotAlt": "{{title}}, screenshot {{n}}",
     "setupDone": "{{site}} is ready.",
     "setupOpen": "Open the content browser",
+    "installedNext": "Installed: {{count}} blueprint(s) loaded. Create a site from it with the form above: name the site, run the plan, then apply it.",
+    "nextTitle": "\"{{site}}\" is ready",
+    "nextLead": "Its pages are drafts until you publish them. Change them in place, look at them, or go through them one by one.",
+    "nextEditor": "Open in the Visual Editor",
+    "nextPreview": "Preview the site",
+    "nextPages": "Browse its pages",
     "setupFailed": "The package could not be applied."
   }
 }

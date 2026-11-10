@@ -1174,21 +1174,6 @@ site link it beside `docker run`. If a guest console is too costly to keep safe,
 rendered showcase alone, with a recorded console tour, is the first step. Set aside
 2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
 
-### XCV.9 XCV.9 After the first install, the next step (SH1422)
-
-SH1420 sends a newcomer from an empty site list to the Marketplace. What happens there
-today: the install dialog runs a dry run, then installs, and the result is a toast
-("installed, N loaded") while the dialog closes onto the catalogue. When a package
-creates a site (through its setup panel), nothing links to that site, and when it only
-loads blueprints, nothing says what to do with them.
-
-The install result should end on a next-step panel instead of a toast. If a site was
-created: open it in the Visual Editor, view it as a visitor, or browse its pages, with
-the Visual Editor as the primary. If only blueprints loaded: name them and offer "create
-a site from this blueprint", which is the setup panel the package already declares. The
-panel should read the install's own answer (what was created, under which addresses),
-not guess from the catalogue, so it stays right for packages that do something else.
-
 ### XCV.10 XCV.10 A getting-started checklist read from the instance (SH1423)
 
 Shio's product is a loop: something builds a site (an agent, a blueprint or a person), a

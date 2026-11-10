@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ROUTES } from "@/app/routes.const"
 import { ShMarketplaceService } from "@/services/marketplace/marketplace.service"
+import { addressKey } from "@/lib/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
+import { MarketplaceNextStep } from "./marketplace.next-step"
 import type {
   ShMarketplaceItem,
   ShMarketplaceSetupResult,
@@ -11,7 +13,6 @@ import type {
 import { LayoutTemplate } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 
 const service = new ShMarketplaceService()
@@ -38,6 +39,7 @@ export function MarketplaceSetup({
   onDone: () => void
 }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const properties = item.params?.properties ?? {}
   const required = new Set(item.params?.required ?? [])
 
@@ -85,6 +87,8 @@ export function MarketplaceSetup({
         setPlan(null)
         setDone(result)
         toast.success(t("marketplace.setupDone", { site: result.apply.site }))
+        // SH1422 — the next step finds the new site in the catalogue, which predates it.
+        void queryClient.invalidateQueries({ queryKey: addressKey("site:") })
         onDone()
       })
       .catch((error) => {
@@ -212,14 +216,8 @@ export function MarketplaceSetup({
         </div>
       )}
 
-      {done && (
-        <p className="text-sm">
-          {t("marketplace.setupDone", { site: done.apply.site })}{" "}
-          <Link className="underline" to={ROUTES.CONTENT_ROOT}>
-            {t("marketplace.setupOpen")}
-          </Link>
-        </p>
-      )}
+      {/* SH1422 — the site it made, and the three ways into it, rather than the list of every site. */}
+      {done && <MarketplaceNextStep siteName={done.apply.site} />}
       {done?.forms?.opened && (
         <p className="text-sm">
           {t("marketplace.formsOpened", { count: done.forms.sections ?? 0, folder: done.forms.folder })}

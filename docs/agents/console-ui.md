@@ -465,6 +465,17 @@ waits for the curator (SH1317). A rail entry of its own was rejected: starting h
 rail is for daily work. The route stayed `/bento/admin/marketplace`. The follow-ups (connect an
 agent, a next step after install, a getting-started checklist) are SH1421 to SH1423.
 
+**SH1421**: a fourth card, administrators only, opens `connect-agent.dialog.tsx`; its mechanics are
+in `docs/agents/agent-surface.md` beside `GET /agent/runs?since=`.
+
+**SH1422: an install ends on a next step.** A setup reads its own answer, `apply.site`, and
+`marketplace.next-step.tsx` finds that site by name in `useSites()` (the setup invalidates
+`addressKey("site:")` first, since the catalogue predates the site) and offers the Visual Editor,
+then a **preview** (`siteDestination`, draft-preferring), then the page list. The preview and not
+`publishedDestination` because an apply writes drafts, so the public route has nothing to show yet.
+A plain install no longer closes its dialog: it marks the package installed and says how many
+blueprints loaded, pointing at the setup form already in that dialog.
+
 ## The editor's name is Visual Editor, never Universal Editor (SH1419)
 
 "Universal Editor" is Adobe AEM's product name for its in-context editor, and Shio is in the

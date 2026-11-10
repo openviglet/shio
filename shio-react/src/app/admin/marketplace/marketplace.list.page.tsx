@@ -62,6 +62,8 @@ export default function MarketplaceListPage() {
   const [readme, setReadme] = useState<string | null>(null)
   const [plan, setPlan] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  /** SH1422 — how many blueprints the install just loaded, while its dialog is still open. */
+  const [installed, setInstalled] = useState<number | null>(null)
 
   /**
    * The read. It touches no state before the request starts, which is what lets the mount effect
@@ -112,6 +114,7 @@ export default function MarketplaceListPage() {
     setSelected(item)
     setPlan(null)
     setReadme(null)
+    setInstalled(null)
     if (!item.readmeUrl) return
     service
       .readme(item.readmeUrl)
@@ -143,7 +146,12 @@ export default function MarketplaceListPage() {
         .install(item.id, false)
         .then((result) => {
           toast.success(t("marketplace.installed", { id: item.id, count: result.loaded }))
-          setSelected(null)
+          // SH1422 — the dialog stays on the package, now installed, and says what to do with it:
+          // its setup form is right here, and closing onto the catalogue dropped the newcomer at
+          // the moment they were most engaged.
+          setSelected({ ...item, installed: true })
+          setPlan(null)
+          setInstalled(result.loaded)
           load()
         })
         .catch((error) => toast.error(problemOf(error, t("marketplace.installFailed"))))
@@ -293,6 +301,13 @@ export default function MarketplaceListPage() {
               </DialogHeader>
 
               {selected.description && <p className="text-sm">{selected.description}</p>}
+
+              {/* SH1422 — the install's own answer, and the next step it leads to. */}
+              {installed !== null && (
+                <p role="status" className="rounded-md border border-primary/60 p-3 text-sm" data-testid="marketplace-installed-next">
+                  {t("marketplace.installedNext", { count: installed })}
+                </p>
+              )}
 
               {/* P7: the opt-ins are a consent, not a footnote. "This package will alter a
                   post-type you already have" is exactly the surprise worth a click. */}

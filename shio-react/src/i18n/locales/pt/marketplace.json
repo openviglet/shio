@@ -49,6 +49,12 @@
     "screenshotAlt": "{{title}}, captura de tela {{n}}",
     "setupDone": "{{site}} está pronto.",
     "setupOpen": "Abrir o navegador de conteúdo",
+    "installedNext": "Instalado: {{count}} blueprint(s) carregado(s). Crie um site a partir dele no formulário acima: dê um nome ao site, rode o plano e depois aplique.",
+    "nextTitle": "\"{{site}}\" está pronto",
+    "nextLead": "As páginas ficam como rascunho até você publicar. Altere-as no lugar, veja como ficam ou percorra uma a uma.",
+    "nextEditor": "Abrir no Editor Visual",
+    "nextPreview": "Pré-visualizar o site",
+    "nextPages": "Ver as páginas",
     "setupFailed": "O pacote não pôde ser aplicado."
   }
 }

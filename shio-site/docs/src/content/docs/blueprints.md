@@ -135,6 +135,12 @@ and choose **Plan**. The plan lists both halves, the install when the package is
 yet and everything the apply would create, and writes nothing. The confirm button only
 works on a plan for exactly the inputs on screen; change anything and you plan again.
 
+When the apply finishes, the dialog names the site it made and offers three ways into it:
+**Open in the Visual Editor**, **Preview the site** and **Browse its pages**. The pages are
+drafts until you publish them, which is why the second is a preview and not the public
+address. Installing a package without applying it keeps the dialog open on the package,
+says how many blueprints it loaded, and points at the form above it to create a site.
+
 **Accepting enquiries.** A package can ship forms (Quilhara's trip and contact pages, the
 small-business contact page), and they ship closed: applying a package never opens a
 form, because where submissions go is the operator's decision, not a template's. A package
