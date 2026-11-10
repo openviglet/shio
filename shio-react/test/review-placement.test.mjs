@@ -35,7 +35,8 @@ test("SH1317: a non-administrator's rail and palette are the curator's, and an u
   assert.match(nav, /\.filter\(\(item\) => !curator \|\| isCuratorSurface\(item\)\)/,
     "SH1317: the rail and palette show a curator every surface again")
   assert.match(nav, /return item\.section === "content" && !BUILDER_SURFACES\.has\(item\.id\)/)
-  assert.match(nav, /const BUILDER_SURFACES = new Set\(\["post-types", "graphql"\]\)/,
+  // SH1420 added the Marketplace: an administrator's act, so it is a builder's surface too.
+  assert.match(nav, /const BUILDER_SURFACES = new Set\(\["post-types", "graphql", "marketplace"\]\)/,
     "SH1317: the content model or the GraphQL explorer is in a curator's rail again")
   assert.match(nav, /\.filter\(\(group\) => group\.items\.length > 0\)/,
     "SH1317: a section with nothing a curator may open is still drawn in the rail")

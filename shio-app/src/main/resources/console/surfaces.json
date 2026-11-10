@@ -252,7 +252,7 @@
     },
     {
       "id": "marketplace",
-      "section": "administration",
+      "section": "content",
       "route": "/bento/admin/marketplace",
       "capability": "browse and install blueprint packages",
       "agent": {

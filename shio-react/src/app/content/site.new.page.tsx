@@ -6,13 +6,14 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconWorld } from "@tabler/icons-react"
+import { IconPackages, IconWorld } from "@tabler/icons-react"
 import { BentoFormHero, BentoFormSection } from "@viglet/viglet-design-system/bento"
 import { toast } from "@viglet/viglet-design-system"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useCurrentUser } from "@/contexts/user.context"
 import { ROUTES } from "@/app/routes.const"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -41,6 +42,8 @@ export default function BentoSiteNewPage() {
   const navigate = useNavigate()
   const form = useForm<ShSite>()
   const [saving, setSaving] = useState(false)
+  const { user } = useCurrentUser()
+  const admin = user ? user.admin : true
 
   const title = form.watch("name")
 
@@ -126,6 +129,21 @@ export default function BentoSiteNewPage() {
             )}
           />
         </BentoFormSection>
+
+        {/*
+          SH1420 — a blank site is one of two starts, and the faster one is a package that arrives
+          with pages, layouts and a theme. Said here, under the form, so a newcomer who came for
+          "New site" learns it exists; an administrator's act, so a curator is not offered it.
+        */}
+        {admin && (
+          <p className="text-muted-foreground text-sm" data-testid="new-site-marketplace-hint">
+            <IconPackages size={16} aria-hidden="true" className="mr-1.5 inline align-text-bottom" />
+            {t("content.newSiteMarketplaceHint")}{" "}
+            <Link to={ROUTES.ADMIN_MARKETPLACE} className="text-foreground font-medium underline">
+              {t("content.newSiteMarketplaceLink")}
+            </Link>
+          </p>
+        )}
       </form>
     </Form>
   )

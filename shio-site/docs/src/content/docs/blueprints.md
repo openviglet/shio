@@ -121,7 +121,10 @@ parameter), the package stays installed and the message says how to retry the ap
 
 ### From the console and from an agent
 
-The console has the same catalogue under **Admin → Marketplace**. A package's card shows
+The console has the same catalogue under **Content → Start and model → Marketplace**, for
+administrators. On an instance with no site yet, the site list and the home page open on
+**Start your first site**, whose first choice, **Start from a ready-made site**, leads here;
+the **New site** form links here too. A package's card shows
 its first screenshot when the catalogue declares any, and the detail shows all of them
 with the README rendered. Screenshots, like the README, are fetched by your instance and
 only from URLs your configured catalogue declares, so a catalogue cannot make your browser

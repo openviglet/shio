@@ -162,7 +162,7 @@ The coverage column is the page's verdict and matches the cluster row above that
 | `rateLimit` | delivery keys are rate limited | [security](./security.md) | 🧩 |
 | `signedImageUrls` | image transform URLs must carry a signature | [search-caching § Image transforms](./search-caching.md#image-transforms-the-operators-half) | ✅ |
 | `searchIndexing` | publishing sends pages to a search index | [search-caching](./search-caching.md) | ✅ |
-| `marketplace` | the instance reads a remote package catalogue | [blueprints § Where more packages come from](./blueprints.md#where-more-packages-come-from) | ✅ |
+| `marketplace` | the instance reads a remote package catalogue; the console offers it under Content and on an empty instance's first screen (SH1420) | [blueprints § Where more packages come from](./blueprints.md#where-more-packages-come-from) · [§ From the console and from an agent](./blueprints.md#from-the-console-and-from-an-agent) | ✅ |
 | `graphql` | delivery answers GraphQL | [graphql](./graphql.md) | ✅ |
 | `search` | content full-text search | [search-caching § Full-text search](./search-caching.md#full-text-search) | ✅ |
 | `locales` | content carries a language and linked translations | [content-i18n](./content-i18n.md) | ✅ |

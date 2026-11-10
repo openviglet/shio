@@ -1191,4 +1191,54 @@ site link it beside `docker run`. If a guest console is too costly to keep safe,
 rendered showcase alone, with a recorded console tour, is the first step. Set aside
 2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
 
+### XCV.8 XCV.8 Connect your agent, from the first screen (SH1421)
+
+Shio is built for a coding agent first, and the first-use screen SH1420 adds offers
+three console paths: a Marketplace package, a blank site, an import. The fourth path,
+and the one the product is designed around, is to let an agent build the site, and the
+console says nothing about it. A newcomer has to find the docs, learn that the endpoint
+is `POST /mcp` on this instance, create an AGENT token in the token list, and assemble
+the `claude mcp add` command (or the plugin install) by hand.
+
+A fourth card on the first-use screen, "Let your coding agent build it", should open a
+short guided panel: it creates an AGENT-scoped token in place (with the same
+confirmation the token list asks for, P7), shows the exact command for Claude Code with
+this instance's URL and the token already filled in, with a copy button, and names the
+plugin install as the alternative. Its last step watches for the first agent call (the
+manifest read shows up in the agent's session list) and says "connected" when it
+arrives, so the newcomer knows it worked without leaving the page.
+
+### XCV.9 XCV.9 After the first install, the next step (SH1422)
+
+SH1420 sends a newcomer from an empty site list to the Marketplace. What happens there
+today: the install dialog runs a dry run, then installs, and the result is a toast
+("installed, N loaded") while the dialog closes onto the catalogue. When a package
+creates a site (through its setup panel), nothing links to that site, and when it only
+loads blueprints, nothing says what to do with them.
+
+The install result should end on a next-step panel instead of a toast. If a site was
+created: open it in the Visual Editor, view it as a visitor, or browse its pages, with
+the Visual Editor as the primary. If only blueprints loaded: name them and offer "create
+a site from this blueprint", which is the setup panel the package already declares. The
+panel should read the install's own answer (what was created, under which addresses),
+not guess from the catalogue, so it stays right for packages that do something else.
+
+### XCV.10 XCV.10 A getting-started checklist read from the instance (SH1423)
+
+Shio's product is a loop: something builds a site (an agent, a blueprint or a person), a
+curator edits it where it renders, publishes it, and reviews what the agent did next. A
+newcomer who goes round that loop once understands the product; one who stops after
+creating a site does not, and nothing on the home page suggests there is more.
+
+The home page should show a getting-started checklist while it is incomplete: have a
+site; edit a page in the Visual Editor; publish a page; connect a coding agent; review
+an agent's run. Each step is ticked from the instance's own state, read by the console
+summary the home page already makes (a site exists, a page has a curator's revision, a
+page is published, an AGENT token has been used, a run was approved or reverted), never
+from clicks stored in the browser, so it stays true across devices and users. Each
+unticked step links to the screen that does it. The checklist can be dismissed per user,
+and it disappears when every step is done. A coach-mark tour was considered and
+rejected: it describes the screen rather than doing the work, and it rots with every
+layout change.
+
 ## XCVII End-user documentation for 2026.3 (docs-shio)

@@ -17,6 +17,7 @@ import {
   IconForms,
   IconHistory,
   IconMessage,
+  IconPackages,
   IconPencil,
   IconPlus,
   IconRestore,
@@ -46,6 +47,7 @@ import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.
 import { ShNoteService } from "@/services/note/note.service"
 import axios from "axios"
 import { useCurrentUser } from "@/contexts/user.context"
+import { FirstSiteStart } from "@/app/content/first-site-start"
 
 
 /**
@@ -247,15 +249,22 @@ export default function BentoHomePage() {
   const counts = waiting.filter((tile) => !(tile.url === ROUTES.ADMIN_REVIEW && pendingRuns.length > 0)
     && !(tile.url === ROUTES.NOTES && notes !== undefined && openNotes <= INBOX_NOTES))
 
+  // SH1420 — no site yet: the page leads with how one starts.
+  const firstUse = siteCount === 0
+  // Unknown while the user loads, and unknown offers everything, as the rail does (SH1317).
+  const admin = user ? user.admin : true
+
   /* The first is the one that starts something, and the only one drawn filled. */
   const quickActions = useMemo(() => [
     { label: t("home.actionNewSite"), icon: IconPlus, url: ROUTES.SITE_NEW },
+    // SH1420 — the other way a site starts; installing a package is an administrator's act.
+    ...(admin ? [{ label: t("home.actionMarketplace"), icon: IconPackages, url: ROUTES.ADMIN_MARKETPLACE }] : []),
     { label: t("home.actionBrowseContent"), icon: IconFileText, url: `${ROUTES.CONSOLE}/content` },
     { label: t("home.actionSearch"), icon: IconSearch, url: ROUTES.SEARCH },
     { label: t("home.actionPostTypes"), icon: IconForms, url: ROUTES.POST_TYPE_ROOT },
     { label: t("home.actionWebhooks"), icon: IconWebhook, url: ROUTES.ADMIN_WEBHOOKS },
     { label: t("home.actionActivity"), icon: IconHistory, url: ROUTES.ADMIN_ACTIVITY },
-  ], [t])
+  ], [t, admin])
 
   const actionLabel = (action: string) => {
     const key = `activity.action${action.charAt(0)}${action.slice(1).toLowerCase()}`
@@ -271,8 +280,18 @@ export default function BentoHomePage() {
         subtitle={t("home.welcomeSubtitle")}
       />
 
+      {/*
+        SH1420 — an instance with no site has one job, and it is not an inbox: the three ways a first
+        site starts, the Marketplace first, in place of "nothing is waiting for you".
+      */}
+      {firstUse && (
+        <BentoSection title={t("content.startTitle")} description={t("content.startSubtitle")} gridClassName="block">
+          <FirstSiteStart />
+        </BentoSection>
+      )}
+
       {/* SH1318 — an empty inbox says so in one line and offers the sites, which is today's work. */}
-      {!isPending && inbox.length === 0 && counts.length === 0 && (
+      {!isPending && !firstUse && inbox.length === 0 && counts.length === 0 && (
         <p className="text-muted-foreground text-sm">
           {t("home.nothingWaits")}{" "}
           <Link to={`${ROUTES.CONSOLE}/content`} className="text-foreground underline">{t("home.openSites")}</Link>

@@ -216,7 +216,9 @@ export function useBentoNav(): BentoNavGroup[] {
  * gets this view and an administrator gets every surface. Nothing is removed: each route still opens
  * by its URL, and what a user may do there is the server's to answer, as it always was.
  */
-const BUILDER_SURFACES = new Set(["post-types", "graphql"])
+// SH1420 — the Marketplace sits in Content, where a first site starts, and installing a package is
+// still an administrator's act, so a curator's rail does not offer it.
+const BUILDER_SURFACES = new Set(["post-types", "graphql", "marketplace"])
 export function isCuratorSurface(item: { section: string; id: string }): boolean {
   return item.section === "content" && !BUILDER_SURFACES.has(item.id)
 }
@@ -263,13 +265,17 @@ export const HUB_GROUPS: Record<string, readonly { labelKey: string; ids: readon
     { labelKey: "nav.hub.content.waiting", ids: ["review", "notes", "scheduled"] },
     { labelKey: "nav.hub.content.library", ids: ["sites", "search", "files", "trash"] },
     { labelKey: "nav.hub.content.publishing", ids: ["forms", "visual-editor"] },
-    { labelKey: "nav.hub.content.model", ids: ["post-types"] },
+    // SH1420 — where a site starts and what it is built from: the Marketplace was under
+    // Administration, Instance, beside the e-mail settings, which is the last place anybody looks for
+    // "how do I begin". Both are a builder's surfaces, so a curator's hub drops the whole group; last,
+    // because the hub opens on what waits (SH1317), and a newcomer is led here by the empty site list.
+    { labelKey: "nav.hub.content.start", ids: ["marketplace", "post-types"] },
   ],
   administration: [
     { labelKey: "nav.hub.administration.access", ids: ["users", "devices", "auth-providers", "tenants"] },
     { labelKey: "nav.hub.administration.oversight", ids: ["activity"] },
     { labelKey: "nav.hub.administration.integration", ids: ["api-tokens", "webhooks", "graphql", "exchange-providers"] },
-    { labelKey: "nav.hub.administration.instance", ids: ["email-config", "marketplace"] },
+    { labelKey: "nav.hub.administration.instance", ids: ["email-config"] },
   ],
 }
 

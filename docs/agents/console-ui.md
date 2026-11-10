@@ -450,6 +450,21 @@ cannot double as an identity.
   correct `t(...)` call sites cost no whitelist. It found twelve on its first run, the HTML
   editor's whole toolbar among them, all now routed through `content.editor*`.
 
+## A first site starts at the Marketplace (SH1420)
+
+An instance with no site has one job. `first-site-start.tsx` draws the three ways a first site
+starts: a Marketplace package (first, marked recommended, administrators only), a blank site, an
+import. The site list renders it instead of its empty table once `useSites()` answers empty with no
+error, and home renders it in place of "nothing is waiting" while `summary.sites === 0`. The New
+site form links to the Marketplace under its fields, and home's quick actions carry it second.
+
+The `marketplace` surface moved from `administration` to `content` in `surfaces.json`, in the
+Content hub's last group, **Start and model**, beside post types. It is in `BUILDER_SURFACES`, so a
+curator's rail and hub drop it with post types; the group sits last because the hub opens on what
+waits for the curator (SH1317). A rail entry of its own was rejected: starting happens once, and the
+rail is for daily work. The route stayed `/bento/admin/marketplace`. The follow-ups (connect an
+agent, a next step after install, a getting-started checklist) are SH1421 to SH1423.
+
 ## The editor's name is Visual Editor, never Universal Editor (SH1419)
 
 "Universal Editor" is Adobe AEM's product name for its in-context editor, and Shio is in the

@@ -17,6 +17,9 @@
 ## Block BJ — What a visitor finds first: release, links and a demo
 
 - ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — Every launch channel lacks a demo that opens without installing, and no production site exists. → §XCV.4
+- 📋 **SH1421** (deps: SH1420 ✅) **The console never tells a newcomer how to connect a coding agent, though the agent is Shio's primary operator** — P1 says the agent builds the site, yet first use offers only console paths; the MCP URL, token and command must be found in docs. → §XCV.8
+- 📋 **SH1422** (deps: SH1420 ✅) **Installing a Marketplace package ends on a toast, with no next step toward a site the newcomer can see and edit** — The first install is the moment a newcomer is most engaged, and the console drops them back on the catalogue instead of on their new site. → §XCV.9
+- 📋 **SH1423** (deps: SH1420 ✅, SH1421) **The home page gives a newcomer no path through Shio's loop of build, edit, publish, connect an agent and review a run** — A newcomer learns the product by doing its loop once; a checklist derived from real state teaches it with no tour to maintain. → §XCV.10
 
 ## Priority
 

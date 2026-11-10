@@ -98,7 +98,8 @@ test("SH1318: the waiting section lists the runs and notes themselves, each a li
   assert.match(homeSource, /params: \{ state: "draft", author: user\?\.username, ids: true, limit: 100 \}/,
     "SH1318: the curator's own drafts are read by modifier again, which misses every blueprint-made page")
   assert.match(homeSource, /\.filter\(\(row\) => !row\.published\)/, "SH1318: a live page is listed as a waiting draft")
-  assert.match(homeSource, /!isPending && inbox\.length === 0 && counts\.length === 0 && \(/,
+  // SH1420 — on an instance with no site the first-use choices take this line's place.
+  assert.match(homeSource, /!isPending && !firstUse && inbox\.length === 0 && counts\.length === 0 && \(/,
     "SH1318: an empty inbox no longer says so, or says it before the summary has answered")
 })
 

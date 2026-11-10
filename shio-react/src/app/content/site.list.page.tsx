@@ -11,7 +11,7 @@ import {
 } from "@tabler/icons-react"
 import { toast } from "@viglet/viglet-design-system"
 import {
-  BentoActionsMenu, BentoChangeCell, BentoIdentityCell, BentoListPage, type BentoActionsMenuItem,
+  BentoActionsMenu, BentoChangeCell, BentoHero, BentoIdentityCell, BentoListPage, type BentoActionsMenuItem,
   type BentoDataTableAction, type BentoDataTableColumn,
 } from "@viglet/viglet-design-system/bento"
 import { Search } from "lucide-react"
@@ -30,6 +30,7 @@ import { useSiteThumbnails } from "@/hooks/use-site-thumbnails"
 import { headlineOf, problemOf, reportProblem } from "@/lib/problem"
 import { publishedDestination, siteDestination } from "@/lib/site-front-end"
 import { ShSiteService } from "@/services/site/site.service"
+import { FirstSiteStart } from "@/app/content/first-site-start"
 
 
 /**
@@ -279,6 +280,24 @@ export default function BentoSiteListPage() {
   // Controlled, so the default can follow the count once the read arrives: a grid up to thirty
   // sites, rows past it, and whatever this reader last picked over either.
   const view = chosenView ?? defaultSitesView(sites?.length ?? 0)
+
+  /*
+   * SH1420 — an instance with no site gets the three ways a first one starts, not an empty table
+   * and "create your first site": the Marketplace first, then a blank site, then an import. Only
+   * once the read has answered and answered empty; a failed read keeps the list's own error.
+   */
+  if (sites?.length === 0 && !error) {
+    return (
+      <div className="space-y-6">
+        <BentoHero
+          eyebrow={t("sidebar.content")}
+          title={t("content.startTitle")}
+          subtitle={t("content.startSubtitle")}
+        />
+        <FirstSiteStart />
+      </div>
+    )
+  }
 
   return (
     <BentoListPage
