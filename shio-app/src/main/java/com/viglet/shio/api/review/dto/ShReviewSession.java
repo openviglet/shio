@@ -42,6 +42,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                   Not "entries with a draft row", which was the same number forever, because
  *                   publishing keeps the draft as the editable copy. And posts rather than
  *                   entries, because one page edited four times is one decision
+ * @param pages      SH1425 — how many distinct pages and sections the run touched, the number a
+ *                   curator decides. {@code changes} counts writes: four pages created and two of
+ *                   them fixed twice is eight changes and four pages
+ * @param byPage     SH1425 — pages per <b>net</b> kind: a page the run created then edited counts
+ *                   once, as {@code CREATE}. What the queue titles a run by
  */
 @JsonInclude(Include.NON_NULL)
 public record ShReviewSession(
@@ -55,12 +60,14 @@ public record ShReviewSession(
         Map<String, Integer> bySite,
         String intent,
         String agentName,
-        int pending) {
+        int pending,
+        int pages,
+        Map<String, Integer> byPage) {
 
     /** Before SH1000 gave a run a premise and SH999 gave it a name. */
     public ShReviewSession(String session, String actor, int changes, Map<String, Integer> byAction,
                            Instant firstSeen, Instant lastSeen, List<String> sites, int pending) {
         this(session, actor, changes, byAction, firstSeen, lastSeen, sites, Map.of(), null, null,
-                pending);
+                pending, 0, Map.of());
     }
 }

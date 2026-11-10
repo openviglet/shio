@@ -30,6 +30,10 @@ export interface ShReviewSession {
   sites: string[]
   /** Changes that can still be acted on — a draft nobody has published yet. */
   pending: number
+  /** SH1425 — distinct pages the run touched; `changes` counts writes. */
+  pages?: number
+  /** SH1425 — pages per net kind: a page created then edited counts once, as CREATE. */
+  byPage?: Record<string, number>
 }
 
 /**
@@ -59,6 +63,16 @@ export interface ShReviewEntry {
   revertable: boolean
   /** SH988 — the field names this change touched, as its audit row recorded them (SH989). */
   fields?: string[]
+}
+
+/**
+ * SH1425 — one page's changes in a run, folded: what the queue lists and a curator decides.
+ *
+ * `action` is the net kind (created then edited is CREATE), the state is the page's now, and
+ * `steps` keeps every write the run made to it, oldest first, so the audit stays readable.
+ */
+export interface ShReviewPage extends ShReviewEntry {
+  steps?: string[]
 }
 
 /**
@@ -99,6 +113,8 @@ export interface ShReviewDetail {
   /** SH1001 — what has already been said about these changes; absent keys are undecided. */
   decisions?: ShReviewDecided[]
   entries: ShReviewEntry[]
+  /** SH1425 — the entries folded per page, in the order the run first touched them. */
+  pages?: ShReviewPage[]
 }
 
 export interface ShReviewOutcome {

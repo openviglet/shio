@@ -53,6 +53,7 @@
   "review.summaryOther": "{{count}} change(s)",
   "review.summaryIn": "{{what}} in {{sites}}",
   "review.changedFields": "Changed: {{fields}}",
+  "review.steps": "{{count}} writes in this run: {{steps}}",
   "review.filterRuns": "Filter runs by intent, agent or who ran them...",
   "review.noMatchTitle": "No run matches",
   "review.noMatchHint": "No agent run in the queue matches these filters. Remove a chip to see more.",

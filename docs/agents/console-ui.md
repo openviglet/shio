@@ -1919,8 +1919,8 @@ would approve the page.
 ## The queue in the curator's words (SH1416)
 
 A curator reported the queue as confusing, and each complaint was a layer that had added controls
-without removing any. **A run with no intent is titled by what it did**, built from `byAction` and
-`bySite` in a fixed order (new, edited, moved, ...), never by its session id, which is only the row's
+without removing any. **A run with no intent is titled by what it did**, built from `byPage` (SH1425;
+`byAction` only from a server that predates it) and `bySite` in a fixed order (new, edited, moved, ...), never by its session id, which is only the row's
 tooltip. The per-action and per-site badges went with it, since the title now says both.
 
 **One verb per act, one place per scope.** Approve is **Publish** (that is what it does), and
@@ -1934,9 +1934,25 @@ from counts the caller already holds: a created page goes to the trash, an edite
 the version it had before the run. For a published page that is the published row; for a page never
 published it is the draft the run's first write replaced, which `ShPostRevisionService.captureBeforeRun`
 keeps as a revision attributed to no session, and `revisionBeforeRun` finds again (SH1418). An edit
-to a page the run itself created still has nothing to go back to, and its creation is the entry to
-discard. The per-change path asks
+to a page the run itself created still has nothing to go back to, so rejecting that page undoes its
+creation (SH1425). The per-change path asks
 for the reason the server requires; the whole-run verb records its own and asks for none.
+
+## A run is reviewed page by page (SH1425)
+
+The queue decides pages, and the audit counts writes. A run that created four pages and then fixed
+two of them twice used to list eight rows with eight Publish buttons and read as "4 new, 4 edited".
+The detail now carries `pages`: the entries folded per post, in first-touch order, each with its
+**net kind** (`ShReviewService.netKind`: created then edited is `CREATE`; a delete that was the run's
+last word stays `DELETE`; otherwise the last change) and `steps`, every write oldest first, which
+the row prints when there is more than one. That is how the audit stays reachable from the row. The listing
+carries `pages` and `byPage`, which is what the run's title counts. `entries` stays the raw audit, which is
+what `ShAgentSafetyTest` and the folder audit read.
+
+The row's Discard and the server's REJECT agree because both resolve to one entry:
+`newestPerPost` picks the `CREATE` for a page the run created (trashing it), so a fixed new page
+is not refused as "never published". The diff was already per page (published against draft), so
+a folded row draws the whole new page. `shio review show` prints the same rows.
 
 The decision is one request for the whole triage, and the page re-reads the run and the badge after
 it (SH207): a page showing the old answer after an action is the one number a curator learns to

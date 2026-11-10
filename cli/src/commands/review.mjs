@@ -108,11 +108,17 @@ async function show(client, flags, positionals, ctx) {
     return detail;
   }
   const decided = new Map((detail.decisions ?? []).map((each) => [each.postId, each]));
-  const lines = [`shio review ${session}: ${detail.entries.length} change(s) by ${detail.actor ?? "—"}`];
-  for (const entry of detail.entries) {
+  // SH1425 — one line per page, the unit a decision is about; a page created then fixed twice is one
+  // CREATE line with its writes beside it, not three lines asking to be decided.
+  const rows = detail.pages ?? detail.entries;
+  const lines = [
+    `shio review ${session}: ${rows.length} page(s), ${detail.entries.length} change(s) by ${detail.actor ?? "—"}`,
+  ];
+  for (const entry of rows) {
     const standing = decided.get(entry.postId);
+    const steps = entry.steps?.length > 1 ? ` (${entry.steps.join(", ")})` : "";
     lines.push(
-      `  ${entry.action} ${entry.address ?? entry.postId}` +
+      `  ${entry.action} ${entry.address ?? entry.postId}${steps}` +
         `${standing ? ` — ${standing.decision}${standing.note ? `: ${standing.note}` : ""}` : ""}`,
     );
   }

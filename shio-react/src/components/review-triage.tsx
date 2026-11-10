@@ -4,7 +4,7 @@ import { Check, Clock, GitCompare, Undo2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { ShReviewDecisionInput, ShReviewEntry } from "@/models/review/review.model"
+import type { ShReviewDecisionInput, ShReviewPage } from "@/models/review/review.model"
 import { ReviewEntryDiff } from "@/components/review-entry-diff"
 import { ReviewDiscardDialog } from "@/components/review-discard.dialog"
 
@@ -57,7 +57,8 @@ export function ReviewTriage({
   busy,
   onDecide,
 }: {
-  entries: ShReviewEntry[]
+  /** SH1425 — one per page; a run that wrote a page three times lists it once. */
+  entries: ShReviewPage[]
   /** postId → the standing decision, so a row already decided says so. */
   decided: Map<string, string>
   busy: boolean
@@ -238,6 +239,15 @@ export function ReviewTriage({
                   )}
                 </div>
               </div>
+              {/* SH1425 — the writes folded into this row, so the audit stays readable from it. */}
+              {entry.steps && entry.steps.length > 1 && (
+                <p className="mt-1 pl-7 text-xs text-muted-foreground">
+                  {t("review.steps", {
+                    count: entry.steps.length,
+                    steps: entry.steps.map((step) => (KIND[step] ? t(KIND[step]) : step)).join(", "),
+                  })}
+                </p>
+              )}
               {entry.postId && standing === "APPROVE" && entry.fields?.length ? (
                 <p className="mt-1 pl-7 text-xs text-muted-foreground">
                   {t("review.changedFields", { fields: entry.fields.join(", ") })}

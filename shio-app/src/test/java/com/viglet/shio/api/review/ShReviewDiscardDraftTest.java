@@ -176,6 +176,55 @@ class ShReviewDiscardDraftTest {
                 .allSatisfy(entry -> assertThat(entry.revertable()).isFalse());
     }
 
+    @Test
+    @DisplayName("SH1425: four new pages, two of them fixed twice, are four rows titled as four new pages")
+    void aRunIsListedPageByPage() {
+        String session = "sess-" + UUID.randomUUID();
+        List<String> posts = asAgent(session, () -> List.of(draft("Trail pt"), draft("Trail en"),
+                draft("Story pt"), draft("Story en")));
+        for (String story : posts.subList(2, 4)) {
+            for (String pass : List.of("headline", "headline again")) {
+                asAgent(session, () -> shPostUnifiedWriteService.update(story,
+                        new UpdateRequest(data(pass), ShPostState.DRAFT, "agent")));
+            }
+        }
+
+        ShReviewDetail detail = shReviewService.detail(session);
+        assertThat(detail.entries()).as("the audit keeps every write").hasSize(8);
+        assertThat(detail.pages()).as("SH1425: one row per page").hasSize(4)
+                .allSatisfy(page -> {
+                    assertThat(page.action()).as("SH1425: created then edited is new")
+                            .isEqualTo(ShContentAction.CREATE.name());
+                    assertThat(page.revertable()).as("SH1425: Discard trashes the new page").isTrue();
+                });
+        assertThat(detail.pages().get(2).steps()).containsExactly("CREATE", "UPDATE", "UPDATE");
+
+        var run = shReviewService.sessions(2000).stream()
+                .filter(each -> session.equals(each.session())).findFirst().orElseThrow();
+        assertThat(run.changes()).isEqualTo(8);
+        assertThat(run.pages()).as("SH1425").isEqualTo(4);
+        assertThat(run.byPage()).as("SH1425: the title counts pages")
+                .containsExactly(java.util.Map.entry("CREATE", 4));
+        assertThat(run.pending()).as("SH1425: Publish all (4)").isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("SH1425: rejecting a new page the run then fixed trashes the page")
+    void rejectingAFixedNewPageTrashesIt() {
+        String session = "sess-" + UUID.randomUUID();
+        String postId = asAgent(session, () -> draft("Made by the agent"));
+        asAgent(session, () -> shPostUnifiedWriteService.update(postId,
+                new UpdateRequest(data("Fixed by the agent"), ShPostState.DRAFT, "agent")));
+
+        ShReviewOutcome outcome = shReviewService.decide(session,
+                List.of(new Decision(postId, Kind.REJECT, "not this story")), "curator");
+
+        assertThat(outcome.skipped()).as("SH1425: the row's Discard works").isEmpty();
+        Boolean stillListed = new TransactionTemplate(transactionManager).execute(status ->
+                shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT).isPresent());
+        assertThat(stillListed).as("SH1425: the page is in the trash").isFalse();
+    }
+
     // --- fixtures ---
 
     private ObjectNode data(String title) {

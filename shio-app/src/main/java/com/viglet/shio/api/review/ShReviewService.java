@@ -310,12 +310,47 @@ public class ShReviewService {
         List<ShHistory> entries = new ArrayList<>(shHistoryRepository.findByAgentSession(session));
         entries.sort((left, right) -> right.getDate().compareTo(left.getDate()));
         Map<String, ShHistory> newest = new LinkedHashMap<>();
+        Map<String, ShHistory> created = new LinkedHashMap<>();
         for (ShHistory entry : entries) {
             if (entry.getShObject() != null) {
                 newest.putIfAbsent(entry.getShObject(), entry);
+                if (ShContentAction.CREATE.name().equals(entry.getAction())) {
+                    created.put(entry.getShObject(), entry);
+                }
             }
         }
+        // SH1425 — the queue shows a page the run created as one "new" row however often the run
+        // went back to fix it, so rejecting that row undoes the page, not the last fix. The newest
+        // entry would be an UPDATE of a never-published page, which has nothing to restore to. A run
+        // that also deleted the page keeps its delete as the last word: that is undone by untrashing.
+        created.forEach((postId, entry) -> {
+            String last = newest.get(postId).getAction();
+            if (!ShContentAction.DELETE.name().equals(last)
+                    && !ShContentAction.PURGE.name().equals(last)) {
+                newest.put(postId, entry);
+            }
+        });
         return newest;
+    }
+
+    /**
+     * What one page's changes in a run amount to (SH1425): the kind the queue shows for its row.
+     *
+     * <p>A page the run created is new however often it went back to fix it; one it deleted last is
+     * deleted; anything else is its last change. The queue decides pages, and a page created then
+     * edited twice is one new page, not three changes.</p>
+     *
+     * @param actions the page's actions in this run, oldest first
+     */
+    static String netKind(List<String> actions) {
+        if (actions.isEmpty()) {
+            return null;
+        }
+        String last = actions.get(actions.size() - 1);
+        if (ShContentAction.DELETE.name().equals(last) || ShContentAction.PURGE.name().equals(last)) {
+            return last;
+        }
+        return actions.contains(ShContentAction.CREATE.name()) ? ShContentAction.CREATE.name() : last;
     }
 
     /** What a curator has already said about this run's changes (SH1001). */
@@ -483,7 +518,46 @@ public class ShReviewService {
                 shReviewDecisionRepository.findBySessionOrderByDecidedAtAsc(session).stream()
                         .map(row -> new ShReviewDetail.Decided(row.getPostId(), row.getDecision(),
                                 row.getNote(), row.getActor(), row.getDecidedAt()))
-                        .toList());
+                        .toList(),
+                pagesOf(rows));
+    }
+
+    /**
+     * The run's changes folded per page (SH1425), in the order it first touched each one.
+     *
+     * <p>The queue decides pages: a run that created four pages and fixed two of them twice listed
+     * eight rows, each with its own Publish, and "Publish all (8)" over four pages. A row with no id
+     * stays a row of its own, because there is nothing to fold it into.</p>
+     *
+     * <p>The row's state (address, title, draft, published, trashed) is the page's now, which every
+     * one of its entries already reports; its undo is the one {@link #newestPerPost} picks for it, so
+     * the button and the rejection agree about what Discard does.</p>
+     */
+    static List<ShReviewDetail.Page> pagesOf(List<ShReviewDetail.Entry> rows) {
+        Map<Object, List<ShReviewDetail.Entry>> byPost = new LinkedHashMap<>();
+        for (ShReviewDetail.Entry row : rows) {
+            Object key = row.postId() != null ? row.postId() : new Object();
+            byPost.computeIfAbsent(key, ignored -> new ArrayList<>()).add(row);
+        }
+        List<ShReviewDetail.Page> pages = new ArrayList<>();
+        for (List<ShReviewDetail.Entry> group : byPost.values()) {
+            List<String> steps = group.stream().map(ShReviewDetail.Entry::action).toList();
+            String kind = netKind(steps);
+            ShReviewDetail.Entry last = group.get(group.size() - 1);
+            ShReviewDetail.Entry undo = ShContentAction.CREATE.name().equals(kind)
+                    ? group.stream().filter(row -> kind.equals(row.action())).findFirst().orElse(last)
+                    : last;
+            Set<String> fields = new LinkedHashSet<>();
+            group.forEach(row -> {
+                if (row.fields() != null) {
+                    fields.addAll(row.fields());
+                }
+            });
+            pages.add(new ShReviewDetail.Page(kind, last.postId(), last.address(), last.title(),
+                    last.siteId(), last.date(), last.draft(), last.published(), last.trashed(),
+                    undo.revertable(), fields.isEmpty() ? null : List.copyOf(fields), steps));
+        }
+        return List.copyOf(pages);
     }
 
     /** The run's first change, which is the moment "before this run" means (SH1000). */
@@ -768,13 +842,39 @@ public class ShReviewService {
             }
         }
         int pending = waiting.size();
+        Map<String, Integer> byPage = byPage(entries);
         return new ShReviewSession(session, entries.get(0).getOwner(), entries.size(),
                 // SH136: byAction is a LinkedHashMap on purpose; Map.copyOf discarded
                 // that insertion order on the way out.
                 ShStableMap.copyOf(byAction), first, last, List.copyOf(sites),
                 ShStableMap.copyOf(bySite),
                 run == null ? null : run.getIntent(),
-                run == null ? null : run.getClientName(), pending);
+                run == null ? null : run.getClientName(), pending,
+                byPage.values().stream().mapToInt(Integer::intValue).sum(),
+                ShStableMap.copyOf(byPage));
+    }
+
+    /**
+     * Pages per net kind (SH1425): what the queue titles a run by. The listing's entries arrive
+     * newest first, so each page's actions are reversed into the order the run made them.
+     */
+    private static Map<String, Integer> byPage(List<ShHistory> entries) {
+        Map<String, List<ShHistory>> byPost = new LinkedHashMap<>();
+        for (ShHistory entry : entries) {
+            if (entry.getShObject() != null) {
+                byPost.computeIfAbsent(entry.getShObject(), key -> new ArrayList<>()).add(entry);
+            }
+        }
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (List<ShHistory> group : byPost.values()) {
+            // findAgentEntries orders by date desc, id desc, so reversing is the run's own order.
+            List<ShHistory> ordered = new ArrayList<>(group);
+            java.util.Collections.reverse(ordered);
+            String kind = netKind(ordered.stream()
+                    .map(entry -> entry.getAction() == null ? "?" : entry.getAction()).toList());
+            counts.merge(kind, 1, Integer::sum);
+        }
+        return counts;
     }
 
     /**

@@ -50,7 +50,9 @@ const SUMMARY_ORDER = ["CREATE", "UPDATE", "MOVE", "PUBLISH", "UNPUBLISH", "DELE
 const rank = (action: string) => { const at = SUMMARY_ORDER.indexOf(action); return at < 0 ? SUMMARY_ORDER.length : at }
 
 function runSummary(run: ShReviewSession, t: TFunction): string {
-  const parts = Object.entries(run.byAction).sort(([a], [b]) => rank(a) - rank(b)).map(([action, count]) =>
+  // SH1425 — pages by their net change, not audit rows: four pages created and two fixed twice is
+  // "4 new pages", not "4 new, 4 edited".
+  const parts = Object.entries(run.byPage ?? run.byAction).sort(([a], [b]) => rank(a) - rank(b)).map(([action, count]) =>
     t(`review.summary${action.charAt(0)}${action.slice(1).toLowerCase()}`,
       { count, defaultValue: t("review.summaryOther", { count }) }))
   const what = parts.length > 0 ? parts.join(", ") : t("review.summaryOther", { count: run.changes })
@@ -62,7 +64,7 @@ function runSummary(run: ShReviewSession, t: TFunction): string {
 function kindsOf(runs: ShReviewSession[]): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const run of runs) {
-    for (const [action, count] of Object.entries(run.byAction)) counts[action] = (counts[action] ?? 0) + count
+    for (const [action, count] of Object.entries(run.byPage ?? run.byAction)) counts[action] = (counts[action] ?? 0) + count
   }
   return counts
 }
@@ -525,8 +527,9 @@ function ReviewRunDetail({ session, busy, onDecide }: Readonly<{
         for a run where one page is wrong, which used to force a curator to accept all of it or undo
         all of it.
       */}
+      {/* SH1425 — one row per page, the unit a curator decides; the audit rows ride on each. */}
       <ReviewTriage
-        entries={detail.entries}
+        entries={detail.pages ?? detail.entries}
         decided={new Map((detail.decisions ?? []).map((each) => [each.postId, each.decision]))}
         busy={busy}
         onDecide={onDecide}

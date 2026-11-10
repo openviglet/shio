@@ -24,14 +24,45 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param appearance SH1000 — which of those pages this run changed the <b>look</b> of
  * @param decisions SH1001 — what a curator has already said about them, by post id. Absent keys
  *                  are undecided, which is the state a queue is mostly in
+ * @param pages     SH1425 — the same changes folded per page, in the order the run first touched
+ *                  them: what the queue lists and a curator decides. {@code entries} stays the audit
  */
 @JsonInclude(Include.NON_NULL)
 public record ShReviewDetail(String session, String actor, List<Entry> entries,
-                             Appearance appearance, List<Decided> decisions) {
+                             Appearance appearance, List<Decided> decisions, List<Page> pages) {
 
     /** Before SH1000 said which pages changed their look. */
     public ShReviewDetail(String session, String actor, List<Entry> entries) {
-        this(session, actor, entries, null, List.of());
+        this(session, actor, entries, null, List.of(), List.of());
+    }
+
+    /**
+     * One page's changes in one run (SH1425).
+     *
+     * @param action    the net kind: {@code CREATE} for a page the run created however often it then
+     *                  edited it, {@code DELETE}/{@code PURGE} when that was the run's last word,
+     *                  otherwise the last change
+     * @param steps     every action the run took on it, oldest first, so the audit stays readable
+     *                  from the row
+     * @param revertable whether rejecting this page has an undo the queue can perform: for a page
+     *                  the run created, trashing it
+     * @param fields    every field any of its changes recorded, in first-seen order
+     * @param date      its last change
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Page(
+            String action,
+            String postId,
+            String address,
+            String title,
+            String siteId,
+            Instant date,
+            boolean draft,
+            boolean published,
+            boolean trashed,
+            boolean revertable,
+            List<String> fields,
+            List<String> steps) {
     }
 
     /**

@@ -144,3 +144,23 @@ test("SH1001: show prints the standing decision beside each change", async () =>
   assert.match(ctx.text(), /looks different \(2 compared\): post:Blog\/about/,
     "SH1000: which the action column above cannot say");
 });
+
+test("SH1425: show lists a page the run created and then fixed once, with its writes beside it", async () => {
+  const page = {
+    action: "CREATE", postId: "p-trail", address: "post:quilhara/trail", title: "Trail",
+    draft: true, published: false, trashed: false, revertable: true,
+  };
+  const ctx = ctxWith(() => ({
+    session: SESSION,
+    actor: "ana",
+    entries: [page, { ...page, action: "UPDATE" }, { ...page, action: "UPDATE" }],
+    pages: [{ ...page, steps: ["CREATE", "UPDATE", "UPDATE"] }],
+  }));
+
+  await review.run({}, ["review", "show", SESSION], ctx);
+
+  assert.match(ctx.text(), /1 page\(s\), 3 change\(s\)/,
+    "SH1425: a curator decides pages, and three writes to one new page are one decision");
+  assert.match(ctx.text(), /CREATE post:quilhara\/trail \(CREATE, UPDATE, UPDATE\)/);
+  assert.doesNotMatch(ctx.text(), /^ {2}UPDATE /m, "SH1425: the fixes are not rows of their own");
+});

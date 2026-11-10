@@ -53,6 +53,7 @@
   "review.summaryOther": "{{count}} alteração(ões)",
   "review.summaryIn": "{{what}} em {{sites}}",
   "review.changedFields": "Alterado: {{fields}}",
+  "review.steps": "{{count}} gravações nesta execução: {{steps}}",
   "review.filterRuns": "Filtrar execuções por intenção, agente ou quem executou...",
   "review.noMatchTitle": "Nenhuma execução corresponde",
   "review.noMatchHint": "Nenhuma execução de agente na fila corresponde a estes filtros. Remova um filtro para ver mais.",
