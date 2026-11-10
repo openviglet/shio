@@ -24,8 +24,56 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { labelSource, labelSourceKey, labelsFrom }
-  from "../src/app/editor/field-labels.ts";
+import {
+  labelForProp, labelSource, labelSourceKey, labelsFrom, panelEntries, relatorLabels, relatorPath,
+} from "../src/app/editor/field-labels.ts";
+
+/** Quilhara's Trail, as the post-type API declares it: the shape the panel was mislabelling. */
+const TRAIL = [
+  { name: "name", label: "Name", widget: "Text" },
+  { name: "summary", label: "Summary", widget: "Text Area" },
+  {
+    name: "facts", label: "Facts", widget: "Relator", widgetSettings: "{\"relator\":{\"title\":\"Fact\"}}",
+    fields: [{ name: "label", label: "Label" }, { name: "value", label: "Value" }],
+  },
+];
+
+test("SH1417: a Relator's leaf is labelled from the Relator, not shown as its path", () => {
+  assert.deepEqual(relatorPath("facts.0.label"), { relator: "facts", index: 0, child: "label" });
+  assert.equal(relatorPath("summary"), null);
+  assert.equal(relatorPath("facts.label"), null, "no index, no item");
+
+  assert.equal(labelForProp(TRAIL, "facts.1.value"), "Facts · Fact 2 · Value",
+    "the panel showed `facts.1.value` here, which names nothing a curator can see on the page");
+  assert.equal(labelForProp(TRAIL, "summary"), "Summary");
+  assert.equal(labelForProp(TRAIL, "body.0.text"), "",
+    "a head no Relator declares keeps the caller's fallback instead of a guessed title");
+});
+
+test("SH1417: the item title falls back to the Relator's label, and a 'null' setting does not crash", () => {
+  const bare = [{ name: "links", label: "Links", widget: "Relator", widgetSettings: "null", fields: [] }];
+  assert.equal(relatorLabels(bare, "links")?.itemTitle, "Links");
+  assert.equal(relatorLabels(TRAIL, "summary"), null, "a field that is not a Relator has no items");
+});
+
+test("SH1417: the flat field list becomes one group per Relator, items in index order", () => {
+  const fields = [
+    { prop: "name" },
+    { prop: "facts.1.label" }, { prop: "facts.1.value" },
+    { prop: "facts.0.label" }, { prop: "facts.0.value" },
+    { prop: "summary" },
+    { prop: "body.0.text" },
+  ];
+  const entries = panelEntries(fields, TRAIL);
+
+  assert.deepEqual(entries.map((e) => e.kind === "field" ? e.field.prop : `group:${e.relator}`),
+    ["name", "group:facts", "summary", "body.0.text"],
+    "four entries, not seven boxes: the group sits where its first leaf was");
+  const group = entries[1];
+  assert.deepEqual(group.items.map((item) => [item.index, item.fields.map((f) => f.child)]),
+    [[0, ["label", "value"]], [1, ["label", "value"]]]);
+  assert.deepEqual(group.labels.children, { label: "Label", value: "Value" });
+});
 
 test("labels come from declared fields, and a blank label is absent rather than empty", () => {
   const labels = labelsFrom([

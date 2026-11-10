@@ -43,6 +43,8 @@
   "universalEditor.typeNotProvisioned": "This page's template offers {{type}}, but this instance does not have that post type yet.",
   "universalEditor.revert": "Revert",
   "universalEditor.revertField": "Put this field back to what it was before you started",
+  "universalEditor.relatorItems_one": "{{count}} item",
+  "universalEditor.relatorItems_other": "{{count}} items",
   "universalEditor.discardAll": "Discard",
   "universalEditor.discardConfirm": "Discard {{count}} pending change(s) and put every field back?",
   "universalEditor.discarded": "Pending changes discarded",

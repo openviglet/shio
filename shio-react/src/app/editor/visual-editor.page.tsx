@@ -26,9 +26,11 @@ import { fillFromDefaults, freeInstance, placementDocument, unfilled } from "./p
 import { copyReference } from "./section-reference"
 import { buttonIndex, caretY, gapIndex, placeAt } from "./section-placement"
 import {
-  attrFromDeclared, labelSource, labelSourceKey, labelsFrom, valueFromWidget, type DeclaredWidgetField,
+  attrFromDeclared, labelForProp, labelSource, labelSourceKey, labelsFrom, panelEntries, relatorItemTitle,
+  valueFromWidget, type DeclaredWidgetField,
 } from "./field-labels"
 import { getWidget } from "@/components/widgets"
+import { cn } from "@/lib/utils"
 import type {
   ContentChange, FrameRect, InsertableContainer, InsertableType, SectionOp, SelectedElement,
   SelectedSection,
@@ -1175,7 +1177,9 @@ export default function VisualEditorPage() {
 
   // The declared label for a field name, or "" when the schema has not arrived (or has no
   // label for it) — the caller falls back to the name the bridge sent.
-  const labelFor = (prop?: string | null) => (prop ? fieldLabels[prop] ?? "" : "")
+  // SH1417 — a Relator's leaf (`facts.0.label`) is labelled from the Relator's own fields.
+  const labelFor = (prop?: string | null) =>
+    (prop ? fieldLabels[prop] ?? labelForProp(declared.data, prop) : "")
 
   /** The pending edit for one field of the selected post, if there is one (SH1041). */
   const pendingFor = (prop?: string | null): ContentChange | undefined =>
@@ -1646,7 +1650,15 @@ export default function VisualEditorPage() {
                   {selected.model && <div className="text-xs text-muted-foreground">{selected.model}</div>}
                 </div>
                 <div className="space-y-2">
-                  {(selected.fields ?? []).map((f) => (
+                  {/*
+                    SH1417 — a Relator's leaves arrive one per bound element (`facts.0.label`,
+                    `facts.0.value`, …). They are drawn as one group under the Relator's label, one row
+                    per item, each leaf under its declared child label, instead of a box per path.
+                  */}
+                  {panelEntries(selected.fields, declared.data).map((entry) => {
+                    if (entry.kind === "field") {
+                      const f = entry.field
+                      return (
                     <div key={f.prop} className="rounded-md border p-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-xs font-medium text-muted-foreground">
@@ -1704,7 +1716,51 @@ export default function VisualEditorPage() {
                         <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
                       )}
                     </div>
-                  ))}
+                      )
+                    }
+                    return (
+                    <div key={`relator:${entry.relator}`} className="rounded-md border p-2">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <div className="text-xs font-medium text-muted-foreground">{entry.labels.label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {t("universalEditor.relatorItems", { count: entry.items.length })}
+                        </div>
+                      </div>
+                      <ol className="mt-1.5 space-y-1.5">
+                        {entry.items.map((item) => (
+                          <li key={item.index} className="rounded-sm bg-muted/50 px-2 py-1.5">
+                            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                              {relatorItemTitle(entry.labels, item.index)}
+                            </div>
+                            <dl className="mt-0.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
+                              {item.fields.map(({ child, field: f }) => (
+                                <div key={f.prop} className={cn("contents",
+                                  selected.prop === f.prop && "[&>*]:font-semibold")}>
+                                  <dt className="text-xs leading-5 text-muted-foreground">
+                                    {entry.labels.children[child] ?? child}
+                                  </dt>
+                                  <dd className="flex min-w-0 items-start justify-between gap-1 wrap-break-word">
+                                    <span className="min-w-0">
+                                      {f.value || <span className="italic text-muted-foreground">—</span>}
+                                    </span>
+                                    {pendingFor(f.prop)?.was !== undefined && (
+                                      <Button variant="ghost" size="icon-sm"
+                                        title={t("universalEditor.revertField")}
+                                        aria-label={t("universalEditor.revertField")}
+                                        onClick={() => revert(pendingFor(f.prop)!)}>
+                                        <Undo2 className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )
+                  })}
                 </div>
               </div>
             ) : (

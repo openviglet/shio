@@ -4527,6 +4527,20 @@ the `-ue` tasks were re-recorded one click up each: headline 3 against the form'
 7, description 4 against 4. The harness matches the publish by `url.endsWith("/publish")`; a
 regex written through a Python heredoc had turned its `\b` into a backspace, which matched nothing.
 
+## The panel draws a Relator as one group of items (SH1417)
+
+A template that loops a Relator binds each leaf as a path (`sh-field="facts.{{@index}}.label"`), and
+the bridge reports each one as its own field. The panel labelled by top-level name only, so Quilhara's
+trail showed `facts.0.label`, `facts.0.value` and so on, one box per leaf. `panelEntries` in
+`field-labels.ts` now gathers every leaf whose head is a declared `Relator` into one entry, placed where
+its first leaf was: the Relator's label and an item count, then one row per item titled
+`widgetSettings.relator.title` plus its 1-based number ("Fact 1"), each leaf under its child's declared
+label. No new read: the post-type the panel already fetches carries the child fields. Leaves stay
+read-only (they are typed on the page), Revert stays per leaf, and the selected leaf is bold. A head
+no Relator declares stays a lone field under its path, because a group titled from a dotted name
+would be the same defect. The heading for a selected leaf reads `Facts · Fact 1 · Label`
+(`labelForProp`). Asserted in `field-labels.test.mjs`.
+
 ## The content browser has one control row (SH1307)
 
 Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a

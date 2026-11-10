@@ -41,7 +41,14 @@
  */
 
 /** A declared field, as both `GET /api/v2/cda/post/{id}` and the post-type API report one. */
-export type DeclaredField = { name?: string | null; label?: string | null };
+export type DeclaredField = {
+  name?: string | null
+  label?: string | null
+  widget?: string | null
+  widgetSettings?: string | null
+  /** A Relator's own fields, which is what labels one of its items' leaves (SH1417). */
+  fields?: DeclaredField[] | null
+};
 
 /** Where a selection's labels come from. */
 export type LabelSource =
@@ -84,6 +91,105 @@ export function labelSource(selection: Selection | null | undefined): LabelSourc
   const postType = selection?.postType?.trim();
   if (postType) return { kind: "post-type", postType };
   return { kind: "none" };
+}
+
+/**
+ * SH1417 — a Relator's leaf, as a template binds it: `facts.{{@index}}.label` reaches the bridge as
+ * `facts.0.label`. Every other prop is not one, and parses to null.
+ */
+export type RelatorPath = { relator: string; index: number; child: string };
+
+export function relatorPath(prop: string | null | undefined): RelatorPath | null {
+  const match = /^([^.]+)\.(\d+)\.(.+)$/.exec(prop?.trim() ?? "");
+  return match ? { relator: match[1], index: Number(match[2]), child: match[3] } : null;
+}
+
+/** What the panel needs to title a Relator's group, its items and their leaves. */
+export type RelatorLabels = { label: string; itemTitle: string; children: Record<string, string> };
+
+/**
+ * The labels of a declared Relator, or null when the name declares none.
+ *
+ * The item title is `widgetSettings.relator.title`, which the post form already uses; the backend may
+ * send the literal string `"null"`, so the parse is guarded the way every widgetSettings parse is. A
+ * Relator that names no item title falls back to its own label, so an item still reads "Facts 1"
+ * rather than "1".
+ */
+export function relatorLabels(fields: DeclaredField[] | null | undefined, relator: string): RelatorLabels | null {
+  const field = (fields ?? []).find((candidate) => candidate?.name === relator);
+  if (!field || field.widget !== "Relator") return null;
+  const label = field.label?.trim() || relator;
+  let itemTitle = "";
+  try {
+    const parsed = JSON.parse(field.widgetSettings ?? "null");
+    const title = parsed && typeof parsed === "object" ? parsed.relator?.title : undefined;
+    if (typeof title === "string") itemTitle = title.trim();
+  } catch {
+    // A settings string that is not JSON names no item title; the label stands in for it.
+  }
+  return { label, itemTitle: itemTitle || label, children: labelsFrom(field.fields) };
+}
+
+/** "Fact 2": the item's title and its 1-based position, which is what the page shows a reader. */
+export function relatorItemTitle(labels: RelatorLabels, index: number): string {
+  return `${labels.itemTitle} ${index + 1}`;
+}
+
+/**
+ * The panel's label for any prop: the declared label for a top-level field, and
+ * "Facts · Fact 1 · Label" for a Relator's leaf. Empty when nothing is declared, so the caller's
+ * fallback (the bridge's label, then the prop) still answers.
+ */
+export function labelForProp(fields: DeclaredField[] | null | undefined, prop: string | null | undefined): string {
+  if (!prop) return "";
+  const path = relatorPath(prop);
+  const relator = path ? relatorLabels(fields, path.relator) : null;
+  if (path && relator) {
+    const child = relator.children[path.child] ?? path.child;
+    return `${relator.label} · ${relatorItemTitle(relator, path.index)} · ${child}`;
+  }
+  return labelsFrom(fields)[prop] ?? "";
+}
+
+/** One entry of the panel's list: a lone field, or a Relator's leaves gathered under it. */
+export type PanelEntry<F> =
+  | { kind: "field"; field: F }
+  | { kind: "relator"; relator: string; labels: RelatorLabels; items: { index: number; fields: { child: string; field: F }[] }[] };
+
+/**
+ * SH1417 — the bridge's flat field list, with every Relator's leaves gathered into one entry.
+ *
+ * The group sits where its first leaf was, items are in index order and leaves keep the order the
+ * page drew them in. A leaf whose head is not a declared Relator stays a lone field: guessing a group
+ * from a dotted name alone would title it with an internal name, which is the defect.
+ */
+export function panelEntries<F extends { prop: string }>(
+  fields: F[] | null | undefined, declared: DeclaredField[] | null | undefined,
+): PanelEntry<F>[] {
+  const entries: PanelEntry<F>[] = [];
+  const groups = new Map<string, Extract<PanelEntry<F>, { kind: "relator" }>>();
+  for (const field of fields ?? []) {
+    const path = relatorPath(field.prop);
+    const labels = path ? relatorLabels(declared, path.relator) : null;
+    if (!path || !labels) {
+      entries.push({ kind: "field", field });
+      continue;
+    }
+    let group = groups.get(path.relator);
+    if (!group) {
+      group = { kind: "relator", relator: path.relator, labels, items: [] };
+      groups.set(path.relator, group);
+      entries.push(group);
+    }
+    let item = group.items.find((candidate) => candidate.index === path.index);
+    if (!item) {
+      item = { index: path.index, fields: [] };
+      group.items.push(item);
+    }
+    item.fields.push({ child: path.child, field });
+  }
+  for (const group of groups.values()) group.items.sort((a, b) => a.index - b.index);
+  return entries;
 }
 
 /** A stable cache key, so selecting a second field of the same post refetches nothing. */

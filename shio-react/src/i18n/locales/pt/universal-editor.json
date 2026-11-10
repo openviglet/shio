@@ -43,6 +43,8 @@
   "universalEditor.typeNotProvisioned": "O template desta página oferece {{type}}, mas esta instância ainda não tem esse post type.",
   "universalEditor.revert": "Desfazer",
   "universalEditor.revertField": "Voltar este campo ao que ele era antes de você começar",
+  "universalEditor.relatorItems_one": "{{count}} item",
+  "universalEditor.relatorItems_other": "{{count}} itens",
   "universalEditor.discardAll": "Descartar",
   "universalEditor.discardConfirm": "Descartar {{count}} alteração(ões) pendente(s) e voltar todos os campos?",
   "universalEditor.discarded": "Alterações pendentes descartadas",
