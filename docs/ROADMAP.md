@@ -12,7 +12,6 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 📋 **SH1414** (deps: —) **A form sent from a pt-br page lands as an English draft, labelled EN in the console** — The curator cannot tell which language to answer an enquiry in, and a translation step starts from the wrong one. → §XI.128
 - 📋 **SH1415** (deps: —) **Opening a never-published draft in the post editor logs a 404 in the browser console** — The editor reads the published row to decide Unpublish, so every draft-only post opens with an error that reads as a defect. → §XI.129
 
 ## Block BJ — What a visitor finds first: release, links and a demo

@@ -42,8 +42,12 @@ import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.form.ShSiteFormRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.post.type.ShFormEligibility;
+import com.viglet.shio.render.ShPageRenderService;
 import com.viglet.shio.render.ShSiteFrontEnd;
+import com.viglet.shio.render.ShSitesAPI;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 
@@ -124,26 +128,38 @@ public class ShFormSubmissionAPI {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostUnifiedWriteService writeService;
     private final ObjectMapper objectMapper;
+    private final ShSiteLocaleService shSiteLocaleService;
+    private final ShPageRenderService shPageRenderService;
 
     public ShFormSubmissionAPI(ShSiteFormRepository shSiteFormRepository,
                                ShSiteRepository shSiteRepository,
                                ShFormDestination shFormDestination,
                                ShPostTypeRepository shPostTypeRepository,
                                ShPostUnifiedWriteService writeService,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               ShSiteLocaleService shSiteLocaleService,
+                               ShPageRenderService shPageRenderService) {
         this.shSiteFormRepository = shSiteFormRepository;
         this.shSiteRepository = shSiteRepository;
         this.shFormDestination = shFormDestination;
         this.shPostTypeRepository = shPostTypeRepository;
         this.writeService = writeService;
         this.objectMapper = objectMapper;
+        this.shSiteLocaleService = shSiteLocaleService;
+        this.shPageRenderService = shPageRenderService;
+    }
+
+    /** A submission with no page behind it, as a server-side caller sends one. */
+    public ResponseEntity<Object> submit(String siteName, String origin, ShFormSubmission body) {
+        return submit(siteName, origin, null, body);
     }
 
     @PostMapping("/{siteName}")
     public ResponseEntity<Object> submit(@PathVariable String siteName,
                                          @RequestHeader(value = "Origin", required = false) String origin,
+                                         @RequestHeader(value = "Referer", required = false) String referer,
                                          @RequestBody ShFormSubmission body) {
-        Outcome outcome = accept(siteName, origin, body);
+        Outcome outcome = accept(siteName, origin, body, referer);
         if (outcome.status() != 200) {
             return refuse(outcome.status(), outcome.title(), outcome.fix());
         }
@@ -181,7 +197,7 @@ public class ShFormSubmissionAPI {
             }
         });
         Outcome outcome = accept(siteName, origin,
-                new ShFormSubmission(params.getFirst(TYPE_FIELD), data, params.getFirst(HONEYPOT_FIELD)));
+                new ShFormSubmission(params.getFirst(TYPE_FIELD), data, params.getFirst(HONEYPOT_FIELD)), referer);
         if (outcome.status() != 200) {
             log.info("Form submission to '{}' refused ({}): {}", siteName, outcome.status(), outcome.title());
         }
@@ -253,7 +269,35 @@ public class ShFormSubmissionAPI {
         }
     }
 
-    private Outcome accept(String siteName, String origin, ShFormSubmission body) {
+    /**
+     * SH1414 — the language a submission is written in.
+     *
+     * <p>A form on a Portuguese page landed as an English draft, labelled EN in the console, so a
+     * curator could not tell which language to answer in. The page it was sent from says: the locale
+     * segment of a {@code /sites/<site>/<format>/<locale>/...} address in the {@code Referer}, taken
+     * only when the site has that locale, since the header is the stranger's to write. Otherwise the
+     * site's declared default, and otherwise none, which the write service turns into its own.</p>
+     */
+    String localeOf(ShSite site, String referer) {
+        URI ref = parse(referer);
+        String path = ref == null ? null : ref.getRawPath();
+        if (path != null && path.startsWith(SITES_PREFIX + "/")) {
+            String tag = ShSitesAPI.Address.of(path.substring(SITES_PREFIX.length()), null, null).selectedLocale();
+            if (tag != null) {
+                Optional<String> known = shPageRenderService.localesOf(site.getId(), ShPostState.PUBLISHED)
+                        .stream().filter(tag::equalsIgnoreCase).findFirst();
+                if (known.isPresent()) {
+                    return known.get();
+                }
+            }
+        }
+        return shSiteLocaleService.declared(site).map(ShSiteLocales::defaultLocale).orElse(null);
+    }
+
+    /** The public delivery route's prefix, whose address carries the page's locale (SH1414). */
+    private static final String SITES_PREFIX = "/sites";
+
+    private Outcome accept(String siteName, String origin, ShFormSubmission body, String referer) {
         ShSite site = shSiteRepository.findByName(siteName);
         if (site == null) {
             return Outcome.refused(404, "No site named '" + siteName + "'",
@@ -327,7 +371,8 @@ public class ShFormSubmissionAPI {
                 // Never a parameter. The moderation step is SH7's review queue, and a submission a
                 // stranger could publish is not a submission.
                 ShPostState.DRAFT,
-                ShFormSubmitter.owner(token), null, null));
+                // SH1414 — in the language of the page that held the form.
+                ShFormSubmitter.owner(token), localeOf(site, referer), null));
 
         log.info("Form submission accepted for site '{}' as {} '{}' by {}",
                 siteName, body.type(), created.getId(), created.getOwner());

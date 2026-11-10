@@ -487,6 +487,46 @@ class ShFormSubmissionAPITest {
 
     // --- fixture ---
 
+    // --- SH1414: the draft is written in the language of the page that held the form ---
+
+    private String localeOfDraft(ResponseEntity<Object> response) {
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        @SuppressWarnings("unchecked")
+        String id = (String) ((Map<String, Object>) response.getBody()).get("id");
+        return shPostUnifiedRepository.findById(id).getFirst().getLocale();
+    }
+
+    @Test
+    @DisplayName("SH1414: a form sent from a pt-br page lands as a pt-br draft; en-us, an unknown locale or no page get the default")
+    void aSubmissionIsWrittenInThePagesLanguage() {
+        configure("/enquiries", contactType, true);
+        // pt-br becomes one of the site's locales the way it does in use: a page published in it.
+        String typeId = new TransactionTemplate(transactionManager).execute(status -> entityManager
+                .createQuery("select t.id from ShPostType t where t.name = :name", String.class)
+                .setParameter("name", contactType).getSingleResult());
+        writeService.create(new CreateRequest(enquiriesFolderId, typeId,
+                objectMapper.createObjectNode().put("TITLE", "Contato " + UUID.randomUUID()),
+                ShPostState.PUBLISHED, "admin", "pt-br", null, null));
+        String page = "https://www.acme.com/sites/" + siteName + "/default/";
+
+        assertThat(localeOfDraft(api.submit(siteName, null, page + "pt-br/contato",
+                submission(contactType, Map.of("TITLE", "Olá"), null))))
+                .as("SH1414: the enquiry was sent from the Portuguese page, so it is a Portuguese draft")
+                .isEqualTo("pt-br");
+        assertThat(localeOfDraft(api.submit(siteName, null, page + "en-us/contact",
+                submission(contactType, Map.of("TITLE", "Hello"), null))))
+                .as("SH1414: en-us is the route's 'no locale named', so the site's default applies")
+                .isEqualTo(ShPostUnifiedWriteService.DEFAULT_LOCALE);
+        assertThat(localeOfDraft(api.submit(siteName, null, page + "de-de/kontakt",
+                submission(contactType, Map.of("TITLE", "Hallo"), null))))
+                .as("SH1414: the Referer is the stranger's to write, so a locale the site lacks is ignored")
+                .isEqualTo(ShPostUnifiedWriteService.DEFAULT_LOCALE);
+        assertThat(localeOfDraft(api.submit(siteName, null,
+                submission(contactType, Map.of("TITLE", "From a server"), null))))
+                .as("SH1414: an API client with no page gets the site's default")
+                .isEqualTo(ShPostUnifiedWriteService.DEFAULT_LOCALE);
+    }
+
     private void postType(String name, byte system, Instant when) {
         ShPostType existing = entityManager
                 .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)

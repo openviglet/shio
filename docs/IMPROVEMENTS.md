@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.128 Form drafts in the language of the page that held the form (SH1414)
-
-Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): a visitor sends the
-enquiry form on Quilhara's Portuguese trip page
-(`/sites/quilhara/default/pt-br/viagens/travessia-crista-do-vento`), and the draft lands
-in `/enquiries` as an Enquiry in **EN**. The console's list and the post's header both
-say EN, and its fields read "Your name", "Your question". A curator reading her
-enquiries cannot tell which language to answer in, and a later translation step starts
-from the wrong one.
-
-The submission already knows the page it came from: the form's `Referer` (checked
-against the allowed origins, SH637) and the section that drew it, whose post has a
-locale. Give the draft the locale of the page that held the form: the section's own
-locale, else the address's locale segment, else the site's default. Keep the field
-labels as the post type defines them.
-
-Test in the form submission tests: a submission from a pt-br page creates a pt-br draft,
-one from an en-us page an en-us draft, and one with no page (an API client) the site's
-default.
-
 ### XI.129 The post editor reads a draft-only post with no 4xx (SH1415)
 
 Seen filming the Viglet Shio promo (marketing VM19, 2026-11-09): opening a draft that

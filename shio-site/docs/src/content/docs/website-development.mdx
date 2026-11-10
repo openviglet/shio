@@ -384,6 +384,7 @@ every content listing (`/agent/find`, `shio_find`, `shio find` and the console s
 | Rule | Behaviour |
 |---|---|
 | Where submissions land | The site's form configuration, never the template |
+| Language | The draft takes the locale of the page the form was sent from, read from its `/sites/<site>/default/<locale>/` address when the site has that locale; otherwise the site's default |
 | The FORM token | Public by design: it cannot read the delivery API, publish, touch another site, or post anywhere but this endpoint |
 | Types that can never be submitted | `PageLayout`, `Region`, `Theme`, `SiteScripts`, `Redirect` and `File`, whatever the allow-list says |
 | A missing folder | `shio verify` reports `form-destination-missing` for an enabled form whose folder is gone |
