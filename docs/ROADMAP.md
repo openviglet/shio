@@ -29,6 +29,10 @@
 - 📋 **SH1432** (deps: —) **The site and README lead with docker run and never offer the free hosted Viglet Shio on viglet.cloud** — A reader who is not a developer leaves at the first step. → §XCIX.7
 - 📋 **SH1433** (deps: —) **Console strings still call the product Shio, as in outra instancia do Shio on the first-site screen** — The product is always Viglet Shio on screen, and the lint does not cover the locale files. → §XCIX.8
 
+## Block F — Market positioning / bold bets
+
+- 📋 **SH1434** (deps: —) **A tenant made by signup carries only its slug, so the name the person typed never shows anywhere** — The shared signup already takes a display name apart from the slug; Shio's adapter passes the slug twice, so a phone shows padaria-aurora for Padaria Aurora. → §VI.15
+
 ## Priority
 
 ## Done when — SH1245
