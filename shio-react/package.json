@@ -39,7 +39,7 @@
     "@graphiql/react": "^1.0.2",
     "@graphiql/toolkit": "^1.0.1",
     "@tabler/icons-react": "^3.50.0",
-    "@tailwindcss/vite": "^4.3.4",
+    "@tailwindcss/vite": "^4.3.5",
     "@tanstack/react-query": "^5.106.1",
     "@uiw/codemirror-theme-github": "^4.25.12",
     "@uiw/react-codemirror": "^4.25.12",
@@ -51,7 +51,7 @@
     "html-to-image": "^1.11.13",
     "i18next": "^26.7.2",
     "i18next-browser-languagedetector": "^8.3.0",
-    "lucide-react": "^1.69.0",
+    "lucide-react": "^1.70.0",
     "monaco-editor": "0.57.0",
     "monaco-graphql": "2.0.1",
     "next-themes": "^0.4.6",
@@ -61,7 +61,7 @@
     "react-i18next": "^17.1.13",
     "react-router-dom": "^7.18.5",
     "sonner": "^2.0.8",
-    "tailwindcss": "^4.3.4"
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

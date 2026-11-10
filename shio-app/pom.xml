@@ -654,7 +654,7 @@
                     <plugin>
                         <groupId>org.hibernate.orm</groupId>
                         <artifactId>hibernate-maven-plugin</artifactId>
-                        <version>7.4.14.Final</version>
+                        <version>7.4.15.Final</version>
                         <executions>
                             <execution>
                                 <id>enhance</id>
