@@ -40,7 +40,7 @@ public class ShSiteFurlConflictException extends ShTeachingException {
                 .withDetail(occupantName == null || occupantName.isBlank()
                         ? "A live site holds the address /" + furl + "."
                         : "The site '" + occupantName + "' holds the address /" + furl + ".")
-                .withFix("Choose a different `furl`, or leave it out and Shio derives a free one "
+                .withFix("Choose a different `furl`, or leave it out and Viglet Shio derives a free one "
                         + "from the name — a declared address is kept as given rather than "
                         + "numbered, which is why this is refused instead of renamed.")
                 .withExample("{\"name\": \"Acme\", \"furl\": \"" + furl + "-2\"}")

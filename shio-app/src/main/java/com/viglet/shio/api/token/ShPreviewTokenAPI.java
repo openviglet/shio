@@ -127,7 +127,7 @@ public class ShPreviewTokenAPI {
         ShApiToken token = new ShApiToken();
         token.setTitle("preview:" + post.getId());
         token.setDescription(share
-                ? "Expiring share link for Shio's own preview (SH1042)"
+                ? "Expiring share link for Viglet Shio's own preview (SH1042)"
                 : "Short-lived draft preview (SH13)");
         token.setToken(UUID.randomUUID().toString().replace("-", "").substring(0, 25));
         token.setOwner(principal != null ? principal.getName() : "system");

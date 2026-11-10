@@ -884,7 +884,7 @@ public class ShBlueprintRegistry {
                     .withDetail("This instance understands version "
                             + ShBlueprintManifest.FORMAT_VERSION + ". Reading a newer package "
                             + "with older rules is how a package half-applies.")
-                    .withFix("Upgrade Shio, or use a package written for format version "
+                    .withFix("Upgrade Viglet Shio, or use a package written for format version "
                             + ShBlueprintManifest.FORMAT_VERSION + ".")
                     .withExample(ShBlueprintManifest.FORMAT_VERSION));
         }

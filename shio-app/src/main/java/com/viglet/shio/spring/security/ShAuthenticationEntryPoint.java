@@ -77,7 +77,7 @@ public class ShAuthenticationEntryPoint implements AuthenticationEntryPoint {
      * The realm. Named rather than left to the container, because it is what a browser shows in its
      * dialog and "Realm" would tell a curator nothing about which system is asking.
      */
-    static final String CHALLENGE = "Basic realm=\"Shio preview\", charset=\"UTF-8\"";
+    static final String CHALLENGE = "Basic realm=\"Viglet Shio preview\", charset=\"UTF-8\"";
 
     /** SH1426 — where a person with no session is sent on a Keycloak instance. */
     static final String KEYCLOAK_SIGN_IN = "/oauth2/authorization/keycloak";

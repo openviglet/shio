@@ -551,6 +551,22 @@ now read bytes. One existing test had to change with it: `ShPreviewChallengeTest
 programmatic one differ in the *header* and nothing else, is now asserted as that comparison
 instead of as a copy of the old bytes.
 
+### Server strings name Viglet Shio, by an agreed list (SH1437)
+
+SH1433 held the console's locale files to the full product name; the server's string literals had
+no lint, and 34 said a bare `Shio`. `ShServerFullNamesLintTest` reads every literal and text block in
+`shio-app/src/main/java` (comments stripped by `ShSourceText`) with the site's pattern. The rule it
+holds: a string a person reads, or an agent meets only when something is refused or found, says
+Viglet Shio, so the problem documents (`ShDataIntegrityProblem`, the furl conflict, the blueprint
+format refusal, the error-recording filter), two verify findings, the preview banner, the share-link
+API descriptions and the browser's Basic realm (`Viglet Shio preview`) were renamed. Held as
+`EXCEPTIONS` by file, **with a count**, so a second mention in an excepted file is still news: MCP
+resource titles and prompts, the context tool's description, a manifest sentence, the AGENTS.md
+heading and a render-digest note (each resent to an agent every turn, so a rename is a token cost
+under P3 and wants measuring first); the seeded provider and admin rows (a label the console shows,
+whose rename is a data migration); and the device token's Bearer realm, which no browser shows. An
+exception wider than what it excuses fails too.
+
 ### The actuator is an operator's (SH1436)
 
 `management.endpoints.web.exposure.include` was `*`, and past sign-in nothing narrowed it: any

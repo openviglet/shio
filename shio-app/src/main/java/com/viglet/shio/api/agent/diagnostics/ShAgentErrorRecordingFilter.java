@@ -48,7 +48,7 @@ public class ShAgentErrorRecordingFilter extends OncePerRequestFilter {
      * advice can name something the reader can actually act on.
      */
     private static final String FIX =
-            "This call failed server-side, so its response is gone. `frames` names where in Shio "
+            "This call failed server-side, so its response is gone. `frames` names where in Viglet Shio "
                     + "it threw, innermost first. Retry it; if it fails again, that location is "
                     + "the one to read.";
 

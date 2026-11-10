@@ -102,14 +102,14 @@ public class ShPreviewBanner {
                 ? "Revision " + page.revision() + " preview — what this page said then, not what visitors see"
                 : page.state() == ShPostState.DRAFT
                         ? "Draft preview — not what visitors see"
-                        : "Published preview — rendered by Shio, not by this site's front end";
+                        : "Published preview — rendered by Viglet Shio, not by this site's front end";
         String composition = page.composition() == null
                 // Every post type renders through this route and most are not conversions. A page
                 // holding neither field gets no claim at all, because "authorable" on an Article
                 // would be this same defect one type over.
                 ? ""
                 : " · " + page.composition() + " page";
-        return "Shio preview · " + what + " · " + page.site() + page.url()
+        return "Viglet Shio preview · " + what + " · " + page.site() + page.url()
                 + composition + " · layout \"" + page.layout() + "\"";
     }
 }

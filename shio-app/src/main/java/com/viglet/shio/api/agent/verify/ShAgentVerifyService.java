@@ -1128,7 +1128,7 @@ public class ShAgentVerifyService {
                             + "perfectly.",
                     "Emit them where they belong: `{{#each site.scripts.head}}<script src=\"{{src}}\""
                             + " {{#if defer}}defer{{/if}}></script>{{/each}}` in the head, and the "
-                            + "same for site.scripts.bodyStart and site.scripts.bodyEnd. Shio never "
+                            + "same for site.scripts.bodyStart and site.scripts.bodyEnd. Viglet Shio never "
                             + "injects a script a layout did not ask for (P10), which is why this is "
                             + "reported rather than fixed. If this layout omits them deliberately — "
                             + "a transactional email, a print sheet, an AMP variant, a partner embed "
@@ -3309,7 +3309,7 @@ public class ShAgentVerifyService {
         provedBySite.forEach((site, proved) -> notes.add("The delivery check proved " + proved
                 + " published page(s) of '" + site + "' by fetching them. What it proves is that the "
                 + "route answers: the page's own markup is the content checks' subject, and an "
-                + "external front end carries none of Shio's render markers to look at."));
+                + "external front end carries none of Viglet Shio's render markers to look at."));
     }
 
     /**

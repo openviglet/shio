@@ -73,7 +73,7 @@ public final class ShDataIntegrityProblem {
                 ? ShProblem.badRequest("value-too-long", "A value is wider than its column")
                         .withDetail("The database refused this write" + wrote + ": " + message)
                         .withFix("Shorten the value the message names and retry. If it is a value "
-                                + "Shio derives rather than one you sent, this is a defect — report "
+                                + "Viglet Shio derives rather than one you sent, this is a defect — report "
                                 + "it with this message.")
                 : ShProblem.of("data-integrity", HttpStatus.CONFLICT,
                                 "The database refused this write")

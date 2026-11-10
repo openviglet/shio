@@ -21,7 +21,6 @@
 
 - ⏳ **SH1430** (deps: a recorded session per non-Claude MCP client on a clean instance) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
 - ⏳ **SH1431** (deps: photography for three more sites) **The Marketplace shows English descriptions on a Portuguese console and only one finished site** — The public catalogue carries no other language yet, and no restaurant, clinic or office site exists. → §XCIX.6
-- 📋 **SH1437** (deps: —) **Server problem documents and labels still call the product Shio, and no lint reads the Java strings** — The full-name rule now holds in the console and the site, while 34 server strings, some on screen, escape it. → §XCIX.9
 
 ## Priority
 

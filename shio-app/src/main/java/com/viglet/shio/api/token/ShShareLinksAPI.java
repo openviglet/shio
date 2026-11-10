@@ -52,7 +52,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  */
 @RestController
 @RequestMapping("/api/v2/preview-token")
-@Tag(name = "Preview", description = "Share links for Shio's own preview")
+@Tag(name = "Preview", description = "Share links for Viglet Shio's own preview")
 public class ShShareLinksAPI {
 
     private final ShApiTokenRepository shApiTokenRepository;
