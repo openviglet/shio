@@ -742,6 +742,14 @@ startup**, blank, too short and unset are each a log line and a return, because 
 binding is a one-line property; a context test for it would cost a slot `ShContextCacheHeadroomTest`
 counts (SH315) to check Spring does its own job.
 
+**Behind an identity provider there is no first access (SH1427).** On a Keycloak instance the local
+`admin` has no password by design, so "unset" read as "pending" forever: a self-registered cloud
+account landed on `/setup`, offered the instance's administrator password, and `/api/v2/setup` is
+`permitAll` on that chain. `isSetupRequired()` is now false whenever `shio.keycloak` is on, which
+is what the login screen reads before routing to `/setup`, and `POST /api/v2/setup` refuses with a
+403 `setup-unavailable` problem whoever asks. The `SHIO_ADMIN_PASSWORD` bootstrap still asks only
+whether the password is unset. `ShSetupBehindIdentityProviderTest` holds both halves.
+
 ## Uploaded bytes are never a document this origin renders (SH950)
 
 Every asset route sent `Content-Disposition: inline`, and a grep of the backend for

@@ -19,7 +19,6 @@
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
-- 📋 **SH1427** (deps: —) **A self-registered account on a Keycloak instance was shown the administrator first-access form** — On a shared instance any new account would be offered the admin password. → §XCIX.2
 - 📋 **SH1428** (deps: —) **Nobody is told when an agent run is waiting for review, so the loop stalls until someone looks** — The product promises a person approves, and the person does not know there is anything to approve. → §XCIX.3
 - 📋 **SH1429** (deps: —) **The review queue shows each page as a code address, so a curator approves pages without seeing them** — The moment the product is judged reads like a developer tool. → §XCIX.4
 - 📋 **SH1430** (deps: —) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5

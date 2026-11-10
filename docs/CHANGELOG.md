@@ -2213,3 +2213,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
 - **SH1426** — On a Keycloak instance a browser opening any console page with no session is redirected to the Keycloak sign-in and returns to that page; JSON clients and /api/** keep the 401 document (design §XCIX.1 recorded in `docs/agents/security.md`).
+- **SH1427** — A Keycloak instance never reports first-access setup as pending, so the console never routes to /setup, and POST /api/v2/setup answers a 403 setup-unavailable problem whoever asks (design §XCIX.2 recorded in `docs/agents/security.md`).

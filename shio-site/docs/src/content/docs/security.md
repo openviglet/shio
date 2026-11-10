@@ -31,7 +31,8 @@ Keycloak realm), or from a social provider configured under
 
 On a Keycloak instance, a browser that opens any console page without a session is sent to the
 Keycloak sign-in and comes back to the page it asked for. A program that asks for JSON still gets
-a `401` problem document.
+a `401` problem document. Such an instance has no first-access screen: administrators are named
+by `shio.keycloak-admin-id`, and `POST /api/v2/setup` answers `403`.
 
 ---
 

@@ -1218,27 +1218,6 @@ rendered showcase alone, with a recorded console tour, is the first step. Set as
 
 ## XCIX The next level: a demo that sells and a review a curator trusts
 
-### XCIX.2 First access never exists behind an identity provider (SH1427)
-
-**Seen once.** shio.viglet.cloud (image 2026.3-02c5300, Keycloak, multi-tenant),
-2026-11-10. A brand-new cloud account, not an administrator (`/api/v2/user/current` says
-`admin: false`), went through `/oauth2/authorization/keycloak` and the console opened on
-`/setup`: "Configure a senha do administrador para começar", with the Nova Senha /
-Confirmar Senha form. A second visit a minute later opened `/bento`. Nothing was
-submitted, so whether the server would accept it is unknown.
-
-**Why it matters.** On a shared instance any self-registered account would be offered
-the instance's administrator password. Even if the server refuses, the screen tells a
-new user the product is not set up.
-
-**What it should be.** The first-access screen exists only for local login on an
-instance whose admin has no password. In Keycloak mode the console never routes to
-`/setup`, and the endpoint that sets the first password refuses (403) whenever an
-identity provider is configured or a password already exists, whoever asks.
-
-**Done when.** A test on a Keycloak instance: a non-admin account's console never shows
-`/setup`, and the set-first-password call is refused with a problem document.
-
 ### XCIX.3 A finished agent run tells its reviewers (SH1428)
 
 **Why.** The product's promise is "the agent drafts, a person approves", but the person

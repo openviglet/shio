@@ -80,6 +80,19 @@ public class ShAdminPasswordService {
      * it as "setup required" would offer a password write on a row that is not there.</p>
      */
     public boolean isSetupRequired() {
+        // SH1427 — never behind an identity provider. There the local admin has no password by
+        // design, so "unset" was true forever and the console sent a self-registered cloud account
+        // to a form offering the instance's administrator password.
+        return !identityProvider() && isPasswordUnset();
+    }
+
+    /** Whether people sign in through Keycloak, where the first-access screen does not exist (SH1427). */
+    public boolean identityProvider() {
+        return shAppProperties.isKeycloak();
+    }
+
+    /** {@code true} while the {@code admin} row exists with no password, whatever the sign-in mode. */
+    private boolean isPasswordUnset() {
         ShUser admin = shUserRepository.findByUsername(ADMIN);
         return admin != null && !StringUtils.hasText(admin.getPassword());
     }
@@ -119,7 +132,7 @@ public class ShAdminPasswordService {
         if (!StringUtils.hasText(configured)) {
             return;
         }
-        if (!isSetupRequired()) {
+        if (!isPasswordUnset()) {
             log.info("SHIO_ADMIN_PASSWORD ignored: the admin password is already configured. "
                     + "Change it in the console instead — a bootstrap that overwrote it would undo "
                     + "an operator's decision on every restart.");

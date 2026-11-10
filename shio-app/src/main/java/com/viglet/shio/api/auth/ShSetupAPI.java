@@ -11,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,8 +47,26 @@ public class ShSetupAPI {
         return ResponseEntity.ok(Map.of("required", shAdminPasswordService.isSetupRequired()));
     }
 
+    /** SH1427 — the first password cannot be set behind an identity provider, whoever asks. */
+    public static class SetupUnavailableException extends ShTeachingException {
+
+        public SetupUnavailableException() {
+            super(ShProblem.of("setup-unavailable", HttpStatus.FORBIDDEN,
+                            "this instance signs people in through its identity provider")
+                    .withDetail("The first-access screen sets the local admin password, and it "
+                            + "exists only on an instance with local login whose admin has none. "
+                            + "Here the endpoint is public, so accepting a password would hand the "
+                            + "instance's administrator to whoever asked first.")
+                    .withFix("Sign in through /oauth2/authorization/keycloak. Administrators are "
+                            + "named by shio.keycloak-admin-id, not by a password."));
+        }
+    }
+
     @PostMapping
     public ResponseEntity<Map<String, Object>> setup(@RequestBody Map<String, String> body) {
+        if (shAdminPasswordService.identityProvider()) {
+            throw new SetupUnavailableException();
+        }
         if (!shAdminPasswordService.isSetupRequired()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Setup already completed."));
