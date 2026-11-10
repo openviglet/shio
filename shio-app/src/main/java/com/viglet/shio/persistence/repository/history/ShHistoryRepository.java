@@ -181,6 +181,16 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "order by h.date desc, h.id desc")
 	List<ShHistory> findAgentEntries(Pageable pageable);
 
+	/** SH1423 — whether a person has ever changed a page: a post UPDATE outside any agent run. */
+	@Query("select count(h) > 0 from ShHistory h where h.action = 'UPDATE' "
+			+ "and coalesce(h.subjectKind, 'POST') = 'POST' "
+			+ "and (h.agentSessionId is null or h.agentSessionId like 'console:%')")
+	boolean existsPersonEdit();
+
+	/** SH1423 — whether any agent run has written anything here. */
+	@Query("select count(h) > 0 from ShHistory h where " + AGENT_SESSION)
+	boolean existsAnyAgentWrite();
+
 	/** SH1418 — whether this run has already written to this object. */
 	boolean existsByShObjectAndAgentSessionId(String shObject, String agentSessionId);
 

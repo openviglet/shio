@@ -43,6 +43,7 @@ import com.viglet.shio.api.history.ShHistoryAPI.ShHistoryResponse;
  * @param diagnostics whether this instance is failing at anything
  * @param activity the most recent trail rows, so home needs no second request
  * @param checks pages failing verify's content or routes checks (SH1336)
+ * @param start the getting-started loop, each step read from the instance (SH1423)
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -54,7 +55,25 @@ public record ShConsoleSummary(long sites,
                                List<Run> runs,
                                Diagnostics diagnostics,
                                List<ShHistoryResponse> activity,
-                               Checks checks) {
+                               Checks checks,
+                               Start start) {
+
+    /**
+     * SH1423 — Shio's loop, gone round once: whether each step has happened on this instance.
+     *
+     * <p>Read from the instance's own state and never from clicks a browser remembered, so a step
+     * done by a colleague, by an agent or on another device is done here too. Each is one existence
+     * query.</p>
+     *
+     * @param site a site exists
+     * @param edited a person changed a page (an update outside any agent run)
+     * @param published a page is live
+     * @param agent a coding agent has worked here: a run introduced itself, or wrote under a session
+     * @param reviewed a curator decided on an agent's change in the review queue
+     */
+    public record Start(boolean site, boolean edited, boolean published, boolean agent,
+                        boolean reviewed) {
+    }
 
     /**
      * How far ahead "soon" looks — a week, the horizon somebody plans a publish inside.

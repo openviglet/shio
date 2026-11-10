@@ -57,6 +57,15 @@ export interface ShChecks {
   pages: ShFailing[];
 }
 
+/** SH1423 — Shio's loop gone round once, each step read from the instance's own state. */
+export interface ShStart {
+  site: boolean;
+  edited: boolean;
+  published: boolean;
+  agent: boolean;
+  reviewed: boolean;
+}
+
 /** The dashboard's whole answer. */
 export interface ShConsoleSummary {
   sites: number;
@@ -67,6 +76,7 @@ export interface ShConsoleSummary {
   diagnostics: ShDiagnostics;
   activity: ShHistory[];
   checks?: ShChecks;
+  start?: ShStart;
 }
 
 export class ShConsoleSummaryService {

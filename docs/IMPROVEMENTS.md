@@ -1174,22 +1174,31 @@ site link it beside `docker run`. If a guest console is too costly to keep safe,
 rendered showcase alone, with a recorded console tour, is the first step. Set aside
 2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
 
-### XCV.10 XCV.10 A getting-started checklist read from the instance (SH1423)
-
-Shio's product is a loop: something builds a site (an agent, a blueprint or a person), a
-curator edits it where it renders, publishes it, and reviews what the agent did next. A
-newcomer who goes round that loop once understands the product; one who stops after
-creating a site does not, and nothing on the home page suggests there is more.
-
-The home page should show a getting-started checklist while it is incomplete: have a
-site; edit a page in the Visual Editor; publish a page; connect a coding agent; review
-an agent's run. Each step is ticked from the instance's own state, read by the console
-summary the home page already makes (a site exists, a page has a curator's revision, a
-page is published, an AGENT token has been used, a run was approved or reverted), never
-from clicks stored in the browser, so it stays true across devices and users. Each
-unticked step links to the screen that does it. The checklist can be dismissed per user,
-and it disappears when every step is done. A coach-mark tour was considered and
-rejected: it describes the screen rather than doing the work, and it rots with every
-layout change.
-
 ## XCVII End-user documentation for 2026.3 (docs-shio)
+
+## XCVIII Releases, scheduling and the publish gate
+
+### XCVIII.1 Concurrent sweeps in the test suite, and in production (from SH1423's gate run) (SH1424)
+
+Seen once in the full Java gate while SH1423 was validated, and not reproduced on the
+next run:
+`ShScheduledGateTest.sh1138AScheduledReleaseWithAPageTheGateStopsStaysScheduledAndNothingGoesLive`
+expected one incident about its release and got two, 0.5 ms apart, one reporting a
+warning the other did not. Two sweeps judged the same release at the same moment: the
+test's own `scheduler.sweep()`, and a background sweep.
+
+Where the second one comes from: `shio.schedule.enabled` defaults to on, and every
+`@SpringBootTest` that does not set it to false boots a context whose scheduled sweep
+keeps running for as long as Spring's context cache holds it. Contexts in one surefire
+fork share the in-memory H2 database, so that sweep reads the release the test just
+scheduled in the past.
+
+Two halves, the instrument first. A lint that every `@SpringBootTest` sets
+`shio.schedule.enabled=false` unless it names a reason (an exemption comment, the way
+`ShFolderSite-exempt:` works), since a background writer in a shared database is a
+hidden input to every other test in the fork. Then the test itself should not depend on
+being the only sweeper: two sweepers is also what two instances behind one database look
+like, so the second question is whether a release sweep is safe to run twice at once,
+and whether two incidents for one stopped release is a defect of the incident log (one
+entry per subject and cause would be the expected shape) or the honest record of two
+attempts.

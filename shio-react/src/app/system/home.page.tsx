@@ -48,6 +48,7 @@ import { ShNoteService } from "@/services/note/note.service"
 import axios from "axios"
 import { useCurrentUser } from "@/contexts/user.context"
 import { FirstSiteStart } from "@/app/content/first-site-start"
+import { GettingStarted } from "@/app/system/getting-started"
 
 
 /**
@@ -289,6 +290,9 @@ export default function BentoHomePage() {
           <FirstSiteStart />
         </BentoSection>
       )}
+
+      {/* SH1423 — the loop, gone round once; it hides itself when every step is done. */}
+      <GettingStarted state={summary?.start} username={user?.username} admin={admin} />
 
       {/* SH1318 — an empty inbox says so in one line and offers the sites, which is today's work. */}
       {!isPending && !firstUse && inbox.length === 0 && counts.length === 0 && (

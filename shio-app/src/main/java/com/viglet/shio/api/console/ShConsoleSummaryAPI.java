@@ -25,7 +25,11 @@ import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.history.ShHistoryAPI;
 import com.viglet.shio.api.review.ShReviewService;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.repository.agent.ShAgentRunRepository;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.note.ShNoteRepository;
+import com.viglet.shio.persistence.repository.review.ShReviewDecisionRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
@@ -88,6 +92,9 @@ public class ShConsoleSummaryAPI {
     private final ShHistoryAPI shHistoryAPI;
     private final ShAgentVerifyService shAgentVerifyService;
     private final ShAddressResolver shAddressResolver;
+    private final ShHistoryRepository shHistoryRepository;
+    private final ShAgentRunRepository shAgentRunRepository;
+    private final ShReviewDecisionRepository shReviewDecisionRepository;
 
     public ShConsoleSummaryAPI(ShSiteRepository shSiteRepository,
                                ShPostTypeRepository shPostTypeRepository,
@@ -97,7 +104,13 @@ public class ShConsoleSummaryAPI {
                                ShAgentIncidentLog shAgentIncidentLog,
                                ShHistoryAPI shHistoryAPI,
                                ShAgentVerifyService shAgentVerifyService,
-                               ShAddressResolver shAddressResolver) {
+                               ShAddressResolver shAddressResolver,
+                               ShHistoryRepository shHistoryRepository,
+                               ShAgentRunRepository shAgentRunRepository,
+                               ShReviewDecisionRepository shReviewDecisionRepository) {
+        this.shHistoryRepository = shHistoryRepository;
+        this.shAgentRunRepository = shAgentRunRepository;
+        this.shReviewDecisionRepository = shReviewDecisionRepository;
         this.shAgentVerifyService = shAgentVerifyService;
         this.shAddressResolver = shAddressResolver;
         this.shSiteRepository = shSiteRepository;
@@ -129,7 +142,24 @@ public class ShConsoleSummaryAPI {
                         shAgentIncidentLog.recent(INCIDENT_WINDOW).size(),
                         shAgentIncidentLog.unpersisted()),
                 shHistoryAPI.recent(ACTIVITY_ROWS, null, null, null, null, null, null, null).rows(),
-                checks());
+                checks(),
+                start());
+    }
+
+    /**
+     * SH1423 — the getting-started loop, each step one existence query on this instance's state.
+     *
+     * <p>Never clicks a browser remembered: a step a colleague or an agent did, or one done on another
+     * device, is done. An agent counts once it introduced itself (MCP {@code initialize}, or a REST
+     * intent) or wrote under a session that is not a console one.</p>
+     */
+    private ShConsoleSummary.Start start() {
+        return new ShConsoleSummary.Start(
+                shSiteRepository.count() > 0,
+                shHistoryRepository.existsPersonEdit(),
+                shPostUnifiedRepository.existsByState(ShPostState.PUBLISHED),
+                shAgentRunRepository.count() > 0 || shHistoryRepository.existsAnyAgentWrite(),
+                shReviewDecisionRepository.count() > 0);
     }
 
     /**

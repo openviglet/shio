@@ -65,6 +65,9 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
 
     List<ShPostUnified> findByState(ShPostState state);
 
+    /** SH1423 — whether any post is in this state; the getting-started "a page is live" step. */
+    boolean existsByState(ShPostState state);
+
     // --- Scheduled publish/unpublish (SH15) sweep finders ---
 
     /** Rows of {@code state} whose publish schedule is set and now due. */

@@ -476,6 +476,16 @@ then a **preview** (`siteDestination`, draft-preferring), then the page list. Th
 A plain install no longer closes its dialog: it marks the package installed and says how many
 blueprints loaded, pointing at the setup form already in that dialog.
 
+**SH1423: the getting-started checklist.** `ShConsoleSummary.start` carries five booleans, each one
+existence query: a site; a person's edit (`ShHistoryRepository.existsPersonEdit`, a post `UPDATE`
+with no session or a `console:` one); a `PUBLISHED` row; an agent (a run introduced itself, or a
+non-console session wrote); a review decision. `getting-started.tsx` draws them on home from that
+read, so a tick is the instance's state and never a click; only **Hide this** is browser-side,
+`localStorage` keyed by user (`startDismissKey`), like the console's other screen preferences. The
+agent step opens `ConnectAgentDialog` for an administrator. "Change a page" is any person's edit,
+not only one made in the Visual Editor: the trail does not record which surface wrote an update, and
+the step's point is that the curator has corrected something.
+
 ## The editor's name is Visual Editor, never Universal Editor (SH1419)
 
 "Universal Editor" is Adobe AEM's product name for its in-context editor, and Shio is in the
