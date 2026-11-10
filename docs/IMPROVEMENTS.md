@@ -526,26 +526,6 @@ asserted at the level the agent surface is.
 
 ## VI. Market positioning
 
-### VI.15 Signup keeps the name the person typed (SH1434)
-
-Found by Shio Mobile SHM2 (2026-11-10). `POST /api/v2/tenant/signup` takes one field,
-`name`, and `ShTenantMembershipService.signup` passes it as both the slug and the
-display name to `VigletTenantMembershipService.signup(slug, name, owner)`. A person who
-types "Padaria Aurora" on the phone's screen 02 gets a tenant named `padaria-aurora`,
-and every surface that names the tenant afterwards (`/tenant/quota`'s `tenant`,
-`/tenant/mine`, the console's switcher) shows the slug. The request record already
-carries `description`, and the shared service already takes a separate name; only Shio's
-adapter drops it.
-
-Proposed: signup reads an optional display name from the body (`description`, or a new
-`title`) and stores it beside the slug; `/mine` and `/tenant/quota` return it, so a
-client shows the person's words and sends the slug as `X-Shio-Tenant`. The slug rule
-stays the shared validator's. A test signs up with a name carrying accents and spaces
-and reads it back from `/mine` unchanged.
-
-Until then the app folds the typed name into the slug itself (`spaceSlug`) and shows the
-slug.
-
 ### VI.16 A site name is unique within its tenant (SH1435)
 
 Found by Shio Mobile SHM5 on the local instance (2026-11-10, multi-tenant on).

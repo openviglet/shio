@@ -61,7 +61,10 @@ public class ShTenantQuotaService {
      */
     public ShTenantQuota quota(String tenant) {
         VigletPlanLimits limits = quotaService.currentLimits();
-        String plan = tenants.findByName(tenant).map(ShTenant::getPlan).orElse(null);
+        java.util.Optional<ShTenant> row = tenants.findByName(tenant);
+        String plan = row.map(ShTenant::getPlan).orElse(null);
+        // SH1434 — the name the person typed, which `description` holds for a tenant made by signup.
+        String title = row.map(ShTenant::getDescription).filter(each -> !each.isBlank()).orElse(null);
         String resetsAt = meter.nextPeriodStart().toString();
         List<ShTenantQuota.Resource> resources = new ArrayList<>();
         for (String key : List.of(ShVigletResourceCounter.SITES, ShVigletResourceCounter.POSTS,
@@ -73,7 +76,7 @@ public class ShTenantQuotaService {
                     unlimited ? null : Math.max(0, max - used),
                     ShVigletResourceCounter.AGENT_CALLS.equals(key) ? resetsAt : null));
         }
-        return new ShTenantQuota(tenant, plan, List.copyOf(resources));
+        return new ShTenantQuota(tenant, plan, List.copyOf(resources), title);
     }
 
     /**

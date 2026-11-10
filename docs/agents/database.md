@@ -108,6 +108,16 @@ session's. `ShTenantHeaderIT` drives both callers through the whole chain, and i
 the password/Basic chain had never carried the "signup and switch are any person's" rule the OIDC
 chain has, so on those instances the admin catch-all took signup. Both chains carry it now.
 
+### Signup keeps the name the person typed (SH1434)
+`viglet-core`'s `VigletTenantMembershipService.signup(slug, name, owner)` always took a display
+name beside the slug, and `ShTenantMembershipService` passed the slug twice, so "Padaria Aurora"
+came back as `padaria-aurora` on `/mine`, `/quota` and the switcher. `POST /tenant/signup` now
+reads `description` as that name, `ShVigletTenantStore.createTenant` stores it in `ShTenant.description`
+when it differs from the slug (no column, no migration: every read already serialises the field),
+and `/tenant/quota` returns it as `title`. `name` stays the slug the shared validator owns and the
+client sends as `X-Shio-Tenant`. A signup with no `description` stores none rather than repeating
+the slug. `ShTenantMembershipIT` signs up with accents, spaces and an ampersand and reads them back.
+
 ### Multi-tenancy (SH22: core DB isolation)
 Tenant isolation uses Hibernate's native `@TenantId` (DISCRIMINATOR), gated by
 `shio.multi-tenant` (default `false`). `ShTenantFilter` resolves the tenant from the

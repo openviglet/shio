@@ -134,6 +134,11 @@ public class ShVigletTenantStore implements VigletTenantStore {
     public VigletTenantRef createTenant(String slug, String name, String plan) {
         ShTenant tenant = new ShTenant();
         tenant.setName(slug); // Shio's name is the discriminator (== slug)
+        // SH1434 — the display name the shared signup carries beside the slug, kept where every read
+        // of the tenant already serialises it. Only when it says something the slug does not.
+        if (name != null && !name.isBlank() && !name.trim().equals(slug)) {
+            tenant.setDescription(name.trim());
+        }
         tenant.setEnabled(true);
         tenant.setCreatedDate(Instant.now());
         if (plan != null) {

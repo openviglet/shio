@@ -99,7 +99,10 @@ A caller with no session (the mobile app's device token, or a script using HTTP 
 names the tenant on each request instead, with an `X-Shio-Tenant: <name>` header. It is
 checked exactly like a switch: you must be an active member, and a suspended tenant
 refuses you. The same caller can create a tenant of its own with
-`POST /api/v2/tenant/signup`. An API token already belongs to one tenant, so a header
+`POST /api/v2/tenant/signup`: `name` is the short identifier it then sends in the header
+(`padaria-aurora`), and `description` is what to call it on screen (`Padaria Aurora`).
+`GET /api/v2/tenant/mine` returns both, and `GET /api/v2/tenant/quota` returns the second as
+`title`. An API token already belongs to one tenant, so a header
 naming a different one is refused with a 403.
 
 ### Plan quotas

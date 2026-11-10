@@ -16,8 +16,17 @@ import java.util.List;
  * @param tenant    the tenant this describes, always the caller's own
  * @param plan      the plan name on the tenant row, {@code null} where the instance runs no plans
  * @param resources sites, posts, storage (bytes) and agent calls (today), in that order
+ * @param title     SH1434 — the name the person gave the tenant ("Padaria Aurora"), for a client to
+ *                  show; {@code tenant} stays the slug it sends as {@code X-Shio-Tenant}. Absent when
+ *                  the tenant has none
  */
-public record ShTenantQuota(String tenant, String plan, List<Resource> resources) {
+@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+public record ShTenantQuota(String tenant, String plan, List<Resource> resources, String title) {
+
+    /** Before SH1434 carried the tenant's display name. */
+    public ShTenantQuota(String tenant, String plan, List<Resource> resources) {
+        this(tenant, plan, resources, null);
+    }
 
     /**
      * One resource.

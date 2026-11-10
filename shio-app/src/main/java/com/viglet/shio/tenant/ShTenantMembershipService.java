@@ -79,7 +79,22 @@ public class ShTenantMembershipService {
      */
     @Transactional
     public ShTenant signup(String name, String owner) {
-        VigletTenantRef ref = membershipService.signup(name, name, owner);
+        return signup(name, null, owner);
+    }
+
+    /**
+     * SH1434 — the same, keeping the name the person typed apart from the slug.
+     *
+     * <p>The shared service always took a display name beside the slug; this adapter passed the slug
+     * twice, so "Padaria Aurora" came back everywhere as {@code padaria-aurora}. The slug rule stays
+     * the shared validator's; {@code title} is stored as the tenant's {@code description}.</p>
+     *
+     * @param title what to call the tenant on screen, or {@code null} to show the slug
+     */
+    @Transactional
+    public ShTenant signup(String name, String title, String owner) {
+        String display = StringUtils.hasText(title) ? title.trim() : name;
+        VigletTenantRef ref = membershipService.signup(name, display, owner);
         return shTenantRepository.findByName(ref.id())
                 .orElseThrow(() -> new IllegalStateException("Tenant vanished: " + ref.id()));
     }

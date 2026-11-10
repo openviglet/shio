@@ -61,6 +61,22 @@ class ShTenantMembershipIT {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("SH1434: signup keeps the name the person typed, accents and spaces, beside the slug")
+    void signupKeepsTheNameThePersonTyped() {
+        service.signup("padaria-aurora", "Padaria Aurora — Pães & Café", "carol");
+
+        assertThat(service.tenantsOf("carol"))
+                .as("SH1434: /mine returns the person's words, so a phone shows them and sends the slug")
+                .singleElement()
+                .satisfies(tenant -> {
+                    assertThat(tenant.getName()).isEqualTo("padaria-aurora");
+                    assertThat(tenant.getDescription()).isEqualTo("Padaria Aurora — Pães & Café");
+                });
+        assertThat(service.signup("plain", "dave").getDescription())
+                .as("SH1434: no name given, no description invented from the slug").isNull();
+    }
+
+    @Test
     void signupIsIdempotentForTheSameOwner() {
         ShTenant first = service.signup("globex", "alice");
         ShTenant second = service.signup("globex", "alice");

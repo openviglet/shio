@@ -236,13 +236,17 @@ public class ShTenantAPI {
     /**
      * Self-service signup: create a tenant (named in the body) owned by the current
      * user, with an {@code OWNER} membership, then provision the default model.
+     *
+     * <p>SH1434 — {@code name} is the slug; {@code description} is what the person called it, kept
+     * and returned by {@code /mine} and {@code /quota} (as {@code title}) for a client to show.</p>
      */
     @PostMapping("/signup")
     public ResponseEntity<ShTenant> signup(@RequestBody ShTenantRequest body, Principal principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        ShTenant tenant = shTenantMembershipService.signup(body.name(), principal.getName());
+        ShTenant tenant = shTenantMembershipService.signup(body.name(), body.description(),
+                principal.getName());
         return ResponseEntity.ok(tenant);
     }
 
