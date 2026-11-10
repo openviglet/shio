@@ -551,6 +551,19 @@ now read bytes. One existing test had to change with it: `ShPreviewChallengeTest
 programmatic one differ in the *header* and nothing else, is now asserted as that comparison
 instead of as a copy of the old bytes.
 
+### The actuator is an operator's (SH1436)
+
+`management.endpoints.web.exposure.include` was `*`, and past sign-in nothing narrowed it: any
+principal could download `/actuator/heapdump` (the JVM's memory, every secret in it; Boot masks
+`/env` values and nothing in a heap dump) and `POST /actuator/loggers`. On a hosted instance every
+free sign-up is a principal. Anonymously it was already a 404, because `unclaimed` does not count
+the actuator's handler mapping. Now the exposure is `health,info`, and both chains carry a second
+wall before `anyRequest()`: `ACTUATOR_HEALTH` (health and info) stays `authenticated()`, and
+`/actuator/**` is `hasRole("ADMIN")`, so an operator who widens the exposure does not widen who can
+read it. A signed-in non-admin therefore gets 403 rather than the 404 the design named: the
+authorization rule answers before the dispatcher, and the wall is the point. `ShActuatorExposureTest`
+pins the exposure string and asserts both callers.
+
 ### A person arriving on a Keycloak instance is signed in, not refused (SH1426)
 
 The Keycloak chain permits no console shell, so a browser with no Shio session that opened `/` got

@@ -225,7 +225,10 @@ const SWEEP = {
       + "the primary page editor, measured against the form, opening a named page, writing every field "
       + "kind, the default for a page, Fields beside the page and a Publish that asks. docs-shio moved: "
       + "the universal-editor and content-console pages, COVERAGE's rows and the mirror. README and "
-      + "shio-site are NOT moved: neither describes how a page is edited",
+      + "shio-site are NOT moved: neither describes how a page is edited. "
+      + "Reopened for SH1436 and re-closed with it: the Actuator exposes health and info only, and an "
+      + "administrator alone reads anything an operator adds. The configuration reference states the "
+      + "new default and COVERAGE's security row names SH1436, with the mirror regenerated",
   },
   BH: {
     swept: true,

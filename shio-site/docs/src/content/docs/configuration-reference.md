@@ -314,7 +314,7 @@ SMTP can also be configured in the console, which writes the same settings.
 
 | Property | Default | Description |
 |---|---|---|
-| `management.endpoints.web.exposure.include` | `*` | Exposed Actuator endpoints, narrow this in production |
+| `management.endpoints.web.exposure.include` | `health,info` | Exposed Actuator endpoints. Health and info answer any signed-in caller; any other endpoint you add here (a heap dump, the environment, log levels) answers only an administrator |
 
 ---
 

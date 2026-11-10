@@ -23,10 +23,6 @@
 - ⏳ **SH1431** (deps: photography for three more sites) **The Marketplace shows English descriptions on a Portuguese console and only one finished site** — The public catalogue carries no other language yet, and no restaurant, clinic or office site exists. → §XCIX.6
 - 📋 **SH1437** (deps: —) **Server problem documents and labels still call the product Shio, and no lint reads the Java strings** — The full-name rule now holds in the console and the site, while 34 server strings, some on screen, escape it. → §XCIX.9
 
-## Block BG — The console as an application: cost, resilience and access
-
-- 📋 **SH1436** (deps: —) **Any signed-in account can download a heap dump of the instance and change its log levels** — The actuator exposes every endpoint behind authenticated() alone, so on a hosted instance a free sign-up reaches every secret the JVM holds. → §C
-
 ## Priority
 
 ## Done when — SH1245

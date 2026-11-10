@@ -73,6 +73,22 @@ public class ShSecurityConfig {
     private static final String GRAPHQL_PATH = "/graphql";
     /** First-run setup (SH6) — open until a tenant exists. */
     private static final String SETUP_PATH = "/api/v2/setup";
+
+    /**
+     * SH1436 — the actuator. `management.endpoints.web.exposure.include` was `*` and nothing here
+     * narrowed it past sign-in, so any principal (every free sign-up on a hosted instance) could
+     * download `/actuator/heapdump`, the JVM's memory with every secret in it, and `POST
+     * /actuator/loggers`. The exposure is `health,info` now; this is the second wall, for the
+     * operator who widens it: whatever else is exposed answers only an ADMIN.
+     */
+    private static final String ACTUATOR_PATH = "/actuator/**";
+
+    /** SH1436 — the two endpoints any signed-in caller keeps, as before. */
+    private static final org.springframework.security.web.util.matcher.RequestMatcher ACTUATOR_HEALTH =
+            new org.springframework.security.web.util.matcher.OrRequestMatcher(
+                    PathPatternRequestMatcher.withDefaults().matcher("/actuator/health"),
+                    PathPatternRequestMatcher.withDefaults().matcher("/actuator/health/**"),
+                    PathPatternRequestMatcher.withDefaults().matcher("/actuator/info"));
     /** Role required for CDA writes (SH10); {@code hasRole} prepends {@code ROLE_}. */
     private static final String ROLE_CDA_WRITE = "CDA_WRITE";
     /** Post-types-as-code admin API (SH16) — console-authenticated, used by the stateless {@code shio} CLI. */
@@ -491,6 +507,10 @@ public class ShSecurityConfig {
                         mvc.matcher(HttpMethod.PUT, TENANT_SUBPATH),
                         mvc.matcher(HttpMethod.DELETE, TENANT_SUBPATH))
                         .hasRole("ADMIN");
+                // SH1436 — see ACTUATOR_HEALTH: health and info for any signed-in caller, every
+                // other actuator endpoint an operator exposes for an administrator only.
+                authorizeRequests.requestMatchers(ACTUATOR_HEALTH).authenticated();
+                authorizeRequests.requestMatchers(mvc.matcher(ACTUATOR_PATH)).hasRole("ADMIN");
                 authorizeRequests.anyRequest().authenticated();
             });
             http.logout(logout -> logout.addLogoutHandler(shLogoutHandler)
@@ -615,6 +635,9 @@ public class ShSecurityConfig {
                                 mvc.matcher(HttpMethod.PUT, TENANT_SUBPATH),
                                 mvc.matcher(HttpMethod.DELETE, TENANT_SUBPATH))
                                 .hasRole("ADMIN");
+                        // SH1436 — the same actuator rule as the OIDC chain.
+                        authorizeRequests.requestMatchers(ACTUATOR_HEALTH).authenticated();
+                        authorizeRequests.requestMatchers(mvc.matcher(ACTUATOR_PATH)).hasRole("ADMIN");
                         authorizeRequests.anyRequest().authenticated();
                     });
             http.logout(logout -> logout

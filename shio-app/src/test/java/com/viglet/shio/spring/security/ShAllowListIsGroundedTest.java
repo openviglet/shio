@@ -121,6 +121,9 @@ class ShAllowListIsGroundedTest {
         NOT_A_CONTROLLER.put("/__tur/**", "the Turing integration's callback prefix");
         NOT_A_CONTROLLER.put("/setup", "the first-run setup shell (SH6), open only until an admin exists");
         NOT_A_CONTROLLER.put("/setup/**", "the same shell's client-side routes");
+        // SH1436 — named only to be closed: hasRole("ADMIN"), never permitAll.
+        NOT_A_CONTROLLER.put("/actuator/**",
+                "Spring Boot's actuator endpoints; the rule is an ADMIN wall for whatever an operator exposes beyond health and info");
     }
 
     @Autowired

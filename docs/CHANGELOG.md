@@ -2147,6 +2147,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1398** — The Universal Editor docs describe saving as it is: the console-session merge held to write and publish permission, with If-Match, and the delivery API with a write token only for an editor on one's own front end.
 - **SH1399** — Fields draws a page's or section's whole form beside the page, opening on the selected field, and its edits are saved with the page's other changes; a description the page never draws costs 3 clicks there (design §XI.125 recorded in `docs/agents/console-ui.md`).
 - **SH1400** — The Universal Editor's Publish saves, then asks with the post form's own confirmation over the server's plan, so a page goes live the same way from either editor (design §XI.126 recorded in `docs/agents/console-ui.md`).
+- **SH1436** — The Actuator exposes health and info only, and anything an operator adds answers an administrator alone; a signed-in non-admin reaches no heap dump, environment or log levels (design §C superseded: its 404 for a signed-in non-admin is a 403: the ADMIN wall for opted-in endpoints answers before the dispatcher) (design §C recorded in `docs/agents/security.md`).
 
 ## Block BH — One content model, many languages
 
