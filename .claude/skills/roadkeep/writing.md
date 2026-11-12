@@ -26,6 +26,9 @@ refusals, with the fields arriving as a schema instead of flag names typed from 
 **The CLI takes these spellings too**: `roadkeep next_id` and `--replacement` run as `next-id`
 and `--with`, with a note on stderr naming the CLI's own — so a name remembered from either
 surface works, and a verb this CLI has is never respelled into another act.
+**Setting a project up**: read `init --questions --json`, ask the user each question it lists
+(AskUserQuestion), and call `init` with the flags the answers name — the questions live in that
+list and nowhere here, so a new option reaches you without this page changing.
 `init`, `adopt` and `install` run *before* a project is governed, or on its wiring, and want
 the CLI — `declare` above is the one write on a configured tree, which is why it is served
 and they are not. **It takes two vocabularies**: a *role* writes that file and the `[files]`
@@ -424,7 +427,10 @@ it — refused unless the old string occurs exactly once, which is what keeps th
 visible in the call. It is also the one form that **inherits** an overrun: a legacy section
 already over the word limit for reasons the correction has nothing to do with takes the edit,
 where the whole-body form is refused and the way out was shortening prose you never came to
-touch. Growing it is still charged. A body-only amend leaves the **heading line's bytes** alone
+touch. Growing it is still charged. **To learn whether a string matches or an edit fits,
+ask: `section amend <id> --replace "<old>" --with "<new>" --check`** runs every refusal
+and prints the prose as it would read, writing nothing — never probe with a real write.
+A body-only amend leaves the **heading line's bytes** alone
 too — the reader takes a `§` an author wrote under an outline and the writer would not
 reproduce it, so re-rendering a heading nobody named silently restyled the file. **The anchor is
 `section move <anchor> --to <address>`**, and only under an outline: `renumber` moves an

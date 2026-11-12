@@ -68,13 +68,15 @@ forgives the standing debt by name.
 
 ## Where the rest is
 
-Two pages sit beside this file, and they are read when a turn needs them and not before:
+Three pages sit beside this file, and they are read when a turn needs them and not before:
 
 * **`writing.md`** — the write path whole: every flag on `add`, `status`, `amend`,
   `restate`, `ship`, `retire`, `record`, `section`, `non-goal`, `defer`, `resume`, `dismiss`
   and `reopen`, what
   each transaction refuses and how the refusal is answered, the wiring verbs (`init`,
   `adopt`, `install`, `declare`, `engines`, `merge`), and every code the gate reports.
+* **`filing.md`** — filing a line into another project `[projects]` declares, from a
+  checkout or from its git remote alone, and the dep the line here takes after.
 * **`asking.md`** — the query surface whole: what each read answers and in which units,
   what git answers about the ledger, the projections that go stale, and what a project may
   declare in `roadkeep.toml`.
