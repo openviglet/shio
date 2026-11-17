@@ -273,6 +273,27 @@ export default function BentoHomePage() {
     return label === key ? action : label
   }
 
+  /*
+   * SH1439 — no layout until the summary has answered. While it is pending `siteCount` is null, so
+   * `firstUse` read false and a fresh instance drew the quick actions and the activity list of an
+   * instance with sites, then swapped them for the first-site start: every section moved, on the
+   * first screen after the first login. The hero stays, and one neutral block holds the space.
+   */
+  if (isPending) {
+    return (
+      <div className="space-y-8">
+        <BentoHero
+          eyebrow={t("sidebar.dashboard")}
+          title={t("home.welcomeTitle")}
+          subtitle={t("home.welcomeSubtitle")}
+        />
+        <div role="status" aria-busy="true" className="bg-muted/40 h-64 animate-pulse rounded-xl">
+          <span className="sr-only">{t("common.loading")}</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       <BentoHero

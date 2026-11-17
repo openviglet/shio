@@ -62,6 +62,20 @@ test("SH1420: an empty site list, an empty home and the New site form all name t
     "SH1420: the New site form no longer names the Marketplace as the faster start")
 })
 
+test("SH1439: while the summary is pending the home draws neither the quick actions nor the first-site start", () => {
+  const home = read("app", "system", "home.page.tsx")
+  const pending = home.match(/if \(isPending\) \{\s*return \(([\s\S]*?)\n {4}\)\n {2}\}/)
+  assert.ok(pending, "SH1439: the home draws a layout before the summary answers, so a fresh instance flashes the dashboard")
+  const placeholder = pending[1]
+  assert.match(placeholder, /<BentoHero/, "SH1439: the pending home lost its welcome header")
+  assert.match(placeholder, /aria-busy="true"/, "SH1439: the pending home has no placeholder for what is coming")
+  for (const section of ["home.quickActions", "<FirstSiteStart", "home.recentActivity", "home.attention", "<GettingStarted"]) {
+    assert.ok(!placeholder.includes(section), `SH1439: the pending home draws ${section} before it knows which layout is right`)
+  }
+  assert.ok(home.indexOf("if (isPending) {") < home.indexOf("{firstUse && ("),
+    "SH1439: the first-site start is drawn before the pending guard returns")
+})
+
 test("SH1420: every first-use string exists in English and Portuguese", () => {
   const locale = (lang, file) => JSON.parse(readFileSync(join(SRC, "i18n", "locales", lang, file), "utf8"))
   const keys = ["startTitle", "startSubtitle", "startMarketplaceTitle", "startMarketplaceDesc",

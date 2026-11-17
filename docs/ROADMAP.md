@@ -16,7 +16,6 @@
 ## Block BJ — What a visitor finds first: release, links and a demo
 
 - ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — Every launch channel lacks a demo that opens without installing, and no production site exists. → §XCV.4
-- 📋 **SH1439** (deps: —) **A fresh instance's console home flashes the quick-actions dashboard before its first-site start** — While the summary is pending, firstUse is false and the home draws the layout of an instance with sites, then swaps it. → §XCV.11
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 

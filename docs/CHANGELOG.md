@@ -2213,6 +2213,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1421** — An empty instance's first screen offers Let your coding agent build it: it issues an AGENT key that cannot publish, prints the claude mcp add command with this instance and key filled in, and says when the first run arrives (design §XCV.8 recorded in `docs/agents/agent-surface.md`).
 - **SH1422** — A Marketplace setup ends on the site it made, offering the Visual Editor, a preview and its pages; a plain install keeps its dialog open and points at the setup form (design §XCV.9 recorded in `docs/agents/console-ui.md`).
 - **SH1423** — Home shows a Getting started checklist (site, change a page, publish, connect an agent, review a run) ticked from the summary's start, read from instance state, hidden when done or by the person (design §XCV.10 recorded in `docs/agents/console-ui.md`).
+- **SH1439** — A fresh instance's console home draws only its welcome header and a neutral placeholder until the summary answers, then the one layout it decides, so the quick actions no longer flash before the first-site start.
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
