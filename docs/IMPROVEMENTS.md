@@ -1196,6 +1196,29 @@ site link it beside `docker run`. If a guest console is too costly to keep safe,
 rendered showcase alone, with a recorded console tour, is the first step. Set aside
 2026-11-09: the deploy is a public service in the cloud repo, which the maintainer runs.
 
+### XCV.11 The home waits for the summary before it chooses a layout (SH1439)
+
+The console home of a fresh instance draws the returning curator's dashboard first
+("Ações Rápidas" / quick actions, and the loading blocks under it), then swaps it for
+"Comece seu primeiro site" (SH1420) once the summary answers zero sites. In
+`shio-react/src/app/system/home.page.tsx`, `siteCount` is `null` while the summary query
+is pending, so `firstUse = siteCount === 0` is false for that moment and the page
+renders the layout of an instance that has sites. The swap moves every section on the
+page.
+
+It reached the Viglet Shio promo video on 2026-11-17 (viglet/marketing, VM86): the scene
+filming the first Marketplace install opens on this home, and the frame of the wrong
+layout showed as a flash at 0:40 that the Alexandre caught watching. Every person who
+logs in to a new instance sees the same jump, the first screen after the first login.
+
+While the summary is pending, the home should draw neither layout's sections: the
+welcome header and a neutral placeholder the size of what is coming, then the one layout
+the answer decides. A test renders the home with the summary pending and asserts that
+neither the quick actions nor the first-site start are in the page.
+
+**Done when** a fresh instance's home goes from its placeholder straight to "Comece seu
+primeiro site", with no frame of the quick actions in between.
+
 ## XCVII End-user documentation for 2026.3 (docs-shio)
 
 ## XCVIII Releases, scheduling and the publish gate
