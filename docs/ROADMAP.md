@@ -12,6 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The MCP Registry entry is live; the Claude Code plugin and MCP lists and a More tools line still await the owner. → §XI.28
+- 📋 **SH1441** (deps: —) **Every small-business site looks the same and plain: one minimal theme, system font, one blue accent** — A style parameter with curated themes, each with a preview image, and a brand accent let a person pick a look that fits the business. → §XI.135
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

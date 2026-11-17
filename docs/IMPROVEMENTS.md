@@ -241,6 +241,33 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
+### XI.135 Curated styles for the small-business blueprint (SH1441)
+
+Found by shio-mobile on the first real build from the phone: the site the small-business
+blueprint applies looks plain and the same for every business. Its one Theme post is a
+minimal stylesheet: system font, white ground, one blue accent (#0b5fff), sections
+alternating white and light grey. The agent fills five parameters and nothing about the
+look, so a bakery and a gym come out identical.
+
+Writing CSS in the agent's prompt is not the fix: every run would style differently and
+unreviewed (contrast, phone width, accessibility), spend tokens on it, and a later
+change run could rewrite it. The look is design work done once, in the blueprint, and
+chosen.
+
+The blueprint takes a `style` parameter naming one of four or more curated styles, each
+a full theme: palette, type pairing, a hero carrying the first photo, buttons, cards,
+gallery and form, checked at phone width and for contrast. A start: warm (bakery, café),
+modern, classic (office, clinic), vibrant (shop, gym). An optional `accent` colour
+overrides the style's accent with the brand's.
+
+Each style ships a preview image a client can show before applying it, served by the
+instance with the blueprint (one small WebP per style), so the phone's chooser and the
+console's blueprint dialog draw the same pictures.
+
+Done when applying small-business with each style gives a visibly distinct site that
+passes the publish gates, the default stays the current look, and the list of styles
+with their previews is readable from the blueprint's description.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
