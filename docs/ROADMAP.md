@@ -20,6 +20,7 @@
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
 - ⏳ **SH1430** (deps: a recorded session per non-Claude MCP client on a clean instance) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
+- 📋 **SH1440** (deps: —) **A review session's pages do not say which rows a visitor reaches: a phone shows folders, menus and layouts as new pages** — A kind on each row (page with its address, part with its pages, structure) lets the phone review three pages instead of twenty-two rows. → §XCIX.10
 
 ## Priority
 

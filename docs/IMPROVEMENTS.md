@@ -1195,3 +1195,28 @@ against a clean instance proves it (the same proof the promo's agent session is)
 
 **Done when.** The dialog offers at least three clients, each with a copy-paste setup,
 and the docs page states when each was last proved.
+
+### XCIX.10 The review session says which rows are pages (SH1440)
+
+Found by shio-mobile on the phone's review screen. A run that applies the small-business
+blueprint lists 22 rows in the session's `pages`, and three of them are pages a visitor
+reaches (`/`, `/about`, `/contact`). The rest are seven folders, six sections that
+render inside those pages, four menu items, the theme and the layout. A person reviewing
+their first site on a phone reads 22 "new page" rows, opens "Small business layout" and
+gets the preview's 400 document, because a layout has no address.
+
+The row carries `address` (`folder:` or `post:` plus a path) and nothing that says which
+rows are pages. The phone could guess from the blueprint's folder names, but that guess
+is a second rule of what a page is, kept outside the instance, and it breaks on the next
+blueprint.
+
+What the phone needs, on each row of `pages` in `GET /api/v2/review/sessions/{id}` (and
+the listing's counts): a `kind`, `page` for a post the renderer serves at an address
+(with that address), `part` for a post that renders inside one or more pages (with those
+pages' post ids), and `structure` for folders, menus, themes and layouts. A part's
+decision follows its page by default; structure rides with the first publish. The
+console's rows could then fold the same way.
+
+Done when a small-business apply reads as three page rows, each naming its parts, with
+the structure counted once, and the preview is never offered for a row that has no
+address.
