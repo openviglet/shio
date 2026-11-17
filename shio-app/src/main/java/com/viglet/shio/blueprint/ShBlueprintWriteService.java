@@ -31,6 +31,7 @@ import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.blueprint.dto.ShBlueprintApplied;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 /**
  * The transactional half of applying a blueprint (SH93): provision the model, then
@@ -264,9 +265,33 @@ public class ShBlueprintWriteService {
      * than inferred: one creates a site, the other adds fields to a post-type the instance
      * already had.</p>
      */
-    public record Options(boolean createSite, boolean mergePostTypes) {
+    public record Options(boolean createSite, boolean mergePostTypes, Boolean publish) {
 
         public static final Options NONE = new Options(false, false);
+
+        /**
+         * The pre-SH1438 form: whether the package's publishes run is left to the credential.
+         */
+        public Options(boolean createSite, boolean mergePostTypes) {
+            this(createSite, mergePostTypes, null);
+        }
+
+        /**
+         * SH1438 — whether this apply writes the package's pages as drafts rather than publishing
+         * the ones it marks {@code publish: true}.
+         *
+         * <p>Asked for with {@code publish: false}, or implied by a token that may not publish
+         * (SH107): such a token applying a package used to be refused with 403 before the first
+         * write, so the one credential an agent run is meant to hold could not apply anything. The
+         * drafts land in the run's session like any other agent write, and a curator's approve is
+         * what publishes them (P7). An explicit {@code publish: true} from that token is never
+         * downgraded: it still meets the SH107 refusal, because silently not doing what was asked
+         * is not the same as doing what is allowed.</p>
+         */
+        public boolean drafts() {
+            return Boolean.FALSE.equals(publish)
+                    || (publish == null && !ShApiTokenContext.currentMayPublish());
+        }
     }
 
     /**

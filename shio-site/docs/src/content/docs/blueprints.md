@@ -199,6 +199,12 @@ shio apply --blueprint marketing-site --site mysite --create-site \
 
 Everything lands as **drafts**. Publishing is yours.
 
+Some packages mark pages to publish on apply. That runs only when the credential may publish.
+An agent token issued without publish rights applies the same package as drafts, in the
+agent's session, so the pages wait in the review queue for a curator to approve them. The dry
+run says which of the two it will do (`"drafts": true`). Send `"publish": false` over REST to
+ask for drafts from any credential.
+
 The two section packages (`marketing-site` and `landing`) arrive **editable on the page**:
 open one in the Visual Editor and every section's fields are there, plus the page's own
 title and description. A curator changes the words without opening the console form, and

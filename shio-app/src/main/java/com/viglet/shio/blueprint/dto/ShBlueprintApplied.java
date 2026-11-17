@@ -71,6 +71,9 @@ import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
  *                  or {@code null} on a plan and when the note could not be filed. Reported
  *                  rather than assumed: the record is what makes "which blueprint is this
  *                  site" answerable later, so a caller has to be able to see it was kept
+ * @param drafts    SH1438 — {@code true} when this apply writes the package's pages as drafts
+ *                  and publishes none of them (a drafts-only token, or {@code publish: false});
+ *                  {@code null} otherwise. On a plan too, so the dry run says which it will do
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -81,7 +84,17 @@ public record ShBlueprintApplied(boolean dryRun, String blueprint, String versio
                                  List<PostType> postTypes, ShAgentChangeSet content,
                                  List<CarriedFile> files, Verified verify, String createdSite,
                                  String recordedAs,
-                                 @JsonInclude(Include.NON_EMPTY) List<AssetRow> assets) {
+                                 @JsonInclude(Include.NON_EMPTY) List<AssetRow> assets,
+                                 Boolean drafts) {
+
+    /** The twelve-field form: pre-SH1438, when an apply published what its package marked. */
+    public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
+                              java.util.Map<String, String> params, List<PostType> postTypes,
+                              ShAgentChangeSet content, List<CarriedFile> files, Verified verify,
+                              String createdSite, String recordedAs, List<AssetRow> assets) {
+        this(dryRun, blueprint, version, site, params, postTypes, content, files, verify,
+                createdSite, recordedAs, assets, null);
+    }
 
     /** The eleven-field form: pre-SH1252, when a package carried no assets. */
     public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,

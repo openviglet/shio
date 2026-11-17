@@ -36,10 +36,20 @@ import tools.jackson.databind.JsonNode;
  * @since 2026.3
  */
 public record ShBlueprintRequest(String site, JsonNode params, boolean dryRun,
-                                 boolean createSite, boolean mergePostTypes) {
+                                 boolean createSite, boolean mergePostTypes, Boolean publish) {
 
     /** The three-field form: every caller from before SH151/SH152, and every default. */
     public ShBlueprintRequest(String site, JsonNode params, boolean dryRun) {
         this(site, params, dryRun, false, false);
+    }
+
+    /**
+     * The five-field form: pre-SH1438. {@code publish} absent leaves it to the credential: a
+     * token that may publish runs the package's publishes, one that may not writes drafts.
+     * {@code false} asks for drafts from any caller.
+     */
+    public ShBlueprintRequest(String site, JsonNode params, boolean dryRun, boolean createSite,
+                              boolean mergePostTypes) {
+        this(site, params, dryRun, createSite, mergePostTypes, null);
     }
 }

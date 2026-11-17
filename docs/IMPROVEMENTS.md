@@ -241,28 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.134 A blueprint applied by a drafts-only agent lands as drafts (SH1438)
-
-Found by Shio Mobile SHM12 on the local instance (2026-11-17). The phone's first run
-applies `small-business` (SH1356) through the backend's AGENT token, which writes drafts
-only (SH107: publishing is granted per token, never implied). `POST
-/api/v2/agent/blueprints/small-business/apply` with that token, `createSite: true` and
-an `Mcp-Session-Id` answers 403 "this token may not publish", and
-`/api/v2/review/sessions/<session>` lists nothing: the apply publishes what it writes,
-so the package meant for the phone's run cannot be applied by the credential that run
-holds. A real gpt-5-mini run built the site some other way and left nothing for the
-person to approve.
-
-Giving the backend a publishing token would break the rule both products keep: the agent
-builds, the curator approves (Shio P7, Shio Mobile M1).
-
-Proposed: an apply under a drafts-only token (or with `publish: false` in the request)
-writes the package's pages as drafts in the run's session, so they land in the review
-queue like any other agent write and the person's approve publishes them; the plan (dry
-run) says which it will do. Post-types, layout and theme stay structural writes as
-today. A test applies `small-business` with a drafts-only AGENT token in a session and
-reads its pages in `/api/v2/review/sessions/<session>`, none published.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

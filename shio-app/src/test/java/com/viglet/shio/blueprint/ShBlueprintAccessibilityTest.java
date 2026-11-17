@@ -350,6 +350,73 @@ class ShBlueprintAccessibilityTest {
                 .satisfies(each -> assertThat(each.getState()).isEqualTo(ShPostState.DRAFT));
     }
 
+    @Autowired
+    private com.viglet.shio.api.review.ShReviewService reviewService;
+
+    /**
+     * SH1438 — a drafts-only agent token applies {@code small-business}, and its pages wait for a
+     * curator.
+     *
+     * <p>Shio Mobile's first run holds an AGENT token that may not publish (SH107), and the apply used
+     * to answer 403 before its first write because the package marks its pages {@code publish: true}.
+     * Here in this class because it is the one that already applies the package on a database of its
+     * own (SH423's slot rule, as for SH1356 above).</p>
+     */
+    @Test
+    @DisplayName("SH1438: a drafts-only agent token applies small-business as drafts in its session")
+    void aDraftsOnlyTokenAppliesAsDraftsInItsSession() throws Exception {
+        String site = freshSite("small-business-drafts");
+        String siteId = siteRepository.findByName(site).getId();
+        String session = "sh1438-" + UUID.randomUUID();
+        JsonNode params = new ObjectMapper().readTree("{\"brand\":\"Bakery\"}");
+        var authentication = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                "phone", null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                        "ROLE_AGENT")));
+        authentication.setDetails(new com.viglet.shio.spring.security.auth.ShApiTokenContext("tok-sh1438",
+                ShApiTokenScope.AGENT, Set.of(), com.viglet.shio.persistence.model.token.ShApiTokenEnv.PROD,
+                false));
+        org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .setAuthentication(authentication);
+        com.viglet.shio.api.agent.ShAgentSessionContext.set(session);
+        try {
+            ShBlueprintApplied plan = blueprintService.plan("small-business", site, params, "phone");
+            assertThat(plan.drafts())
+                    .as("SH1438: the dry run says the apply will write drafts, before anything moves")
+                    .isTrue();
+            assertThat(plan.content().results())
+                    .as("SH1438: and plans no publish a drafts-only token would be refused")
+                    .noneMatch(row -> com.viglet.shio.api.agent.ShAgentBatchService.POST_PUBLISH.equals(row.op()));
+
+            ShBlueprintApplied applied = blueprintService.apply("small-business", site, params, "phone");
+            assertThat(applied.drafts()).isTrue();
+            assertThat(applied.content().changed()).isPositive();
+
+            assertThatThrownByPublish(site, params);
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+            com.viglet.shio.api.agent.ShAgentSessionContext.clear();
+        }
+
+        assertThat(postRepository.findAll().stream()
+                .filter(each -> each.getShSite() != null && siteId.equals(each.getShSite().getId()))
+                .filter(each -> each.getState() == ShPostState.PUBLISHED)
+                .toList())
+                .as("SH1438: none of the package's pages is live until a curator approves it")
+                .isEmpty();
+        var detail = reviewService.detail(session);
+        assertThat(detail.entries())
+                .as("SH1438: the pages are in the run's review session, where the person approves them")
+                .anySatisfy(entry -> assertThat(entry.address()).endsWith("/contact"));
+    }
+
+    /** SH1438 — an explicit `publish: true` from a drafts-only token is still the SH107 refusal. */
+    private void assertThatThrownByPublish(String site, JsonNode params) {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> blueprintService.apply("small-business",
+                        site, params, "phone", new ShBlueprintWriteService.Options(false, false, true)))
+                .as("SH1438: asking to publish is never silently downgraded to drafts")
+                .isInstanceOf(com.viglet.shio.api.agent.ShAgentBatchService.PublishNotPermittedException.class);
+    }
+
     private static final String QUILHARA_ORIGIN = "https://quilhara.example";
     private static final String QUILHARA_TOKEN = "sh1387-form-key";
 

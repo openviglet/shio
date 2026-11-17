@@ -174,7 +174,9 @@ public class ShBlueprintService {
         Map<String, String> assetIds = blueprint.assets().isEmpty()
                 ? Map.of()
                 : shBlueprintAssetWriter.ids(blueprint.assets(), siteName);
-        ShAgentDesiredState desired = desired(blueprint, values, siteName, assetIds);
+        // SH1438 — decided once, before either half, so the plan and the apply agree on it.
+        boolean drafts = options.drafts();
+        ShAgentDesiredState desired = desired(blueprint, values, siteName, assetIds, drafts);
 
         ShBlueprintWriteService.Written written = dryRun
                 ? shBlueprintWriteService.plan(defs, desired, actor, options)
@@ -184,7 +186,8 @@ public class ShBlueprintService {
                 siteName, values, written.postTypes(), written.content(),
                 carriedFiles(blueprint), dryRun ? null : verify(blueprint, values, siteName),
                 createdSite != null ? createdSite : written.site(),
-                dryRun ? null : record(blueprint, values, siteName, actor), assets);
+                dryRun ? null : record(blueprint, values, siteName, actor), assets,
+                drafts ? Boolean.TRUE : null);
     }
 
     /**
@@ -244,7 +247,7 @@ public class ShBlueprintService {
      * order, addressed to the caller's site and never pruning.
      */
     private ShAgentDesiredState desired(ShBlueprint blueprint, Map<String, String> values,
-                                        String site, Map<String, String> assetIds) {
+                                        String site, Map<String, String> assetIds, boolean drafts) {
         ObjectNode document = codec.object();
         document.put("site", site);
         ArrayNode folders = document.putArray("folders");
@@ -259,7 +262,7 @@ public class ShBlueprintService {
         for (JsonNode raw : blueprint.content()) {
             JsonNode tree = ShBlueprintParams.substitute(raw, values, blueprint.name());
             append(folders, tree.get("folders"));
-            append(posts, withAssetIds(tree.get("posts"), assetIds));
+            append(posts, withoutPublish(withAssetIds(tree.get("posts"), assetIds), drafts));
             append(postTypes, tree.get("postTypes"));
             JsonNode declaredBinding = tree.get("postTypeLayout");
             if (declaredBinding != null && declaredBinding.isObject()) {
@@ -301,6 +304,27 @@ public class ShBlueprintService {
         if (source != null && source.isArray()) {
             source.forEach(target::add);
         }
+    }
+
+    /**
+     * SH1438 — the posts with every {@code publish: true} removed, when this apply writes drafts.
+     *
+     * <p>Removed rather than set to {@code false}: the desired-state compiler reads absence as
+     * "leave it alone" and {@code false} as an unpublish, and a re-apply by a drafts-only agent
+     * must not take down a page a curator already approved. A package's own {@code publish:
+     * false} is kept, since unpublishing is not what SH107 gates.</p>
+     */
+    private static JsonNode withoutPublish(JsonNode posts, boolean drafts) {
+        if (!drafts || posts == null || !posts.isArray()) {
+            return posts;
+        }
+        ArrayNode copy = (ArrayNode) posts.deepCopy();
+        copy.forEach(post -> {
+            if (post instanceof ObjectNode object && object.path("publish").asBoolean(false)) {
+                object.remove("publish");
+            }
+        });
+        return copy;
     }
 
     /** SH1263 — the folders a package's assets land in, as a document of their own. */

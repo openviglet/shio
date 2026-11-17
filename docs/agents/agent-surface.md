@@ -382,6 +382,14 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   system type. Neither is an MCP argument: either one puts `shio_apply` over the SH132 per-tool
   ceiling, and `tools/list` is re-sent every turn (P3), so an MCP client creates the site with
   `shio_write`'s `site.upsert` and the missing-site error says so.
+  **A drafts-only token applies as drafts (SH1438).** A package's `publish: true` compiles to
+  `post.publish`, which SH107 refuses for a token without `mayPublish`, so the AGENT token a
+  phone run holds got a 403 before the first write. `Options.drafts()` now strips those
+  publishes when the request sends `publish: false` or omits it under such a token; the pages
+  land in the run's session and the curator's approve publishes them. Stripped, never set to
+  `false`, because `false` compiles to an unpublish and a re-apply must not take down an
+  approved page. An explicit `publish: true` is not downgraded: it still meets the 403. The
+  response carries `drafts: true`, on the plan too.
 - `GET /agent/find`: posts by site/type/folder-subtree/text; **addresses, not bodies**. A post
   with no friendly URL is addressed **`id:`** (SH172), the fallback lives in
   `ShAddressResolver.addressOf`, so `find`, `changes` and the review queue cannot disagree about

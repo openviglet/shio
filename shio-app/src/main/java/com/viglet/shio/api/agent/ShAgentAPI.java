@@ -618,7 +618,9 @@ public class ShAgentAPI {
         ShBlueprintRequest body = request == null
                 ? new ShBlueprintRequest(null, null, false) : request;
         // SH151/SH152 — both opt-in, both named in the plan before they happen.
-        var options = new ShBlueprintWriteService.Options(body.createSite(), body.mergePostTypes());
+        // SH1438 — `publish` absent follows the credential, so a drafts-only token lands drafts.
+        var options = new ShBlueprintWriteService.Options(body.createSite(), body.mergePostTypes(),
+                body.publish());
         return body.dryRun()
                 ? shBlueprintService.plan(name, body.site(), body.params(), name(principal), options)
                 : shBlueprintService.apply(name, body.site(), body.params(), name(principal), options);

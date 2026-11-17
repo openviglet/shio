@@ -12,7 +12,6 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The MCP Registry entry is live; the Claude Code plugin and MCP lists and a More tools line still await the owner. → §XI.28
-- 📋 **SH1438** (deps: —) **A drafts-only agent token cannot apply a blueprint: apply publishes, so the phone's first run is refused with 403** — small-business was built for the phone's run, but its apply needs publish rights the run's AGENT token must not hold; it should land as drafts in the run's session. → §XI.134
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
