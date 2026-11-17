@@ -16,12 +16,12 @@
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
-- ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — Every launch channel lacks a demo that opens without installing, and no production site exists. → §XCV.4
+- ⏳ **SH1342** (deps: maintainer deploy) **Nobody can open a finished Shio site and its console without signing up or installing** — The free viglet.cloud sign-up (SH1432) starts empty; launch channels still lack a finished showcase a visitor clicks at once. → §XCV.4
 
 ## Block BK — The next level: a demo that sells and a review a curator trusts
 
 - ⏳ **SH1430** (deps: a recorded session per non-Claude MCP client on a clean instance) **Only Claude Code is shown connecting, so users of other MCP clients do not know Viglet Shio works for them** — The claim that any agent works is unproved where those users look. → §XCIX.5
-- 📋 **SH1440** (deps: —) **A review session's pages do not say which rows a visitor reaches: a phone shows folders, menus and layouts as new pages** — A kind on each row (page with its address, part with its pages, structure) lets the phone review three pages instead of twenty-two rows. → §XCIX.10
+- 📋 **SH1440** (deps: —) **A review session's pages do not say which rows a visitor reaches: a phone shows folders, menus and layouts as new pages** — A role on each row (page with its address, part with its pages, structure) lets the phone review three pages instead of twenty-two rows. → §XCIX.10
 
 ## Priority
 

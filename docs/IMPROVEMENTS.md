@@ -243,30 +243,30 @@ Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/
 
 ### XI.135 Curated styles for the small-business blueprint (SH1441)
 
-Found by shio-mobile on the first real build from the phone: the site the small-business
-blueprint applies looks plain and the same for every business. Its one Theme post is a
-minimal stylesheet: system font, white ground, one blue accent (#0b5fff), sections
-alternating white and light grey. The agent fills five parameters and nothing about the
-look, so a bakery and a gym come out identical.
+Found by shio-mobile on the first real build from the phone. The small-business site has
+one Theme (system font, one blue accent `#0b5fff`) and no parameter touches the look, so
+a bakery and a gym come out identical. CSS in the agent's prompt is not the fix: each
+run would style differently, unreviewed. landing, blog and marketing-site share the
+shape, so the mechanism belongs to the blueprint format and small-business uses it
+first.
 
-Writing CSS in the agent's prompt is not the fix: every run would style differently and
-unreviewed (contrast, phone width, accessibility), spend tokens on it, and a later
-change run could rewrite it. The look is design work done once, in the blueprint, and
-chosen.
+**Parameters.** `style` is an `enum` (`ShBlueprintParams` validates one today) whose
+default is the current look; then warm, modern, classic and vibrant, each a full theme
+checked at phone width and for contrast. `accent` is optional and held to `#rrggbb` by
+`pattern`. Left empty, it must emit no CSS. A light accent under white button text must
+fail the contrast check, not ship.
 
-The blueprint takes a `style` parameter naming one of four or more curated styles, each
-a full theme: palette, type pairing, a hero carrying the first photo, buttons, cards,
-gallery and form, checked at phone width and for contrast. A start: warm (bakery, café),
-modern, classic (office, clinic), vibrant (shop, gym). An optional `accent` colour
-overrides the style's accent with the brand's.
+**Only the chosen theme lands.** Shipping all four and picking one by the layout's
+`THEME` title leaves three for `unused-theme` to report on every site. So a content
+entry gains a condition on a parameter's value, which any blueprint can use.
 
-Each style ships a preview image a client can show before applying it, served by the
-instance with the blueprint (one small WebP per style), so the phone's chooser and the
-console's blueprint dialog draw the same pictures.
+**Previews.** Each enum choice may declare a title and a line per locale, and a WebP
+preview inside the package. The blueprint API serves it, as SH1253 serves marketplace
+screenshots, and the agent's blueprint description names it (P1).
 
-Done when applying small-business with each style gives a visibly distinct site that
-passes the publish gates, the default stays the current look, and the list of styles
-with their previews is readable from the blueprint's description.
+Done when each style applies as a visibly distinct site that passes the publish gates,
+the default renders as today's does, and the styles with their previews read the same
+over MCP and REST.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
@@ -1190,7 +1190,8 @@ produtos/shio.md).
 installing as what every launch channel is missing for Turing, Shio and Dumont
 (estrategia/portfolio.md). For a CMS, the visitor wants to click the rendered site and
 the console behind it; screenshots and `docker run` ask for trust or for ten minutes
-first.
+first. SH1432's free viglet.cloud sign-up needs no install, but it needs an account and
+starts empty: a finished site to click is what is left.
 
 **Design.** A hosted instance on the Viglet Cloud, `shio-demo.viglet.cloud`, deployed
 from `D:\Git\viglet\cloud` (the maintainer, 2026-11-09), with the Quilhara showcase
@@ -1225,25 +1226,27 @@ and the docs page states when each was last proved.
 
 ### XCIX.10 The review session says which rows are pages (SH1440)
 
-Found by shio-mobile on the phone's review screen. A run that applies the small-business
-blueprint lists 22 rows in the session's `pages`, and three of them are pages a visitor
-reaches (`/`, `/about`, `/contact`). The rest are seven folders, six sections that
-render inside those pages, four menu items, the theme and the layout. A person reviewing
-their first site on a phone reads 22 "new page" rows, opens "Small business layout" and
-gets the preview's 400 document, because a layout has no address.
+Found by shio-mobile on the phone's review screen. A small-business apply lists 22 rows
+in the session's `pages`, three of them pages a visitor reaches (`/`, `/about`,
+`/contact`). Opening the layout row gets the preview's 400 (`render-no-layout-binding`).
+`ShReviewDetail.Page` carries `address` and nothing that says which rows are pages, and
+a client's guess from folder names breaks on the next blueprint.
 
-The row carries `address` (`folder:` or `post:` plus a path) and nothing that says which
-rows are pages. The phone could guess from the blueprint's folder names, but that guess
-is a second rule of what a page is, kept outside the instance, and it breaks on the next
-blueprint.
+The instance already holds both answers. A page is a post whose type the site's
+`postTypeLayout` binds, the rule `ShPageRenderService` renders by. A part's pages come
+from the reference index (`ShObjectReferenceService.referrersOf`), followed upward until
+a page is reached.
 
-What the phone needs, on each row of `pages` in `GET /api/v2/review/sessions/{id}` (and
-the listing's counts): a `kind`, `page` for a post the renderer serves at an address
-(with that address), `part` for a post that renders inside one or more pages (with those
-pages' post ids), and `structure` for folders, menus, themes and layouts. A part's
-decision follows its page by default; structure rides with the first publish. The
-console's rows could then fold the same way.
+Each row of `pages` in `GET /api/v2/review/sessions/{id}` gains a `role`: `page`, `part`
+(with `pages`, the ids that render it) or `structure`. The name is `role` and not
+`kind`, because the queue already calls the net action its kind (SH1425). The listing
+counts page rows from the binding alone, with no reference reads on that path. Decisions
+stay one per post (P7): a client folds a part into its page by sending both ids in one
+call.
 
-Done when a small-business apply reads as three page rows, each naming its parts, with
-the structure counted once, and the preview is never offered for a row that has no
-address.
+Tests: a part two pages use; a section no page uses (`part`, empty `pages`); a page a
+menu item links to stays a `page`; a trashed referrer counts for nothing; a run in two
+locales.
+
+Done when a small-business apply reads as three `page` rows naming their parts, and the
+console and the phone offer a preview only on a `page`.
