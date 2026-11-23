@@ -14,7 +14,7 @@
     <url>https://github.com/openshio/shio</url>
     <packaging>jar</packaging>
     <properties>
-        <spring-boot.version>4.1.2</spring-boot.version>
+        <spring-boot.version>4.2.0</spring-boot.version>
         <!-- Single toggle for the React build (frontend-maven-plugin), mirroring Turing.
              Default false = build the console; pass -Dskip.npm=true to skip it and run
              against a previously-built src/main/resources/public. -->
@@ -263,7 +263,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
-            <version>7.1.2</version>
+            <version>7.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -316,7 +316,7 @@
        <dependency>
             <groupId>tools.jackson.datatype</groupId>
             <artifactId>jackson-datatype-hibernate7</artifactId>
-            <version>3.2.4</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -654,7 +654,7 @@
                     <plugin>
                         <groupId>org.hibernate.orm</groupId>
                         <artifactId>hibernate-maven-plugin</artifactId>
-                        <version>7.4.15.Final</version>
+                        <version>7.4.17.Final</version>
                         <executions>
                             <execution>
                                 <id>enhance</id>
@@ -683,7 +683,7 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>1.1.18</version>
+                        <version>1.1.19</version>
                         <extensions>true</extensions>
                         <configuration>
                             <mainClass>com.viglet.shio.Shio</mainClass>
